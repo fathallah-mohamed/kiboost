@@ -38,6 +38,11 @@ serve(async (req) => {
   }
 
   try {
+    if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
+      throw new Error('OpenAI API key is not configured. Please set up the OPENAI_API_KEY secret.');
+    }
+
     const { childProfile } = await req.json();
     console.log('Generating recipe for child profile:', childProfile);
 
@@ -72,11 +77,6 @@ serve(async (req) => {
     }`;
 
     const generateRecipeWithOpenAI = async () => {
-      if (!openAIApiKey) {
-        console.error('OpenAI API key not found');
-        throw new Error('OpenAI API key is not configured');
-      }
-
       console.log('Making request to OpenAI API...');
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
