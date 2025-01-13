@@ -56,6 +56,7 @@ export type Database = {
           expiry_date: string | null
           id: string
           ingredient_name: string
+          photos: string[] | null
           profile_id: string
           quantity: number
           unit: string
@@ -66,6 +67,7 @@ export type Database = {
           expiry_date?: string | null
           id?: string
           ingredient_name: string
+          photos?: string[] | null
           profile_id: string
           quantity: number
           unit: string
@@ -76,6 +78,7 @@ export type Database = {
           expiry_date?: string | null
           id?: string
           ingredient_name?: string
+          photos?: string[] | null
           profile_id?: string
           quantity?: number
           unit?: string

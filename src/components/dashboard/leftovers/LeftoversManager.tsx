@@ -11,6 +11,7 @@ import { fr } from "date-fns/locale";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, UtensilsCrossed } from "lucide-react";
 import { Recipe } from "../types";
+import { PhotoUploader } from "./PhotoUploader";
 
 interface Leftover {
   id: string;
@@ -18,6 +19,7 @@ interface Leftover {
   quantity: number;
   unit: string;
   expiry_date: string;
+  photos?: string[];
 }
 
 interface LeftoversManagerProps {
@@ -31,7 +33,9 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
     quantity: "",
     unit: "",
     expiry_date: "",
+    photos: [] as string[],
   });
+  const [analyzing, setAnalyzing] = useState(false);
 
   const { data: leftovers, refetch } = useQuery({
     queryKey: ["leftovers"],
@@ -55,7 +59,8 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
         quantity: parseFloat(newLeftover.quantity),
         unit: newLeftover.unit,
         expiry_date: newLeftover.expiry_date,
-        profile_id: userId
+        profile_id: userId,
+        photos: newLeftover.photos,
       });
 
       if (error) throw error;
@@ -70,6 +75,7 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
         quantity: "",
         unit: "",
         expiry_date: "",
+        photos: [],
       });
 
       refetch();
@@ -114,17 +120,28 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
     }
 
     try {
-      const ingredients = leftovers.map(leftover => ({
-        item: leftover.ingredient_name,
-        quantity: leftover.quantity.toString(),
-        unit: leftover.unit
-      }));
+      setAnalyzing(true);
+      const ingredients = leftovers.map(leftover => leftover.ingredient_name);
+      const photos = leftovers.flatMap(leftover => leftover.photos || []);
 
+      const { data, error } = await supabase.functions.invoke('analyze-leftovers', {
+        body: { photoUrls: photos, ingredients }
+      });
+
+      if (error) throw error;
+
+      const suggestion = data.suggestion;
+
+      // Create recipe from suggestion
       const recipeData = {
         profile_id: userId,
         name: "Recette avec restes du " + format(new Date(), 'dd/MM/yyyy'),
-        ingredients: JSON.stringify(ingredients),
-        instructions: "Utilisez les restes disponibles pour créer votre recette",
+        ingredients: JSON.stringify(ingredients.map(item => ({
+          item,
+          quantity: "à ajuster",
+          unit: "selon besoin"
+        }))),
+        instructions: suggestion,
         nutritional_info: JSON.stringify({
           calories: 0,
           protein: 0,
@@ -137,17 +154,15 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
         servings: 4
       };
 
-      const { data: savedRecipe, error } = await supabase
+      const { error: saveError } = await supabase
         .from("recipes")
-        .insert(recipeData)
-        .select()
-        .single();
+        .insert(recipeData);
 
-      if (error) throw error;
+      if (saveError) throw saveError;
 
       toast({
         title: "Recette créée",
-        description: "Une nouvelle recette a été créée à partir des restes.",
+        description: "Une nouvelle recette a été créée à partir des restes avec l'aide de l'IA.",
       });
     } catch (error) {
       console.error('Error creating recipe:', error);
@@ -156,6 +171,8 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
         title: "Erreur",
         description: "Une erreur est survenue lors de la création de la recette.",
       });
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -163,9 +180,13 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Gestion des restes</h2>
-        <Button onClick={handleCreateRecipe} className="gap-2">
+        <Button 
+          onClick={handleCreateRecipe} 
+          className="gap-2"
+          disabled={analyzing}
+        >
           <UtensilsCrossed className="w-4 h-4" />
-          Créer une recette avec les restes
+          {analyzing ? "Analyse en cours..." : "Créer une recette avec les restes"}
         </Button>
       </div>
 
@@ -221,6 +242,15 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
               />
             </div>
           </div>
+
+          <div>
+            <Label>Photos</Label>
+            <PhotoUploader
+              onPhotosUploaded={(urls) => setNewLeftover({ ...newLeftover, photos: urls })}
+              existingPhotos={newLeftover.photos}
+            />
+          </div>
+
           <Button type="submit">
             <Plus className="w-4 h-4 mr-2" />
             Ajouter
@@ -233,6 +263,7 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Photos</TableHead>
               <TableHead>Ingrédient</TableHead>
               <TableHead>Quantité</TableHead>
               <TableHead>Unité</TableHead>
@@ -243,6 +274,18 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
           <TableBody>
             {leftovers?.map((leftover) => (
               <TableRow key={leftover.id}>
+                <TableCell>
+                  <div className="flex gap-2">
+                    {leftover.photos?.map((photo, index) => (
+                      <img
+                        key={index}
+                        src={photo}
+                        alt={`Photo ${index + 1}`}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    ))}
+                  </div>
+                </TableCell>
                 <TableCell>{leftover.ingredient_name}</TableCell>
                 <TableCell>{leftover.quantity}</TableCell>
                 <TableCell>{leftover.unit}</TableCell>
