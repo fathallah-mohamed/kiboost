@@ -36,14 +36,16 @@ export const LeftoversManager = () => {
   const handleAddLeftover = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from("leftovers").insert([
-        {
-          ingredient_name: newLeftover.ingredient_name,
-          quantity: parseFloat(newLeftover.quantity),
-          unit: newLeftover.unit,
-          expiry_date: newLeftover.expiry_date,
-        },
-      ]);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase.from("leftovers").insert({
+        ingredient_name: newLeftover.ingredient_name,
+        quantity: parseFloat(newLeftover.quantity),
+        unit: newLeftover.unit,
+        expiry_date: newLeftover.expiry_date,
+        profile_id: user.id
+      });
 
       if (error) throw error;
 

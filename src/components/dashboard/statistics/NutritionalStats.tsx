@@ -14,6 +14,13 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+interface NutritionalInfo {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 export const NutritionalStats = () => {
   const startDate = startOfWeek(new Date(), { weekStartsOn: 1 });
   const endDate = endOfWeek(new Date(), { weekStartsOn: 1 });
@@ -36,7 +43,7 @@ export const NutritionalStats = () => {
 
       const dailyNutrition = mealPlans.reduce((acc: any, plan) => {
         const date = format(new Date(plan.date), "EEEE", { locale: fr });
-        const nutrition = plan.recipes?.nutritional_info || {
+        const nutrition = plan.recipes?.nutritional_info as NutritionalInfo || {
           calories: 0,
           protein: 0,
           carbs: 0,
