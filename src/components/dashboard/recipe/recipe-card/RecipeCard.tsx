@@ -5,9 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Clock, Heart, Star, Share2, ArrowRight, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Recipe } from "../../types";
-import { DietaryLabel } from "./DietaryLabel";
-import { HealthScore } from "./HealthScore";
-import { NutritionalBadge } from "./NutritionalBadge";
+import { NutritionalIndicator } from "./NutritionalIndicator";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -48,6 +46,26 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
               <span className="text-2xl">•</span>
               <span className="capitalize">{recipe.difficulty}</span>
             </div>
+          </div>
+
+          {/* Indicateurs nutritionnels */}
+          <div className="flex items-center gap-3">
+            <NutritionalIndicator 
+              type="calories" 
+              value={recipe.nutritional_info.calories} 
+            />
+            <NutritionalIndicator 
+              type="protein" 
+              value={recipe.nutritional_info.protein} 
+            />
+            <NutritionalIndicator 
+              type="carbs" 
+              value={recipe.nutritional_info.carbs} 
+            />
+            <NutritionalIndicator 
+              type="fat" 
+              value={recipe.nutritional_info.fat} 
+            />
           </div>
 
           {/* Actions principales */}
