@@ -5,7 +5,7 @@ import { Recipe, MealType, Difficulty, ChildProfile } from '../types';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-export const useMealPlanner = (userId: string, selectedChild: ChildProfile | null) => {
+export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[]) => {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -38,7 +38,6 @@ export const useMealPlanner = (userId: string, selectedChild: ChildProfile | nul
         difficulty: recipe.difficulty as Difficulty
       })) || [];
 
-      // Remove duplicates based on recipe name
       const uniqueRecipes = parsedRecipes.filter((recipe, index, self) =>
         index === self.findIndex((r) => r.name === recipe.name)
       );
@@ -79,8 +78,10 @@ export const useMealPlanner = (userId: string, selectedChild: ChildProfile | nul
         .eq('profile_id', userId)
         .in('date', dates);
 
-      if (selectedChild) {
-        query.eq('child_id', selectedChild.id);
+      if (selectedChildren.length === 1) {
+        query.eq('child_id', selectedChildren[0].id);
+      } else if (selectedChildren.length > 1) {
+        query.in('child_id', selectedChildren.map(child => child.id));
       }
 
       const { data, error } = await query;
@@ -125,27 +126,30 @@ export const useMealPlanner = (userId: string, selectedChild: ChildProfile | nul
     }
   };
 
-  const planRecipe = async (recipe: Recipe, child: ChildProfile | null) => {
+  const planRecipe = async (recipe: Recipe, children: ChildProfile[]) => {
     setPlanningRecipe(true);
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       
-      // Delete existing plan for this date if any
+      // Delete existing plans for this date for selected children
       await supabase
         .from('meal_plans')
         .delete()
         .eq('profile_id', userId)
         .eq('date', formattedDate)
-        .eq('child_id', child?.id);
+        .in('child_id', children.map(child => child.id));
+
+      // Create new meal plans for each selected child
+      const mealPlans = children.map(child => ({
+        profile_id: userId,
+        recipe_id: recipe.id,
+        date: formattedDate,
+        child_id: child.id
+      }));
 
       const { error } = await supabase
         .from('meal_plans')
-        .insert({
-          profile_id: userId,
-          recipe_id: recipe.id,
-          date: formattedDate,
-          child_id: child?.id
-        });
+        .insert(mealPlans);
 
       if (error) throw error;
 
@@ -156,7 +160,7 @@ export const useMealPlanner = (userId: string, selectedChild: ChildProfile | nul
 
       toast({
         title: "Recette planifiée",
-        description: `La recette a été planifiée pour le ${format(selectedDate, 'dd MMMM yyyy', { locale: fr })}`,
+        description: `La recette a été planifiée pour ${children.length} enfant(s) le ${format(selectedDate, 'dd MMMM yyyy', { locale: fr })}`,
       });
     } catch (error) {
       console.error('Error planning recipe:', error);
@@ -172,7 +176,7 @@ export const useMealPlanner = (userId: string, selectedChild: ChildProfile | nul
 
   useEffect(() => {
     fetchPlannedRecipes();
-  }, [selectedDate, viewMode, selectedChild]);
+  }, [selectedDate, viewMode, selectedChildren]);
 
   return {
     selectedDate,
