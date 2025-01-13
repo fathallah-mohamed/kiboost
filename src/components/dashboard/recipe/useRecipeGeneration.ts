@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
-import { Recipe, ChildProfile } from "../types";
+import { Recipe, ChildProfile, RecipeFilters } from "../types";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -9,7 +9,7 @@ export const useRecipeGeneration = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const generateRecipe = async (selectedChild: ChildProfile) => {
+  const generateRecipe = async (selectedChild: ChildProfile, filters?: RecipeFilters) => {
     setLoading(true);
     setError(null);
 
@@ -30,6 +30,7 @@ export const useRecipeGeneration = () => {
                 allergies: selectedChild.allergies,
                 preferences: selectedChild.preferences,
               },
+              filters,
             },
           });
 
@@ -43,7 +44,7 @@ export const useRecipeGeneration = () => {
               : [response.data.instructions].filter(Boolean)
           };
           
-          setRecipe(recipeData);
+          setRecipe(recipeData as Recipe);
           toast({
             title: "Recette générée",
             description: "Une nouvelle recette a été créée pour " + selectedChild.name,

@@ -3,16 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ChefHat } from 'lucide-react';
 import { RecipeCard } from "./recipe/RecipeCard";
 import { useRecipeGeneration } from "./recipe/useRecipeGeneration";
-import { ChildProfile } from "./types";
+import { ChildProfile, MealType, Difficulty } from "./types";
 import { ChildSelector } from "./recipe/ChildSelector";
 import { RecipeFilters } from "./recipe/RecipeFilters";
 import { useState } from "react";
 
 export const RecipeGenerator = () => {
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
-  const [mealType, setMealType] = useState("all");
+  const [mealType, setMealType] = useState<MealType | "all">("all");
   const [maxPrepTime, setMaxPrepTime] = useState(60);
-  const [difficulty, setDifficulty] = useState("all");
+  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
   
   const { loading, recipe, error, generateRecipe } = useRecipeGeneration();
 

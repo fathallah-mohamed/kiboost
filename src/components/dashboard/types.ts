@@ -6,6 +6,9 @@ export interface ChildProfile {
   preferences: string[];
 }
 
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
 export interface Recipe {
   id: string;
   name: string;
@@ -21,9 +24,9 @@ export interface Recipe {
     carbs: number;
     fat: number;
   };
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  meal_type: MealType;
   preparation_time: number;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: Difficulty;
   servings: number;
 }
 
@@ -41,4 +44,10 @@ export interface RecipeFavorite {
   recipe_id: string;
   profile_id: string;
   created_at: string;
+}
+
+export interface RecipeFilters {
+  mealType?: MealType;
+  maxPrepTime?: number;
+  difficulty?: Difficulty;
 }

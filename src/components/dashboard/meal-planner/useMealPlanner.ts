@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Recipe } from '../types';
+import { Recipe, MealType, Difficulty } from '../types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -38,7 +38,9 @@ export const useMealPlanner = (userId: string) => {
           : recipe.nutritional_info,
         instructions: Array.isArray(recipe.instructions)
           ? recipe.instructions
-          : [recipe.instructions].filter(Boolean)
+          : [recipe.instructions].filter(Boolean),
+        meal_type: recipe.meal_type as MealType,
+        difficulty: recipe.difficulty as Difficulty
       })) || [];
 
       console.log('Parsed recipes:', parsedRecipes);
@@ -76,7 +78,9 @@ export const useMealPlanner = (userId: string) => {
             : recipe.nutritional_info,
           instructions: Array.isArray(recipe.instructions)
             ? recipe.instructions
-            : [recipe.instructions].filter(Boolean)
+            : [recipe.instructions].filter(Boolean),
+          meal_type: recipe.meal_type as MealType,
+          difficulty: recipe.difficulty as Difficulty
         };
         setSelectedRecipe(parsedRecipe);
       } else {
