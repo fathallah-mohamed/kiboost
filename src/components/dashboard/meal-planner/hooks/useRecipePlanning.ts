@@ -14,12 +14,13 @@ export const useRecipePlanning = (userId: string) => {
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
       
-      // Delete existing plans for this date for selected children
+      // Delete existing plans for this date, meal time, and selected children
       await supabase
         .from('meal_plans')
         .delete()
         .eq('profile_id', userId)
         .eq('date', formattedDate)
+        .eq('meal_time', recipe.meal_type)
         .in('child_id', children.map(child => child.id));
 
       // Create new meal plans for each selected child
@@ -27,7 +28,8 @@ export const useRecipePlanning = (userId: string) => {
         profile_id: userId,
         recipe_id: recipe.id,
         date: formattedDate,
-        child_id: child.id
+        child_id: child.id,
+        meal_time: recipe.meal_type || 'dinner' // Ensure meal_time is never null
       }));
 
       const { error } = await supabase
