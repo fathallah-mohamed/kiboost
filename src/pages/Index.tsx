@@ -1,14 +1,73 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Heart, Utensils, Calendar, ShoppingCart } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <h1 className="text-5xl font-bold mb-6 text-primary">
+          Kiboost
+          <span className="text-accent">.</span>
+        </h1>
+        <p className="text-2xl mb-8 text-gray-600 max-w-2xl mx-auto">
+          Des petits-déjeuners sains et amusants pour vos enfants, générés avec amour par l'IA
+        </p>
+        <Button asChild className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg animate-float">
+          <Link to="/signup">Commencer l'aventure</Link>
+        </Button>
+      </section>
+
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <FeatureCard
+            icon={<Heart className="w-8 h-8 text-primary" />}
+            title="Recettes personnalisées"
+            description="Des recettes adaptées aux goûts et besoins de vos enfants"
+          />
+          <FeatureCard
+            icon={<Utensils className="w-8 h-8 text-primary" />}
+            title="Nutrition équilibrée"
+            description="Des petits-déjeuners nutritifs pour bien commencer la journée"
+          />
+          <FeatureCard
+            icon={<Calendar className="w-8 h-8 text-primary" />}
+            title="Planification facile"
+            description="Planifiez la semaine en quelques clics"
+          />
+          <FeatureCard
+            icon={<ShoppingCart className="w-8 h-8 text-primary" />}
+            title="Liste de courses"
+            description="Générez automatiquement votre liste de courses"
+          />
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-secondary/50 py-20 mt-16">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-6">Prêt à révolutionner les petits-déjeuners ?</h2>
+          <p className="text-xl mb-8 text-gray-600 max-w-2xl mx-auto">
+            Rejoignez des milliers de parents qui font confiance à Kiboost pour les petits-déjeuners de leurs enfants.
+          </p>
+          <Button asChild className="bg-accent hover:bg-accent/90 text-white rounded-full px-8 py-6 text-lg">
+            <Link to="/signup">Essayer gratuitement</Link>
+          </Button>
+        </div>
+      </section>
     </div>
   );
 };
+
+const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
+  <Card className="p-6 text-center hover:shadow-lg transition-shadow bg-white/80 backdrop-blur-sm">
+    <div className="mb-4 flex justify-center">{icon}</div>
+    <h3 className="text-xl font-semibold mb-2">{title}</h3>
+    <p className="text-gray-600">{description}</p>
+  </Card>
+);
 
 export default Index;
