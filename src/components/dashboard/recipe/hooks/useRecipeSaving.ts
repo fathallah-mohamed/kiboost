@@ -20,10 +20,10 @@ export const useRecipeSaving = () => {
         ingredients: JSON.stringify(recipe.ingredients),
         instructions: recipe.instructions.join('\n'),
         nutritional_info: JSON.stringify(recipe.nutritional_info),
-        meal_type: recipe.meal_type,
-        preparation_time: recipe.preparation_time,
-        difficulty: recipe.difficulty,
-        servings: recipe.servings,
+        meal_type: recipe.meal_type || 'dinner', // Ensure meal_type is never null
+        preparation_time: recipe.preparation_time || 30, // Use default if not provided
+        difficulty: recipe.difficulty || 'medium', // Use default if not provided
+        servings: recipe.servings || 4, // Use default if not provided
       };
 
       const { data: savedRecipe, error: recipeError } = await supabase
@@ -40,6 +40,7 @@ export const useRecipeSaving = () => {
         recipe_id: savedRecipe.id,
         child_id: child.id,
         date: new Date().toISOString().split('T')[0],
+        meal_time: recipe.meal_type || 'dinner', // Ensure meal_time is never null
       }));
 
       const { error: planError } = await supabase
