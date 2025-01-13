@@ -38,13 +38,11 @@ serve(async (req) => {
   }
 
   try {
-    // Get the JWT token from the Authorization header
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
-    // Extract the user ID from the JWT token
     const token = authHeader.replace('Bearer ', '');
     const tokenPayload = JSON.parse(atob(token.split('.')[1]));
     const userId = tokenPayload.sub;
@@ -138,12 +136,17 @@ serve(async (req) => {
         throw new Error('Failed to parse OpenAI response as JSON');
       }
 
-      // Validate the recipe structure
-      if (!recipeContent.name || !Array.isArray(recipeContent.ingredients) || 
-          !Array.isArray(recipeContent.instructions) || !recipeContent.nutritional_info) {
+      // Validate the recipe structure and ensure arrays are arrays
+      if (!recipeContent.name || 
+          !Array.isArray(recipeContent.ingredients) || 
+          !Array.isArray(recipeContent.instructions) || 
+          !recipeContent.nutritional_info) {
         console.error('Invalid recipe structure:', recipeContent);
-        throw new Error('Recipe data is missing required fields');
+        throw new Error('Recipe data is missing required fields or has invalid types');
       }
+
+      // Ensure instructions is an array of strings
+      recipeContent.instructions = recipeContent.instructions.map(String);
 
       console.log('Recipe generated successfully:', recipeContent);
 
@@ -152,7 +155,6 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
-      // Use the extracted userId instead of the JWT token
       const { data: recipe, error: insertError } = await supabaseClient
         .from('recipes')
         .insert({
