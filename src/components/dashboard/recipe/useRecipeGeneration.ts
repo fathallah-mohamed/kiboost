@@ -17,6 +17,14 @@ export const useRecipeGeneration = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Non authentifié");
 
+      // Récupérer les recettes déjà planifiées
+      const { data: plannedRecipes } = await supabase
+        .from('meal_plans')
+        .select('recipe_id')
+        .eq('profile_id', session.user.id);
+
+      const plannedRecipeIds = plannedRecipes?.map(plan => plan.recipe_id) || [];
+
       const recipePromises = Array(3).fill(null).map(async () => {
         const response = await supabase.functions.invoke('generate-recipe', {
           body: {
@@ -26,6 +34,7 @@ export const useRecipeGeneration = () => {
               preferences: selectedChild.preferences,
             },
             filters,
+            excludeRecipes: plannedRecipeIds,
           },
         });
 
@@ -35,6 +44,7 @@ export const useRecipeGeneration = () => {
           ...response.data,
           profile_id: session.user.id,
           is_generated: true,
+          image_url: `https://source.unsplash.com/featured/?food,${response.data.name.replace(/\s+/g, ',')}`,
         };
 
         const { data: savedRecipe, error: saveError } = await supabase
@@ -45,7 +55,6 @@ export const useRecipeGeneration = () => {
 
         if (saveError) throw saveError;
 
-        // Ensure the saved recipe conforms to the Recipe type
         const recipe: Recipe = {
           id: savedRecipe.id,
           name: savedRecipe.name,
