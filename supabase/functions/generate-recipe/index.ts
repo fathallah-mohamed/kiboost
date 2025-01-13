@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -46,8 +47,8 @@ serve(async (req) => {
     console.log('Generating recipe for child profile:', childProfile);
 
     const prompt = `Generate a healthy breakfast recipe suitable for a ${childProfile.age} year old child.
-    ${childProfile.allergies.length > 0 ? `Allergies to avoid: ${childProfile.allergies.join(', ')}` : ''}
-    ${childProfile.preferences.length > 0 ? `Food preferences: ${childProfile.preferences.join(', ')}` : ''}
+    ${childProfile.allergies?.length > 0 ? `Allergies to avoid: ${childProfile.allergies.join(', ')}` : ''}
+    ${childProfile.preferences?.length > 0 ? `Food preferences: ${childProfile.preferences.join(', ')}` : ''}
     
     Please provide a recipe that is:
     1. Age-appropriate
@@ -69,9 +70,7 @@ serve(async (req) => {
         "carbs": number,
         "fat": number
       }
-    }
-    
-    Make sure all numbers are actual numbers, not strings. The response must be valid JSON.`;
+    }`;
 
     const generateRecipeWithOpenAI = async () => {
       console.log('Making request to OpenAI API...');
@@ -82,7 +81,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'gpt-4o',
           messages: [
             {
               role: 'system',
@@ -133,7 +132,7 @@ serve(async (req) => {
         throw new Error('Recipe data is missing required fields');
       }
 
-      console.log('Recipe generated:', recipeContent);
+      console.log('Recipe generated successfully:', recipeContent);
 
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
