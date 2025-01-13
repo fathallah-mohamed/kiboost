@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { AvailableRecipes } from './meal-planner/AvailableRecipes';
 import { WeeklyCalendar } from './meal-planner/WeeklyCalendar';
@@ -6,7 +7,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CalendarDays, CalendarRange } from "lucide-react";
 import { MultiChildSelector } from './recipe/MultiChildSelector';
 import { ChildProfile } from './types';
-import { useState } from 'react';
 
 interface MealPlannerProps {
   userId: string;

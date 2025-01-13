@@ -50,6 +50,47 @@ export type Database = {
           },
         ]
       }
+      leftovers: {
+        Row: {
+          created_at: string
+          expiry_date: string | null
+          id: string
+          ingredient_name: string
+          profile_id: string
+          quantity: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          ingredient_name: string
+          profile_id: string
+          quantity: number
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          ingredient_name?: string
+          profile_id?: string
+          quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leftovers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_plans: {
         Row: {
           child_id: string | null
@@ -98,6 +139,61 @@ export type Database = {
           },
           {
             foreignKeyName: "meal_plans_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_statistics: {
+        Row: {
+          child_id: string | null
+          created_at: string
+          frequency: number | null
+          id: string
+          last_served: string
+          profile_id: string
+          recipe_id: string
+          updated_at: string
+        }
+        Insert: {
+          child_id?: string | null
+          created_at?: string
+          frequency?: number | null
+          id?: string
+          last_served: string
+          profile_id: string
+          recipe_id: string
+          updated_at?: string
+        }
+        Update: {
+          child_id?: string | null
+          created_at?: string
+          frequency?: number | null
+          id?: string
+          last_served?: string
+          profile_id?: string
+          recipe_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_statistics_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_statistics_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_statistics_recipe_id_fkey"
             columns: ["recipe_id"]
             isOneToOne: false
             referencedRelation: "recipes"
