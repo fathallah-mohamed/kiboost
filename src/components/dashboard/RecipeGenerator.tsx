@@ -24,10 +24,11 @@ export const RecipeGenerator = () => {
   const { saveRecipe, saving } = useRecipeSaving();
   const { plannedRecipes } = usePlannedRecipesFetching(selectedChildren);
 
-  // Force clear recipes on mount
+  // Force clear recipes on mount and when selectedChildren changes
   useEffect(() => {
+    console.log('Clearing recipes on mount or selectedChildren change');
     clearRecipes();
-  }, []);
+  }, [selectedChildren]); // Add selectedChildren as dependency
 
   const handleGenerateRecipes = async () => {
     if (selectedChildren.length === 0) {

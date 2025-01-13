@@ -8,10 +8,18 @@ export const useRecipeGeneration = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const clearRecipes = () => {
+    console.log('Clearing recipes');
+    setRecipes([]);
+    setLoading(false);
+    setError(null);
+  };
+
   const generateRecipes = async (child: ChildProfile, filters?: RecipeFilters) => {
     try {
       setLoading(true);
       setError(null);
+      setRecipes([]); // Clear recipes before generating new ones
       
       const response = await fetch('/api/generate-recipe', {
         method: 'POST',
@@ -29,6 +37,7 @@ export const useRecipeGeneration = () => {
       }
 
       const data = await response.json();
+      console.log('Generated recipes:', data);
       setRecipes(data);
     } catch (err) {
       console.error('Error generating recipes:', err);
@@ -41,12 +50,6 @@ export const useRecipeGeneration = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const clearRecipes = () => {
-    setRecipes([]);
-    setLoading(false);
-    setError(null);
   };
 
   return {
