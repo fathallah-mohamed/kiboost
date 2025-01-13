@@ -52,6 +52,7 @@ export type Database = {
       }
       meal_plans: {
         Row: {
+          child_id: string | null
           created_at: string
           date: string
           id: string
@@ -61,6 +62,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          child_id?: string | null
           created_at?: string
           date: string
           id?: string
@@ -70,6 +72,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          child_id?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -79,6 +82,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "meal_plans_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "meal_plans_profile_id_fkey"
             columns: ["profile_id"]

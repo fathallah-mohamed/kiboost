@@ -1,14 +1,11 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Loader2, ChefHat, Plus } from 'lucide-react';
-import { RecipeCard } from "./recipe/RecipeCard";
-import { useRecipeGeneration } from "./recipe/useRecipeGeneration";
-import { ChildProfile, MealType, Difficulty, Recipe } from "./types";
-import { ChildSelector } from "./recipe/ChildSelector";
-import { RecipeFilters } from "./recipe/RecipeFilters";
 import { useState, useEffect } from "react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
+import { ChildProfile, Recipe } from "./types";
+import { RecipeFilters } from "./recipe/RecipeFilters";
+import { RecipeGeneratorHeader } from "./recipe/RecipeGeneratorHeader";
+import { RecipeList } from "./recipe/RecipeList";
+import { useRecipeGeneration } from "./recipe/useRecipeGeneration";
 
 export const RecipeGenerator = () => {
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
@@ -22,43 +19,28 @@ export const RecipeGenerator = () => {
 
   useEffect(() => {
     fetchPlannedRecipes();
-    autoSelectChild();
-  }, []);
+  }, [selectedChild]);
 
   const fetchPlannedRecipes = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data, error } = await supabase
+      const query = supabase
         .from('meal_plans')
         .select('recipe_id')
         .eq('profile_id', session.user.id);
+
+      if (selectedChild) {
+        query.eq('child_id', selectedChild.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setPlannedRecipes(data.map(plan => plan.recipe_id));
     } catch (error) {
       console.error('Error fetching planned recipes:', error);
-    }
-  };
-
-  const autoSelectChild = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { data, error } = await supabase
-        .from('children_profiles')
-        .select('*')
-        .eq('profile_id', session.user.id);
-
-      if (error) throw error;
-
-      if (data && data.length === 1) {
-        setSelectedChild(data[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching children:', error);
     }
   };
 
@@ -81,7 +63,7 @@ export const RecipeGenerator = () => {
         profile_id: session.user.id,
         name: recipe.name,
         ingredients: JSON.stringify(recipe.ingredients),
-        instructions: recipe.instructions.join('\n'), // Convert array to string
+        instructions: recipe.instructions.join('\n'),
         nutritional_info: JSON.stringify(recipe.nutritional_info),
         meal_type: recipe.meal_type,
         preparation_time: recipe.preparation_time,
@@ -89,18 +71,31 @@ export const RecipeGenerator = () => {
         servings: recipe.servings,
       };
 
-      const { error } = await supabase
+      const { data: savedRecipe, error: recipeError } = await supabase
         .from('recipes')
-        .insert([recipeData]);
+        .insert([recipeData])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (recipeError) throw recipeError;
+
+      // Save to meal plan with child_id
+      const { error: planError } = await supabase
+        .from('meal_plans')
+        .insert([{
+          profile_id: session.user.id,
+          recipe_id: savedRecipe.id,
+          child_id: selectedChild?.id,
+          date: new Date().toISOString().split('T')[0],
+        }]);
+
+      if (planError) throw planError;
 
       toast({
         title: "Recette sauvegardée",
         description: "La recette a été ajoutée à votre planificateur",
       });
 
-      // Mettre à jour la liste des recettes planifiées
       await fetchPlannedRecipes();
     } catch (error) {
       console.error('Error saving recipe:', error);
@@ -114,29 +109,12 @@ export const RecipeGenerator = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-2xl font-bold">Générateur de recettes</h2>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-          <div className="w-full sm:w-64">
-            <ChildSelector 
-              onSelectChild={setSelectedChild}
-              selectedChild={selectedChild}
-            />
-          </div>
-          <Button 
-            onClick={handleGenerateRecipes} 
-            disabled={loading || !selectedChild}
-            className="whitespace-nowrap"
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <ChefHat className="w-4 h-4 mr-2" />
-            )}
-            Générer des recettes
-          </Button>
-        </div>
-      </div>
+      <RecipeGeneratorHeader
+        loading={loading}
+        selectedChild={selectedChild}
+        onSelectChild={setSelectedChild}
+        onGenerateRecipes={handleGenerateRecipes}
+      />
 
       <RecipeFilters
         mealType={mealType}
@@ -147,27 +125,12 @@ export const RecipeGenerator = () => {
         setDifficulty={setDifficulty}
       />
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {recipes.map((recipe, index) => (
-          <div key={index} className="relative">
-            <RecipeCard recipe={recipe} />
-            <Button
-              className="absolute top-4 right-4"
-              onClick={() => saveRecipe(recipe)}
-              disabled={plannedRecipes.includes(recipe.id)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              {plannedRecipes.includes(recipe.id) ? 'Déjà planifiée' : 'Planifier'}
-            </Button>
-          </div>
-        ))}
-      </div>
+      <RecipeList
+        recipes={recipes}
+        error={error}
+        plannedRecipes={plannedRecipes}
+        onSaveRecipe={saveRecipe}
+      />
     </div>
   );
 };

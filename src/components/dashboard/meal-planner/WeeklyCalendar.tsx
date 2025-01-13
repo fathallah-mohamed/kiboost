@@ -9,9 +9,16 @@ interface WeeklyCalendarProps {
   onSelectDate: (date: Date) => void;
   plannedRecipes: { [key: string]: Recipe | null };
   viewMode: 'week' | 'month';
+  selectedChild?: ChildProfile | null;
 }
 
-export const WeeklyCalendar = ({ selectedDate, onSelectDate, plannedRecipes, viewMode }: WeeklyCalendarProps) => {
+export const WeeklyCalendar = ({ 
+  selectedDate, 
+  onSelectDate, 
+  plannedRecipes, 
+  viewMode,
+  selectedChild 
+}: WeeklyCalendarProps) => {
   const getDaysToDisplay = () => {
     if (viewMode === 'week') {
       const startOfCurrentWeek = startOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -61,6 +68,11 @@ export const WeeklyCalendar = ({ selectedDate, onSelectDate, plannedRecipes, vie
               <div className="text-sm text-muted-foreground">
                 {format(day, 'd MMMM', { locale: fr })}
               </div>
+              {selectedChild && (
+                <div className="text-sm font-medium text-primary">
+                  {selectedChild.name}
+                </div>
+              )}
             </div>
             
             {recipe && (
