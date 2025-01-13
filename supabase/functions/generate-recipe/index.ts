@@ -18,11 +18,11 @@ async function retryWithDelay(fn: () => Promise<any>, maxRetries = 3, initialDel
       return await fn();
     } catch (error) {
       lastError = error;
-      console.error(`Attempt ${i + 1} failed:`, error);
+      console.error(`Tentative ${i + 1} échouée:`, error);
       
       if (error.message?.includes('Too Many Requests')) {
         const waitTime = initialDelay * Math.pow(2, i);
-        console.log(`Waiting ${waitTime}ms before retry...`);
+        console.log(`Attente de ${waitTime}ms avant nouvelle tentative...`);
         await delay(waitTime);
       } else {
         throw error;
@@ -40,51 +40,46 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      throw new Error('Pas d\'en-tête d\'autorisation');
     }
 
     const token = authHeader.replace('Bearer ', '');
     const tokenPayload = JSON.parse(atob(token.split('.')[1]));
     const userId = tokenPayload.sub;
 
-    console.log('User ID extracted from token:', userId);
-
     if (!openAIApiKey) {
-      console.error('OpenAI API key not configured');
-      throw new Error('OpenAI API key is not configured. Please set up the OPENAI_API_KEY secret.');
+      throw new Error('Clé API OpenAI non configurée. Veuillez configurer la variable OPENAI_API_KEY.');
     }
 
     const { childProfile } = await req.json();
-    console.log('Generating recipe for child profile:', childProfile);
 
-    const prompt = `Generate a healthy breakfast recipe suitable for a ${childProfile.age} year old child.
-    ${childProfile.allergies?.length > 0 ? `Allergies to avoid: ${childProfile.allergies.join(', ')}` : ''}
-    ${childProfile.preferences?.length > 0 ? `Food preferences: ${childProfile.preferences.join(', ')}` : ''}
+    const prompt = `Génère une recette de petit-déjeuner saine adaptée à un enfant de ${childProfile.age} ans.
+    ${childProfile.allergies?.length > 0 ? `Allergies à éviter : ${childProfile.allergies.join(', ')}` : ''}
+    ${childProfile.preferences?.length > 0 ? `Préférences alimentaires : ${childProfile.preferences.join(', ')}` : ''}
     
-    Please provide a recipe that is:
-    1. Age-appropriate
-    2. Nutritionally balanced
-    3. Easy to prepare
-    4. Safe considering any allergies
-    5. Takes into account preferences
+    La recette doit être :
+    1. Adaptée à l'âge
+    2. Équilibrée nutritionnellement
+    3. Facile à préparer
+    4. Sûre en tenant compte des allergies
+    5. Prenant en compte les préférences
     
-    The response MUST be a valid JSON object with EXACTLY this structure:
+    La réponse DOIT être un objet JSON valide avec EXACTEMENT cette structure :
     {
-      "name": "Recipe Name",
+      "name": "Nom de la recette",
       "ingredients": [
-        {"item": "ingredient name", "quantity": "amount", "unit": "measurement unit"}
+        {"item": "nom ingrédient", "quantity": "quantité", "unit": "unité de mesure"}
       ],
-      "instructions": ["step 1", "step 2", "etc"],
+      "instructions": ["étape 1", "étape 2", "etc"],
       "nutritional_info": {
-        "calories": number,
-        "protein": number,
-        "carbs": number,
-        "fat": number
+        "calories": nombre,
+        "protein": nombre,
+        "carbs": nombre,
+        "fat": nombre
       }
     }`;
 
     const generateRecipeWithOpenAI = async () => {
-      console.log('Making request to OpenAI API...');
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -92,11 +87,11 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'gpt-4',
           messages: [
             {
               role: 'system',
-              content: 'You are a professional nutritionist specializing in children\'s dietary needs. You must respond with valid JSON only, no additional text or explanations.'
+              content: 'Vous êtes un nutritionniste professionnel spécialisé dans les besoins alimentaires des enfants. Répondez uniquement en JSON valide, sans texte ni explications supplémentaires.'
             },
             { role: 'user', content: prompt }
           ],
@@ -106,49 +101,31 @@ serve(async (req) => {
 
       if (!response.ok) {
         const error = await response.json();
-        console.error('OpenAI API error:', error);
-        throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
+        throw new Error(`Erreur API OpenAI : ${error.error?.message || response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('Raw OpenAI response:', data);
       return data;
     };
 
     const data = await retryWithDelay(generateRecipeWithOpenAI);
-    console.log('OpenAI response processed');
     
     try {
       if (!data.choices?.[0]?.message?.content) {
-        console.error('Invalid OpenAI response structure:', data);
-        throw new Error('Invalid response structure from OpenAI');
+        throw new Error('Structure de réponse OpenAI invalide');
       }
 
       const content = data.choices[0].message.content.trim();
-      console.log('Attempting to parse content:', content);
+      let recipeContent = JSON.parse(content);
 
-      let recipeContent;
-      try {
-        recipeContent = JSON.parse(content);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        console.error('Content that failed to parse:', content);
-        throw new Error('Failed to parse OpenAI response as JSON');
-      }
-
-      // Validate the recipe structure and ensure arrays are arrays
       if (!recipeContent.name || 
           !Array.isArray(recipeContent.ingredients) || 
           !Array.isArray(recipeContent.instructions) || 
           !recipeContent.nutritional_info) {
-        console.error('Invalid recipe structure:', recipeContent);
-        throw new Error('Recipe data is missing required fields or has invalid types');
+        throw new Error('Les données de la recette sont manquantes ou ont des types invalides');
       }
 
-      // Ensure instructions is an array of strings
       recipeContent.instructions = recipeContent.instructions.map(String);
-
-      console.log('Recipe generated successfully:', recipeContent);
 
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
@@ -168,7 +145,6 @@ serve(async (req) => {
         .single();
 
       if (insertError) {
-        console.error('Error inserting recipe:', insertError);
         throw insertError;
       }
 
@@ -176,11 +152,9 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (parseError) {
-      console.error('Error parsing or validating recipe data:', parseError);
-      throw new Error(`Failed to parse or validate recipe data: ${parseError.message}`);
+      throw new Error(`Échec de l'analyse ou de la validation des données de la recette : ${parseError.message}`);
     }
   } catch (error) {
-    console.error('Error in generate-recipe function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
