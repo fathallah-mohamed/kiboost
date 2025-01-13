@@ -17,7 +17,7 @@ export const useRecipePlanning = (userId: string) => {
       // Pour chaque enfant, on va d'abord vérifier si un repas existe déjà
       for (const child of children) {
         // Vérifier si un repas existe déjà pour cet enfant à cette date et ce moment de la journée
-        const { data: existingMeal } = await supabase
+        const { data: existingMeal, error: queryError } = await supabase
           .from('meal_plans')
           .select()
           .match({
@@ -26,37 +26,47 @@ export const useRecipePlanning = (userId: string) => {
             meal_time: recipe.meal_type,
             child_id: child.id
           })
-          .single();
+          .maybeSingle();
 
-        if (existingMeal) {
-          // Si un repas existe, on le met à jour
-          const { error: updateError } = await supabase
-            .from('meal_plans')
-            .update({
-              recipe_id: recipe.id,
-              updated_at: new Date().toISOString()
-            })
-            .match({
-              profile_id: userId,
-              date: formattedDate,
-              meal_time: recipe.meal_type,
-              child_id: child.id
-            });
+        if (queryError) {
+          console.error('Error checking existing meal:', queryError);
+          throw queryError;
+        }
 
-          if (updateError) throw updateError;
-        } else {
-          // Si aucun repas n'existe, on en crée un nouveau
-          const { error: insertError } = await supabase
-            .from('meal_plans')
-            .insert({
-              profile_id: userId,
-              recipe_id: recipe.id,
-              date: formattedDate,
-              child_id: child.id,
-              meal_time: recipe.meal_type || 'dinner'
-            });
+        try {
+          if (existingMeal) {
+            // Si un repas existe, on le met à jour
+            const { error: updateError } = await supabase
+              .from('meal_plans')
+              .update({
+                recipe_id: recipe.id,
+                updated_at: new Date().toISOString()
+              })
+              .match({
+                profile_id: userId,
+                date: formattedDate,
+                meal_time: recipe.meal_type,
+                child_id: child.id
+              });
 
-          if (insertError) throw insertError;
+            if (updateError) throw updateError;
+          } else {
+            // Si aucun repas n'existe, on en crée un nouveau
+            const { error: insertError } = await supabase
+              .from('meal_plans')
+              .insert({
+                profile_id: userId,
+                recipe_id: recipe.id,
+                date: formattedDate,
+                child_id: child.id,
+                meal_time: recipe.meal_type || 'dinner'
+              });
+
+            if (insertError) throw insertError;
+          }
+        } catch (error: any) {
+          console.error('Error managing meal plan:', error);
+          throw error;
         }
       }
 
@@ -64,7 +74,7 @@ export const useRecipePlanning = (userId: string) => {
         title: "Recette planifiée",
         description: `La recette a été planifiée pour ${children.length} enfant(s) le ${format(date, 'dd MMMM yyyy', { locale: fr })}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error planning recipe:', error);
       toast({
         variant: "destructive",
