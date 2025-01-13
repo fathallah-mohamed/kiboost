@@ -20,9 +20,14 @@ export const RecipeGenerator = () => {
   const [displayCount, setDisplayCount] = useState(3);
   
   const { toast } = useToast();
-  const { loading, recipes, error, generateRecipes } = useRecipeGeneration();
+  const { loading, recipes, error, generateRecipes, clearRecipes } = useRecipeGeneration();
   const { saveRecipe, saving } = useRecipeSaving();
   const { plannedRecipes } = usePlannedRecipesFetching(selectedChildren);
+
+  // Force clear recipes on mount
+  useState(() => {
+    clearRecipes();
+  }, []);
 
   const handleGenerateRecipes = async () => {
     if (selectedChildren.length === 0) {
@@ -51,7 +56,6 @@ export const RecipeGenerator = () => {
 
   return (
     <div className="space-y-6 relative">
-      {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg flex flex-col items-center gap-4">
