@@ -5,15 +5,24 @@ import { RecipeCard } from "./recipe/RecipeCard";
 import { useRecipeGeneration } from "./recipe/useRecipeGeneration";
 import { ChildProfile } from "./types";
 import { ChildSelector } from "./recipe/ChildSelector";
+import { RecipeFilters } from "./recipe/RecipeFilters";
 import { useState } from "react";
 
 export const RecipeGenerator = () => {
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
+  const [mealType, setMealType] = useState("all");
+  const [maxPrepTime, setMaxPrepTime] = useState(60);
+  const [difficulty, setDifficulty] = useState("all");
+  
   const { loading, recipe, error, generateRecipe } = useRecipeGeneration();
 
   const handleGenerateRecipe = async () => {
     if (!selectedChild) return;
-    await generateRecipe(selectedChild);
+    await generateRecipe(selectedChild, {
+      mealType: mealType === "all" ? undefined : mealType,
+      maxPrepTime,
+      difficulty: difficulty === "all" ? undefined : difficulty,
+    });
   };
 
   return (
@@ -38,6 +47,15 @@ export const RecipeGenerator = () => {
           </Button>
         </div>
       </div>
+
+      <RecipeFilters
+        mealType={mealType}
+        setMealType={setMealType}
+        maxPrepTime={maxPrepTime}
+        setMaxPrepTime={setMaxPrepTime}
+        difficulty={difficulty}
+        setDifficulty={setDifficulty}
+      />
 
       {error && (
         <Alert variant="destructive">

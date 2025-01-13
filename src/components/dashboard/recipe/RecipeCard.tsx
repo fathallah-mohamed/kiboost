@@ -1,31 +1,125 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Recipe } from "../types";
-import { Utensils, Clock, Heart, Beef, Wheat, Flame, Cookie } from "lucide-react";
+import { 
+  Utensils, Clock, Heart, Beef, Wheat, 
+  Flame, Cookie, Star, Share2
+} from "lucide-react";
+import { RecipeRating } from "./RecipeRating";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface RecipeCardProps {
   recipe: Recipe;
 }
 
 export const RecipeCard = ({ recipe }: RecipeCardProps) => {
+  const [showRating, setShowRating] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const { toast } = useToast();
+
+  const toggleFavorite = async () => {
+    try {
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('recipe_favorites')
+          .delete()
+          .eq('recipe_id', recipe.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('recipe_favorites')
+          .insert({ recipe_id: recipe.id });
+        
+        if (error) throw error;
+      }
+
+      setIsFavorite(!isFavorite);
+      toast({
+        title: isFavorite ? "Retiré des favoris" : "Ajouté aux favoris",
+        description: isFavorite 
+          ? "La recette a été retirée de vos favoris"
+          : "La recette a été ajoutée à vos favoris",
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue.",
+      });
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: recipe.name,
+        text: `Découvre cette délicieuse recette : ${recipe.name}`,
+        url: window.location.href,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center">
         <h3 className="text-2xl font-bold text-primary mb-2">{recipe.name}</h3>
         <div className="flex justify-center gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
-            <Utensils className="w-4 h-4" />
-            Facile
+            <Clock className="w-4 h-4" />
+            {recipe.preparation_time} min
           </span>
           <span className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            15 min
+            <Utensils className="w-4 h-4" />
+            {recipe.difficulty}
           </span>
           <span className="flex items-center gap-1">
             <Heart className="w-4 h-4" />
-            Healthy
+            {recipe.meal_type}
           </span>
         </div>
+        <div className="flex justify-center gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleFavorite}
+            className={isFavorite ? "text-red-500" : ""}
+          >
+            <Heart className="w-4 h-4 mr-2" fill={isFavorite ? "currentColor" : "none"} />
+            {isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowRating(!showRating)}
+          >
+            <Star className="w-4 h-4 mr-2" />
+            Évaluer
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShare}
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            Partager
+          </Button>
+        </div>
       </div>
+
+      {showRating && (
+        <Card className="p-4">
+          <RecipeRating 
+            recipeId={recipe.id}
+            onRatingSubmitted={() => setShowRating(false)}
+          />
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-4 bg-secondary/10">

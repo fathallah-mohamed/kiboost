@@ -21,4 +21,24 @@ export interface Recipe {
     carbs: number;
     fat: number;
   };
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  preparation_time: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  servings: number;
+}
+
+export interface RecipeRating {
+  id: string;
+  recipe_id: string;
+  profile_id: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+}
+
+export interface RecipeFavorite {
+  id: string;
+  recipe_id: string;
+  profile_id: string;
+  created_at: string;
 }
