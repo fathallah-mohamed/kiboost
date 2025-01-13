@@ -5,60 +5,6 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 
-interface MealPlanOperation {
-  userId: string;
-  child: ChildProfile;
-  recipe: Recipe;
-  formattedDate: string;
-}
-
-const checkExistingMeal = async ({ userId, child, recipe, formattedDate }: MealPlanOperation) => {
-  const { data: existingMeal, error } = await supabase
-    .from('meal_plans')
-    .select()
-    .eq('profile_id', userId)
-    .eq('date', formattedDate)
-    .eq('child_id', child.id)
-    .eq('meal_time', recipe.meal_type)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Error checking existing meal:', error);
-    throw error;
-  }
-
-  return existingMeal;
-};
-
-const updateMealPlan = async ({ userId, child, recipe, formattedDate }: MealPlanOperation) => {
-  const { error } = await supabase
-    .from('meal_plans')
-    .update({
-      recipe_id: recipe.id,
-      updated_at: new Date().toISOString()
-    })
-    .eq('profile_id', userId)
-    .eq('date', formattedDate)
-    .eq('child_id', child.id)
-    .eq('meal_time', recipe.meal_type);
-
-  if (error) throw error;
-};
-
-const createMealPlan = async ({ userId, child, recipe, formattedDate }: MealPlanOperation) => {
-  const { error } = await supabase
-    .from('meal_plans')
-    .insert({
-      profile_id: userId,
-      recipe_id: recipe.id,
-      date: formattedDate,
-      child_id: child.id,
-      meal_time: recipe.meal_type || 'dinner'
-    });
-
-  if (error) throw error;
-};
-
 export const useRecipePlanning = () => {
   const [saving, setSaving] = useState(false);
 
@@ -74,12 +20,63 @@ export const useRecipePlanning = () => {
     try {
       for (const child of children) {
         try {
-          const existingMeal = await checkExistingMeal({ userId, child, recipe, formattedDate });
-          
+          // First check if a meal plan already exists for this combination
+          const { data: existingMeal, error: checkError } = await supabase
+            .from('meal_plans')
+            .select('id')
+            .eq('profile_id', userId)
+            .eq('date', formattedDate)
+            .eq('child_id', child.id)
+            .eq('meal_time', recipe.meal_type)
+            .maybeSingle();
+
+          if (checkError) {
+            console.error('Error checking existing meal:', checkError);
+            throw checkError;
+          }
+
           if (existingMeal) {
-            await updateMealPlan({ userId, child, recipe, formattedDate });
+            // Update existing meal plan
+            const { error: updateError } = await supabase
+              .from('meal_plans')
+              .update({
+                recipe_id: recipe.id,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingMeal.id);
+
+            if (updateError) throw updateError;
           } else {
-            await createMealPlan({ userId, child, recipe, formattedDate });
+            // Create new meal plan
+            const { error: insertError } = await supabase
+              .from('meal_plans')
+              .upsert({
+                profile_id: userId,
+                recipe_id: recipe.id,
+                date: formattedDate,
+                child_id: child.id,
+                meal_time: recipe.meal_type || 'dinner'
+              });
+
+            if (insertError) {
+              // If we get a unique constraint violation, try updating instead
+              if (insertError.code === '23505') {
+                const { error: retryError } = await supabase
+                  .from('meal_plans')
+                  .update({
+                    recipe_id: recipe.id,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('profile_id', userId)
+                  .eq('date', formattedDate)
+                  .eq('child_id', child.id)
+                  .eq('meal_time', recipe.meal_type);
+
+                if (retryError) throw retryError;
+              } else {
+                throw insertError;
+              }
+            }
           }
         } catch (error: any) {
           console.error('Error managing meal plan:', error);
