@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, ChefHat } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ChildProfile {
   id: string;
@@ -37,6 +38,7 @@ interface RecipeGeneratorProps {
 export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
   const [loading, setLoading] = useState(false);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const generateRecipe = async () => {
@@ -50,33 +52,61 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
     }
 
     setLoading(true);
+    setError(null);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Non authentifié");
 
-      const response = await supabase.functions.invoke('generate-recipe', {
-        body: {
-          childProfile: {
-            age: selectedChild.age,
-            allergies: selectedChild.allergies,
-            preferences: selectedChild.preferences,
-          },
-        },
-      });
+      const maxRetries = 3;
+      let attempt = 0;
+      let lastError;
 
-      if (response.error) throw response.error;
+      while (attempt < maxRetries) {
+        try {
+          const response = await supabase.functions.invoke('generate-recipe', {
+            body: {
+              childProfile: {
+                age: selectedChild.age,
+                allergies: selectedChild.allergies,
+                preferences: selectedChild.preferences,
+              },
+            },
+          });
+
+          if (response.error) throw response.error;
+          
+          setRecipe(response.data);
+          toast({
+            title: "Recette générée",
+            description: "Une nouvelle recette a été créée pour " + selectedChild.name,
+          });
+          return;
+        } catch (error: any) {
+          lastError = error;
+          console.error(`Attempt ${attempt + 1} failed:`, error);
+          
+          if (error.message?.includes('Too Many Requests')) {
+            attempt++;
+            if (attempt < maxRetries) {
+              const delay = Math.pow(2, attempt) * 1000;
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+          } else {
+            throw error;
+          }
+        }
+      }
       
-      setRecipe(response.data);
-      toast({
-        title: "Recette générée",
-        description: "Une nouvelle recette a été créée pour " + selectedChild.name,
-      });
+      throw lastError;
     } catch (error: any) {
       console.error('Error generating recipe:', error);
+      setError(error.message || "Une erreur est survenue lors de la génération de la recette");
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de générer la recette: " + error.message,
+        description: "Impossible de générer la recette. Veuillez réessayer dans quelques instants.",
       });
     } finally {
       setLoading(false);
@@ -99,6 +129,12 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
           Générer une recette
         </Button>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {recipe && (
         <Card className="p-6">
