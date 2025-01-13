@@ -15,12 +15,12 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
     viewMode,
     selectedChildren
   );
-  const { planningRecipe, planRecipe } = useRecipePlanning(userId);
+  const { planRecipe, saving } = useRecipePlanning();
 
   const loading = recipesLoading || plannedRecipesLoading;
 
   const handlePlanRecipe = (recipe: Recipe, children: ChildProfile[]) => {
-    planRecipe(recipe, children, selectedDate);
+    planRecipe(recipe, children, selectedDate, userId);
   };
 
   return {
@@ -29,7 +29,7 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
     recipes,
     plannedRecipes,
     loading,
-    planningRecipe,
+    planningRecipe: saving,
     planRecipe: handlePlanRecipe,
     viewMode,
     setViewMode
