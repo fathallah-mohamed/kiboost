@@ -76,12 +76,22 @@ export const RecipeGenerator = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Non authentifié");
 
+      // Format the recipe data according to the database schema
+      const recipeData = {
+        profile_id: session.user.id,
+        name: recipe.name,
+        ingredients: JSON.stringify(recipe.ingredients),
+        instructions: recipe.instructions.join('\n'), // Convert array to string
+        nutritional_info: JSON.stringify(recipe.nutritional_info),
+        meal_type: recipe.meal_type,
+        preparation_time: recipe.preparation_time,
+        difficulty: recipe.difficulty,
+        servings: recipe.servings,
+      };
+
       const { error } = await supabase
         .from('recipes')
-        .insert([{
-          ...recipe,
-          profile_id: session.user.id,
-        }]);
+        .insert([recipeData]);
 
       if (error) throw error;
 
