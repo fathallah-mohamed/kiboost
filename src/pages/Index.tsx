@@ -1,9 +1,41 @@
+import { useEffect, useState } from 'react';
+import { AuthForm } from '@/components/auth/AuthForm';
+import { supabase } from '@/lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Utensils, Calendar, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    // Récupérer la session actuelle
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Écouter les changements d'auth
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (session) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Tableau de bord</h1>
+        <Button onClick={() => supabase.auth.signOut()}>
+          Se déconnecter
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -15,9 +47,7 @@ const Index = () => {
         <p className="text-2xl mb-8 text-gray-600 max-w-2xl mx-auto">
           Des petits-déjeuners sains et amusants pour vos enfants, générés avec amour par l'IA
         </p>
-        <Button asChild className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg animate-float">
-          <Link to="/signup">Commencer l'aventure</Link>
-        </Button>
+        <AuthForm />
       </section>
 
       {/* Features Section */}
