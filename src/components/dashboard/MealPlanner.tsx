@@ -4,9 +4,10 @@ import { AvailableRecipes } from './meal-planner/AvailableRecipes';
 import { WeeklyCalendar } from './meal-planner/WeeklyCalendar';
 import { useMealPlanner } from './meal-planner/useMealPlanner';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CalendarDays, CalendarRange } from "lucide-react";
+import { CalendarDays, CalendarRange, Trash2 } from "lucide-react";
 import { MultiChildSelector } from './recipe/MultiChildSelector';
 import { ChildProfile } from './types';
+import { Button } from '@/components/ui/button';
 
 interface MealPlannerProps {
   userId: string;
@@ -24,7 +25,8 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
     planningRecipe,
     planRecipe,
     viewMode,
-    setViewMode
+    setViewMode,
+    clearRecipes
   } = useMealPlanner(userId, selectedChildren);
 
   return (
@@ -42,6 +44,14 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
               <span className="ml-2">Mois</span>
             </ToggleGroupItem>
           </ToggleGroup>
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={clearRecipes}
+            title="Supprimer toutes les recettes disponibles"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
