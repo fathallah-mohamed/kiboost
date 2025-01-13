@@ -29,22 +29,34 @@ serve(async (req) => {
     const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
     const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
 
-    const prompt = `En tant que chef cuisinier français créatif et passionné, crée une recette unique, amusante et délicieuse ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
+    // Profil nutritionnel par défaut basé sur l'âge
+    const nutritionProfile = {
+      protein: childProfile.age <= 3 ? '15-18%' : '15-20%',
+      carbs: childProfile.age <= 3 ? '45-55%' : '50-60%',
+      fat: childProfile.age <= 3 ? '30-35%' : '20-30%'
+    };
 
-    ${childProfile.allergies?.length > 0 ? `⚠️ IMPORTANT: Évite absolument ces allergènes : ${childProfile.allergies.join(', ')}` : ''}
-    ${childProfile.preferences?.length > 0 ? `✨ Préférences alimentaires à favoriser : ${childProfile.preferences.join(', ')}` : ''}
+    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français, crée une recette exceptionnelle, gourmande et équilibrée ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
+
+    ${childProfile.allergies?.length > 0 ? `⚠️ IMPORTANT : Évite absolument ces allergènes : ${childProfile.allergies.join(', ')}` : ''}
+    ${childProfile.preferences?.length > 0 ? `✨ Préférences alimentaires à inclure : ${childProfile.preferences.join(', ')}` : ''}
     
-    La recette doit être :
-    1. 👶 Parfaitement adaptée à l'âge de l'enfant (${childProfile.age} ans)
-    2. 🥗 Équilibrée nutritionnellement
-    3. 👨‍🍳 Facile et sécurisée à préparer avec un adulte
-    4. 🎨 Colorée et visuellement attrayante
-    5. 🎯 Avec un nom créatif et amusant qui donne envie à l'enfant
-    6. 📝 Instructions détaillées avec des quantités précises
-    7. 🌈 Utilisant des ingrédients variés et de saison
-    8. 🎪 Avec une présentation ludique et originale
+    La recette doit :
+    1. 🧒 Être nutritionnellement adaptée à l'âge (${childProfile.age} ans) et ses besoins de croissance (calcium, fer, vitamines, etc.).
+    2. 🍎 Promouvoir des ingrédients frais, variés, de saison et sains.
+    3. 👩‍🍳 Être simple à préparer, sécurisée pour un enfant et amusante à réaliser avec un adulte.
+    4. 🎨 Inclure des couleurs vibrantes et une présentation ludique pour capter l'attention de l'enfant.
+    5. 🧠 Favoriser le développement cérébral et physique avec des superaliments adaptés (ex. : noix, graines, légumes verts, etc.).
+    6. 💡 Avoir un nom attractif et créatif qui donne envie à l'enfant.
+    7. 📋 Fournir des instructions claires et détaillées, avec des quantités exactes.
+    8. 🌍 Incorporer des options écoresponsables (ex. : éviter le gaspillage alimentaire, utiliser des produits locaux).
     
-    IMPORTANT: Réponds UNIQUEMENT avec un objet JSON valide, sans formatage markdown, sans backticks (\`\`\`), avec EXACTEMENT cette structure :
+    ⚖️ Assure-toi que la recette respecte les proportions idéales pour un repas enfantin sain :
+    - Protéines : ${nutritionProfile.protein}
+    - Glucides : ${nutritionProfile.carbs}
+    - Lipides : ${nutritionProfile.fat}
+    
+    Réponds UNIQUEMENT avec un objet JSON valide et respecte EXACTEMENT cette structure :
     {
       "name": "Nom créatif et amusant de la recette",
       "ingredients": [
@@ -63,7 +75,7 @@ serve(async (req) => {
       "servings": 4
     }`;
 
-    console.log('Sending request to OpenAI...');
+    console.log('Sending request to OpenAI with prompt:', prompt);
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -71,11 +83,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier français créatif et passionné, spécialisé dans la création de recettes amusantes, saines et adaptées aux enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire ni formatage.'
+            content: 'Tu es un chef cuisinier français créatif, passionné et reconnu pour tes compétences en pédiatrie nutritionnelle et diététique. Tu excelles dans la création de recettes amusantes, délicieuses, saines et adaptées aux besoins spécifiques des enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire ni formatage.'
           },
           { role: 'user', content: prompt }
         ],
@@ -110,7 +122,6 @@ serve(async (req) => {
       throw new Error(`Échec du parsing JSON : ${error.message}`);
     }
 
-    // Vérification de la structure de la recette
     if (!recipeContent.name || 
         !Array.isArray(recipeContent.ingredients) || 
         !Array.isArray(recipeContent.instructions) || 
@@ -119,18 +130,18 @@ serve(async (req) => {
       throw new Error('Structure de la recette invalide');
     }
 
-    // Génération d'une image thématique
+    // Génération d'une image thématique adaptée aux enfants
     const themes = [
-      'colorful kids food art',
-      'creative food plating for children',
-      'fun food presentation',
-      'cute food decoration',
-      'playful food styling',
-      'food art for kids',
-      'healthy kids meal presentation',
-      'whimsical food plating',
-      'cartoon food art',
-      'rainbow food presentation'
+      'cute food art for kids',
+      'fun food presentation for children',
+      'creative kids meal plating',
+      'colorful healthy kids food',
+      'playful food decoration',
+      'cartoon style food art',
+      'rainbow food presentation',
+      'animal shaped food for kids',
+      'food art characters',
+      'healthy kids meal presentation'
     ];
     
     const randomTheme = themes[Math.floor(Math.random() * themes.length)];
