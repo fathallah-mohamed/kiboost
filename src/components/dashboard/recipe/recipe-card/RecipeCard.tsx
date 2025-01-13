@@ -70,11 +70,6 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: Recipe
     return (
       <Card className="p-2">
         <div className="flex items-center gap-2">
-          <img 
-            src={recipe.image_url} 
-            alt={recipe.name}
-            className="w-12 h-12 rounded object-cover"
-          />
           <div className="flex-1 min-w-0">
             <h4 className="text-sm font-medium truncate">{recipe.name}</h4>
             <div className="flex items-center gap-2 text-xs text-gray-600">
@@ -89,51 +84,40 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: Recipe
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      <div className="relative">
-        {recipe.image_url && (
-          <img 
-            src={recipe.image_url} 
-            alt={recipe.name}
-            className="w-full h-48 object-cover"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        
-        <div className="absolute top-4 right-4 flex gap-2">
-          <Button
-            variant="secondary"
-            size="icon"
-            className="bg-white/90 hover:bg-white"
-            onClick={toggleFavorite}
-          >
-            <Heart 
-              className="w-4 h-4" 
-              fill={isFavorite ? "currentColor" : "none"} 
-            />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="bg-white/90 hover:bg-white"
-            onClick={handleShare}
-          >
-            <Share2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
       <div className="p-6 space-y-6">
-        <div>
-          <h3 className="text-2xl font-bold text-primary mb-2">{recipe.name}</h3>
-          <div className="flex items-center gap-4 text-gray-600">
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              <span>{recipe.preparation_time} min</span>
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-2xl font-bold text-primary mb-2">{recipe.name}</h3>
+            <div className="flex items-center gap-4 text-gray-600">
+              <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                <span>{recipe.preparation_time} min</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Gauge className="w-4 h-4" />
+                <span>{recipe.nutritional_info.calories} kcal</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Gauge className="w-4 h-4" />
-              <span>{recipe.nutritional_info.calories} kcal</span>
-            </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={toggleFavorite}
+            >
+              <Heart 
+                className="w-4 h-4" 
+                fill={isFavorite ? "currentColor" : "none"} 
+              />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleShare}
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
