@@ -9,29 +9,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-async function retryWithDelay(fn: () => Promise<any>, maxRetries = 3, initialDelay = 1000) {
-  let lastError;
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      console.error(`Tentative ${i + 1} échouée:`, error);
-      
-      if (error.message?.includes('Too Many Requests')) {
-        const waitTime = initialDelay * Math.pow(2, i);
-        console.log(`Attente de ${waitTime}ms avant nouvelle tentative...`);
-        await delay(waitTime);
-      } else {
-        throw error;
-      }
-    }
-  }
-  throw lastError;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -53,20 +30,21 @@ serve(async (req) => {
 
     const { childProfile } = await req.json();
 
-    const prompt = `Génère une recette de petit-déjeuner saine adaptée à un enfant de ${childProfile.age} ans.
+    const prompt = `Génère une recette de petit-déjeuner saine et amusante adaptée à un enfant de ${childProfile.age} ans.
     ${childProfile.allergies?.length > 0 ? `Allergies à éviter : ${childProfile.allergies.join(', ')}` : ''}
     ${childProfile.preferences?.length > 0 ? `Préférences alimentaires : ${childProfile.preferences.join(', ')}` : ''}
     
     La recette doit être :
-    1. Adaptée à l'âge
+    1. Adaptée à l'âge de l'enfant
     2. Équilibrée nutritionnellement
     3. Facile à préparer
     4. Sûre en tenant compte des allergies
-    5. Prenant en compte les préférences
+    5. Amusante et attrayante pour l'enfant
+    6. Avec un nom créatif et ludique
     
-    La réponse DOIT être un objet JSON valide avec EXACTEMENT cette structure :
+    La réponse DOIT être un objet JSON valide en français avec EXACTEMENT cette structure :
     {
-      "name": "Nom de la recette",
+      "name": "Nom créatif de la recette",
       "ingredients": [
         {"item": "nom ingrédient", "quantity": "quantité", "unit": "unité de mesure"}
       ],
@@ -79,36 +57,31 @@ serve(async (req) => {
       }
     }`;
 
-    const generateRecipeWithOpenAI = async () => {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: 'Vous êtes un nutritionniste professionnel spécialisé dans les besoins alimentaires des enfants. Répondez uniquement en JSON valide, sans texte ni explications supplémentaires.'
-            },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.7,
-        }),
-      });
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'Tu es un chef cuisinier français spécialisé dans la création de recettes amusantes et saines pour les enfants. Réponds uniquement en français avec un JSON valide.'
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+      }),
+    });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Erreur API OpenAI : ${error.error?.message || response.statusText}`);
-      }
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Erreur API OpenAI : ${error.error?.message || response.statusText}`);
+    }
 
-      const data = await response.json();
-      return data;
-    };
-
-    const data = await retryWithDelay(generateRecipeWithOpenAI);
+    const data = await response.json();
     
     try {
       if (!data.choices?.[0]?.message?.content) {
@@ -118,7 +91,6 @@ serve(async (req) => {
       const content = data.choices[0].message.content.trim();
       let recipeContent = JSON.parse(content);
 
-      // Validation des données
       if (!recipeContent.name || 
           !Array.isArray(recipeContent.ingredients) || 
           !Array.isArray(recipeContent.instructions) || 
@@ -126,7 +98,6 @@ serve(async (req) => {
         throw new Error('Les données de la recette sont manquantes ou ont des types invalides');
       }
 
-      // Conversion explicite des instructions en tableau de chaînes
       recipeContent.instructions = recipeContent.instructions.map(String);
 
       const supabaseClient = createClient(
