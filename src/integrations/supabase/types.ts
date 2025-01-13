@@ -305,8 +305,10 @@ export type Database = {
           created_at: string
           difficulty: string
           id: string
+          image_url: string | null
           ingredients: Json
           instructions: string
+          is_generated: boolean | null
           meal_type: string
           name: string
           nutritional_info: Json
@@ -319,8 +321,10 @@ export type Database = {
           created_at?: string
           difficulty?: string
           id?: string
+          image_url?: string | null
           ingredients: Json
           instructions: string
+          is_generated?: boolean | null
           meal_type?: string
           name: string
           nutritional_info: Json
@@ -333,8 +337,10 @@ export type Database = {
           created_at?: string
           difficulty?: string
           id?: string
+          image_url?: string | null
           ingredients?: Json
           instructions?: string
+          is_generated?: boolean | null
           meal_type?: string
           name?: string
           nutritional_info?: Json

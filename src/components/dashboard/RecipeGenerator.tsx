@@ -9,12 +9,14 @@ import { useRecipeSaving } from "./recipe/hooks/useRecipeSaving";
 import { usePlannedRecipesFetching } from "./recipe/hooks/usePlannedRecipesFetching";
 import { MultiChildSelector } from "./recipe/MultiChildSelector";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export const RecipeGenerator = () => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const [mealType, setMealType] = useState<MealType | "all">("breakfast");
   const [maxPrepTime, setMaxPrepTime] = useState(10);
   const [difficulty, setDifficulty] = useState<Difficulty | "all">("easy");
+  const [displayCount, setDisplayCount] = useState(3);
   
   const { toast } = useToast();
   const { loading, recipes, error, generateRecipes } = useRecipeGeneration();
@@ -40,6 +42,10 @@ export const RecipeGenerator = () => {
 
   const handleSaveRecipe = async (recipe: Recipe) => {
     await saveRecipe(recipe, selectedChildren);
+  };
+
+  const handleLoadMore = () => {
+    setDisplayCount(prev => prev + 3);
   };
 
   return (
@@ -75,11 +81,23 @@ export const RecipeGenerator = () => {
       </div>
 
       <RecipeList
-        recipes={recipes}
+        recipes={recipes.slice(0, displayCount)}
         error={error}
         plannedRecipes={plannedRecipes}
         onSaveRecipe={handleSaveRecipe}
       />
+
+      {recipes.length > displayCount && (
+        <div className="flex justify-center">
+          <Button 
+            variant="outline" 
+            onClick={handleLoadMore}
+            className="mt-4"
+          >
+            Voir plus de recettes
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

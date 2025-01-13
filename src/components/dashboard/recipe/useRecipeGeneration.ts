@@ -31,11 +31,26 @@ export const useRecipeGeneration = () => {
         });
 
         if (response.error) throw response.error;
-        return response.data;
+        
+        // Save the generated recipe to Supabase
+        const recipeData = {
+          ...response.data,
+          profile_id: session.user.id,
+          is_generated: true,
+        };
+
+        const { data: savedRecipe, error: saveError } = await supabase
+          .from('recipes')
+          .insert([recipeData])
+          .select()
+          .single();
+
+        if (saveError) throw saveError;
+        return savedRecipe;
       });
 
       const generatedRecipes = await Promise.all(recipePromises);
-      setRecipes(generatedRecipes);
+      setRecipes(prev => [...prev, ...generatedRecipes]);
       
       toast({
         title: "Recettes générées",
