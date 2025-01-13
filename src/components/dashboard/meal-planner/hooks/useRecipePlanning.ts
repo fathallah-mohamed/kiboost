@@ -60,7 +60,25 @@ export const useRecipePlanning = () => {
                 meal_time: recipe.meal_type || 'dinner'
               });
 
-            if (insertError) throw insertError;
+            if (insertError) {
+              // Si l'erreur est due à une violation de contrainte unique, on tente une mise à jour
+              if (insertError.code === '23505') {
+                const { error: retryError } = await supabase
+                  .from('meal_plans')
+                  .update({
+                    recipe_id: recipe.id,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('profile_id', userId)
+                  .eq('date', formattedDate)
+                  .eq('meal_time', recipe.meal_type)
+                  .eq('child_id', child.id);
+
+                if (retryError) throw retryError;
+              } else {
+                throw insertError;
+              }
+            }
           }
         } catch (error: any) {
           console.error('Error managing meal plan:', error);
