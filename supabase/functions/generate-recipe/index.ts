@@ -22,12 +22,12 @@ async function retryWithDelay(fn: () => Promise<any>, maxRetries = 3, initialDel
       lastError = error;
       console.error(`Attempt ${i + 1} failed:`, error);
       
-      if (error.message.includes('Too Many Requests')) {
+      if (error.message?.includes('Too Many Requests')) {
         const waitTime = initialDelay * Math.pow(2, i);
         console.log(`Waiting ${waitTime}ms before retry...`);
         await delay(waitTime);
       } else {
-        throw error; // Si ce n'est pas une erreur de limite de taux, on la propage
+        throw error;
       }
     }
   }
@@ -74,6 +74,10 @@ serve(async (req) => {
     }`;
 
     const generateRecipeWithOpenAI = async () => {
+      if (!openAIApiKey) {
+        throw new Error('OpenAI API key is not configured');
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -95,14 +99,17 @@ serve(async (req) => {
 
       if (!response.ok) {
         const error = await response.json();
+        console.error('OpenAI API error:', error);
         throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log('OpenAI response received:', data);
+      return data;
     };
 
     const data = await retryWithDelay(generateRecipeWithOpenAI);
-    console.log('OpenAI response received');
+    console.log('OpenAI response processed');
     
     try {
       const recipeContent = JSON.parse(data.choices[0].message.content);
@@ -126,6 +133,7 @@ serve(async (req) => {
         .single();
 
       if (insertError) {
+        console.error('Error inserting recipe:', insertError);
         throw insertError;
       }
 
