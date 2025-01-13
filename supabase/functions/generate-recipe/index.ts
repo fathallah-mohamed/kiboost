@@ -1,113 +1,123 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface RecipeRequest {
-  childProfile: {
-    age: number;
-    allergies: string[];
-    preferences: string[];
-  };
-}
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { childProfile } = await req.json() as RecipeRequest;
+    const { childProfile } = await req.json();
+    console.log('Generating recipe for child profile:', childProfile);
 
     // Construct the prompt based on child's profile
     const prompt = `Generate a healthy breakfast recipe suitable for a ${childProfile.age} year old child.
     ${childProfile.allergies.length > 0 ? `Allergies to avoid: ${childProfile.allergies.join(', ')}` : ''}
     ${childProfile.preferences.length > 0 ? `Food preferences: ${childProfile.preferences.join(', ')}` : ''}
     
-    Please provide the response in the following JSON format:
+    Please provide a recipe that is:
+    1. Age-appropriate
+    2. Nutritionally balanced
+    3. Easy to prepare
+    4. Safe considering any allergies
+    5. Takes into account preferences
+    
+    Format the response exactly like this example:
     {
-      "name": "Recipe name",
-      "ingredients": [{"item": "ingredient", "quantity": "amount", "unit": "measurement"}],
-      "instructions": ["step 1", "step 2", ...],
-      "nutritionalInfo": {
-        "calories": number,
-        "protein": number,
-        "carbs": number,
-        "fat": number
+      "name": "Banana Oatmeal Bowl",
+      "ingredients": [
+        {"item": "rolled oats", "quantity": "1/2", "unit": "cup"},
+        {"item": "banana", "quantity": "1", "unit": "medium"}
+      ],
+      "instructions": [
+        "Pour oats into a bowl",
+        "Add milk and microwave for 2 minutes"
+      ],
+      "nutritional_info": {
+        "calories": 300,
+        "protein": 8,
+        "carbs": 45,
+        "fat": 6
       }
     }`;
 
-    // Call OpenAI API
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [{
-          role: 'user',
-          content: prompt,
-        }],
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional nutritionist specializing in children\'s dietary needs. Generate appropriate, safe, and healthy breakfast recipes.'
+          },
+          { role: 'user', content: prompt }
+        ],
         temperature: 0.7,
       }),
     });
 
-    if (!openAIResponse.ok) {
-      throw new Error(`OpenAI API error: ${openAIResponse.statusText}`);
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
-    const openAIData = await openAIResponse.json();
-    const recipeResponse = JSON.parse(openAIData.choices[0].message.content);
+    const data = await response.json();
+    console.log('OpenAI response received');
+    
+    try {
+      const recipeContent = JSON.parse(data.choices[0].message.content);
+      console.log('Recipe generated:', recipeContent);
 
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+      // Create Supabase client
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
 
-    // Save recipe to database
-    const { data: recipe, error: insertError } = await supabaseClient
-      .from('recipes')
-      .insert({
-        profile_id: req.headers.get('x-user-id'),
-        name: recipeResponse.name,
-        ingredients: recipeResponse.ingredients,
-        instructions: recipeResponse.instructions,
-        nutritional_info: recipeResponse.nutritionalInfo,
-      })
-      .select()
-      .single();
+      // Save recipe to database
+      const { data: recipe, error: insertError } = await supabaseClient
+        .from('recipes')
+        .insert({
+          profile_id: req.headers.get('x-user-id'),
+          name: recipeContent.name,
+          ingredients: recipeContent.ingredients,
+          instructions: recipeContent.instructions,
+          nutritional_info: recipeContent.nutritional_info,
+        })
+        .select()
+        .single();
 
-    if (insertError) {
-      throw insertError;
+      if (insertError) {
+        throw insertError;
+      }
+
+      return new Response(JSON.stringify(recipe), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (parseError) {
+      console.error('Error parsing OpenAI response:', parseError);
+      throw new Error('Failed to parse recipe data from OpenAI response');
     }
-
-    return new Response(
-      JSON.stringify(recipe),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error in generate-recipe function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        status: 400,
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     );
   }
-})
+});

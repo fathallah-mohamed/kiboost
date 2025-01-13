@@ -75,6 +75,7 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
         description: "Une nouvelle recette a été créée pour " + selectedChild.name,
       });
     } catch (error) {
+      console.error('Error generating recipe:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
