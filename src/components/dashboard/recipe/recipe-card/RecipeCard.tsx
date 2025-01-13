@@ -1,22 +1,55 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Clock, Heart, Star, Share2, ChevronDown, Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { Recipe } from "../../types";
-import { NutritionalScore } from "./NutritionalScore";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Clock, Heart, Share2, CalendarPlus, Gauge, Cookie, Beef, Wheat } from "lucide-react";
+import { NutritionalGauge } from "./NutritionalGauge";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
   onAdd?: (recipe: Recipe) => void;
-  compact?: boolean;
 }
 
-export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: RecipeCardProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
+  const [isFavorite, setIsFavorite] = useState(false);
   const { toast } = useToast();
+
+  const toggleFavorite = async () => {
+    try {
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('recipe_favorites')
+          .delete()
+          .eq('recipe_id', recipe.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('recipe_favorites')
+          .insert({ recipe_id: recipe.id });
+        
+        if (error) throw error;
+      }
+
+      setIsFavorite(!isFavorite);
+      toast({
+        title: isFavorite ? "Retiré des favoris" : "Ajouté aux favoris",
+        description: isFavorite 
+          ? "La recette a été retirée de vos favoris"
+          : "La recette a été ajoutée à vos favoris",
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue.",
+      });
+    }
+  };
 
   const handleShare = async () => {
     try {
@@ -30,133 +63,99 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: Recipe
     }
   };
 
-  if (compact) {
-    return (
-      <div className="p-2 bg-white rounded-lg shadow">
-        <h4 className="font-medium text-sm">{recipe.name}</h4>
-        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-          <Clock className="w-3 h-3" />
-          {recipe.preparation_time} min
+  return (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+      <div className="relative">
+        <img 
+          src={recipe.image_url} 
+          alt={recipe.name}
+          className="w-full h-48 object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        
+        {/* Actions flottantes */}
+        <div className="absolute top-4 right-4 flex gap-2">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="bg-white/90 hover:bg-white"
+            onClick={toggleFavorite}
+          >
+            <Heart 
+              className="w-4 h-4" 
+              fill={isFavorite ? "currentColor" : "none"} 
+            />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="bg-white/90 hover:bg-white"
+            onClick={handleShare}
+          >
+            <Share2 className="w-4 h-4" />
+          </Button>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
-      {recipe.image_url && (
-        <div className="relative h-48 overflow-hidden">
-          <img 
-            src={recipe.image_url} 
-            alt={recipe.name}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <div className="absolute bottom-4 left-4 text-white">
-            <div className="flex items-center gap-2">
+      <div className="p-6 space-y-6">
+        {/* En-tête */}
+        <div>
+          <h3 className="text-2xl font-bold text-primary mb-2">{recipe.name}</h3>
+          <div className="flex items-center gap-4 text-gray-600">
+            <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
               <span>{recipe.preparation_time} min</span>
             </div>
+            <div className="flex items-center gap-1">
+              <Gauge className="w-4 h-4" />
+              <span>{recipe.nutritional_info.calories} kcal</span>
+            </div>
           </div>
         </div>
-      )}
 
-      <div className="p-6">
-        <div className="flex flex-col gap-6">
-          {/* En-tête avec les informations principales */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-2xl font-bold text-primary group-hover:text-primary/80 transition-colors mb-2">
-                {recipe.name}
-              </h3>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <span className="capitalize">{recipe.difficulty}</span>
-              </div>
-            </div>
+        {/* Informations nutritionnelles */}
+        <div className="grid gap-4">
+          <NutritionalGauge
+            value={recipe.nutritional_info.carbs}
+            maxValue={100}
+            label="Glucides"
+            icon={<Cookie className="w-4 h-4" />}
+          />
+          <NutritionalGauge
+            value={recipe.nutritional_info.protein}
+            maxValue={50}
+            label="Protéines"
+            icon={<Beef className="w-4 h-4" />}
+          />
+          <NutritionalGauge
+            value={recipe.nutritional_info.fat}
+            maxValue={50}
+            label="Lipides"
+            icon={<Wheat className="w-4 h-4" />}
+          />
+        </div>
 
-            {/* Actions principales */}
-            <div className="flex items-center gap-2">
-              {onAdd && (
-                <Button
-                  onClick={() => onAdd(recipe)}
-                  disabled={isPlanned}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {isPlanned ? 'Déjà planifiée' : 'Planifier'}
-                </Button>
-              )}
-            </div>
+        {/* Texte informatif santé */}
+        <p className="text-sm text-gray-600 bg-secondary/20 p-4 rounded-lg">
+          Cette recette est particulièrement riche en protéines et fibres, idéale pour la croissance 
+          et le développement de votre enfant. Les ingrédients choisis favorisent la concentration 
+          et l'énergie tout au long de la journée.
+        </p>
 
-            {/* Actions secondaires */}
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm">
-                <Heart className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Star className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleShare}>
-                <Share2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Indicateurs nutritionnels */}
-          <div className="grid grid-cols-2 gap-4">
-            <NutritionalScore 
-              type="calories" 
-              value={recipe.nutritional_info.calories}
-            />
-            <NutritionalScore 
-              type="graisses" 
-              value={recipe.nutritional_info.fat}
-            />
-            <NutritionalScore 
-              type="sucre" 
-              value={recipe.nutritional_info.carbs}
-            />
-            <NutritionalScore 
-              type="fibres" 
-              value={recipe.nutritional_info.protein}
-            />
-          </div>
-
-          {/* Contenu dépliable */}
-          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-            <CollapsibleContent className="space-y-6">
-              <div>
-                <h4 className="font-semibold mb-2">Ingrédients</h4>
-                <ul className="list-disc pl-4 space-y-1">
-                  {recipe.ingredients.map((ingredient, index) => (
-                    <li key={index}>
-                      {ingredient.quantity} {ingredient.unit} {ingredient.item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Instructions</h4>
-                <ol className="list-decimal pl-4 space-y-2">
-                  {recipe.instructions.map((step, index) => (
-                    <li key={index}>{step}</li>
-                  ))}
-                </ol>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Bouton pour afficher/masquer la recette */}
+        {/* Bouton d'action principal */}
+        {onAdd && (
           <div className="flex justify-center">
             <Button
-              variant="outline"
-              className="group-hover:bg-accent/5"
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={() => onAdd(recipe)}
+              disabled={isPlanned}
+              className="w-full sm:w-auto"
+              size="lg"
             >
-              <ChevronDown className={`w-4 h-4 mr-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-              {isOpen ? 'Masquer la recette' : 'Afficher la recette'}
+              <CalendarPlus className="w-5 h-5 mr-2" />
+              {isPlanned ? 'Déjà planifiée' : 'Planifier cette recette'}
             </Button>
           </div>
-        </div>
+        )}
       </div>
     </Card>
   );
