@@ -2,11 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Clock, Eye, Plus, Droplet, Candy, Leaf } from "lucide-react";
+import { Clock, ArrowRight, Plus, Heart, Star, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { NutritionalBadge } from "./NutritionalBadge";
-import { HealthScore } from "./HealthScore";
-import { DietaryLabel } from "./DietaryLabel";
 import { Recipe } from "../../types";
 
 interface RecipeCardProps {
@@ -19,20 +16,6 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
 
-  const getSugarScore = () => {
-    const carbs = recipe.nutritional_info.carbs;
-    if (carbs < 30) return 'low';
-    if (carbs < 60) return 'medium';
-    return 'high';
-  };
-
-  const getFatScore = () => {
-    const fat = recipe.nutritional_info.fat;
-    if (fat < 10) return 'low';
-    if (fat < 20) return 'medium';
-    return 'high';
-  };
-
   const handleAdd = () => {
     if (onAdd) {
       onAdd(recipe);
@@ -43,10 +26,22 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
     }
   };
 
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: recipe.name,
+        text: `Découvre cette délicieuse recette : ${recipe.name}`,
+        url: window.location.href,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   return (
     <>
-      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg bg-gradient-to-br from-white to-gray-50">
-        <div className="p-6 space-y-6">
+      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
+        <div className="p-6 space-y-4">
           {/* En-tête de la recette */}
           <div className="space-y-2">
             <h3 className="text-2xl font-bold text-primary group-hover:text-primary/80 transition-colors">
@@ -62,72 +57,46 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
             </div>
           </div>
 
-          {/* Labels diététiques */}
-          <div className="flex flex-wrap gap-2">
-            <DietaryLabel type="bio" />
-            <DietaryLabel type="gluten-free" />
-            <DietaryLabel type="low-sugar" />
+          {/* Informations nutritionnelles simplifiées */}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>{recipe.nutritional_info.calories} calories</span>
+            <span>{recipe.nutritional_info.protein}g protéines</span>
           </div>
 
-          {/* Valeurs nutritionnelles */}
-          <div className="grid grid-cols-2 gap-3">
-            <NutritionalBadge
-              label="Calories"
-              value={recipe.nutritional_info.calories}
-              unit="calories"
-              variant="calories"
-            />
-            <NutritionalBadge
-              label="Protéines"
-              value={recipe.nutritional_info.protein}
-              variant="protein"
-            />
-            <NutritionalBadge
-              label="Glucides"
-              value={recipe.nutritional_info.carbs}
-              variant="carbs"
-            />
-            <NutritionalBadge
-              label="Lipides"
-              value={recipe.nutritional_info.fat}
-              variant="fat"
-            />
-          </div>
-
-          {/* Scores de santé */}
-          <div className="grid grid-cols-2 gap-3">
-            <HealthScore
-              label="Sucres"
-              score={getSugarScore()}
-              icon={<Candy className="w-4 h-4" />}
-            />
-            <HealthScore
-              label="Gras"
-              score={getFatScore()}
-              icon={<Droplet className="w-4 h-4" />}
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          {/* Actions principales */}
+          <div className="flex gap-3">
             <Button
               variant="outline"
               className="flex-1 group-hover:bg-accent/5"
               onClick={() => setShowDetails(true)}
             >
-              <Eye className="w-4 h-4 mr-2" />
-              Détails
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Afficher détails
             </Button>
-            {onAdd && (
-              <Button
-                className="flex-1"
-                onClick={handleAdd}
-                disabled={isPlanned}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {isPlanned ? 'Déjà planifiée' : 'Ajouter'}
-              </Button>
-            )}
+            <Button
+              className="flex-1"
+              onClick={handleAdd}
+              disabled={isPlanned}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {isPlanned ? 'Déjà planifiée' : 'Planifier'}
+            </Button>
+          </div>
+
+          {/* Actions secondaires */}
+          <div className="flex gap-2 justify-end pt-2">
+            <Button variant="ghost" size="sm">
+              <Heart className="w-4 h-4 mr-2" />
+              Favoris
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Star className="w-4 h-4 mr-2" />
+              Évaluer
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleShare}>
+              <Share2 className="w-4 h-4 mr-2" />
+              Partager
+            </Button>
           </div>
         </div>
       </Card>
