@@ -4,27 +4,58 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Utensils, Calendar, ShoppingCart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Dashboard } from '@/components/dashboard/Dashboard';
+import { Session } from '@supabase/supabase-js';
+import { useToast } from '@/components/ui/use-toast';
 
 const Index = () => {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Get current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
+      if (error) {
+        console.error('Error fetching session:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur d'authentification",
+          description: "Une erreur est survenue lors de la récupération de votre session.",
+        });
+      }
+      setSession(currentSession);
+      setLoading(false);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+      if (_event === 'SIGNED_OUT') {
+        setSession(null);
+        navigate('/');
+      } else if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') {
+        setSession(currentSession);
+      } else if (_event === 'USER_UPDATED') {
+        setSession(currentSession);
+      }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (session) {
     return <Dashboard session={session} />;
