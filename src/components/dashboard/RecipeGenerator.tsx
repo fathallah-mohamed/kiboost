@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ChildProfile, Recipe, MealType, Difficulty } from "./types";
+import { Card } from "@/components/ui/card";
 import { RecipeFilters } from "./recipe/RecipeFilters";
 import { RecipeGeneratorHeader } from "./recipe/RecipeGeneratorHeader";
 import { RecipeList } from "./recipe/RecipeList";
+import { MultiChildSelector } from "./recipe/MultiChildSelector";
 import { useRecipeGeneration } from "./recipe/useRecipeGeneration";
 import { useRecipeSaving } from "./recipe/hooks/useRecipeSaving";
 import { usePlannedRecipesFetching } from "./recipe/hooks/usePlannedRecipesFetching";
-import { MultiChildSelector } from "./recipe/MultiChildSelector";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { LoadingOverlay } from "./recipe/LoadingOverlay";
+import { RecipeGeneratorTitle } from "./recipe/RecipeGeneratorTitle";
+import { LoadMoreButton } from "./recipe/LoadMoreButton";
 
 export const RecipeGenerator = () => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
@@ -24,11 +25,10 @@ export const RecipeGenerator = () => {
   const { saveRecipe, saving } = useRecipeSaving();
   const { plannedRecipes } = usePlannedRecipesFetching(selectedChildren);
 
-  // Force clear recipes on mount and when selectedChildren changes
   useEffect(() => {
     console.log('Clearing recipes on mount or selectedChildren change');
     clearRecipes();
-  }, [selectedChildren]); // Add selectedChildren as dependency
+  }, [selectedChildren]);
 
   const handleGenerateRecipes = async () => {
     if (selectedChildren.length === 0) {
@@ -51,25 +51,11 @@ export const RecipeGenerator = () => {
     await saveRecipe(recipe, selectedChildren);
   };
 
-  const handleLoadMore = () => {
-    setDisplayCount(prev => prev + 3);
-  };
-
   return (
     <div className="space-y-6 relative">
-      {loading && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-lg font-medium">Génération des recettes en cours...</p>
-            <p className="text-sm text-muted-foreground">Veuillez patienter, cela peut prendre quelques instants</p>
-          </div>
-        </div>
-      )}
+      {loading && <LoadingOverlay />}
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-2xl font-bold">Générateur de recettes</h2>
-      </div>
+      <RecipeGeneratorTitle />
 
       <Card className="p-4">
         <MultiChildSelector 
@@ -104,17 +90,10 @@ export const RecipeGenerator = () => {
         onSaveRecipe={handleSaveRecipe}
       />
 
-      {recipes.length > displayCount && (
-        <div className="flex justify-center">
-          <Button 
-            variant="outline" 
-            onClick={handleLoadMore}
-            className="mt-4"
-          >
-            Voir plus de recettes
-          </Button>
-        </div>
-      )}
+      <LoadMoreButton 
+        visible={recipes.length > displayCount}
+        onClick={() => setDisplayCount(prev => prev + 3)}
+      />
     </div>
   );
 };
