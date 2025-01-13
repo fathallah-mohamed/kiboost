@@ -50,15 +50,7 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
             </div>
 
             {/* Actions principales */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="group-hover:bg-accent/5"
-                onClick={() => setIsOpen(!isOpen)}
-              >
-                <ChevronDown className={`w-4 h-4 mr-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-                {isOpen ? 'Replier la recette' : 'Déplier la recette'}
-              </Button>
+            <div className="flex items-center gap-2">
               <Button
                 onClick={() => onAdd?.(recipe)}
                 disabled={isPlanned}
@@ -125,6 +117,18 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
               </div>
             </CollapsibleContent>
           </Collapsible>
+
+          {/* Bouton pour afficher/masquer la recette */}
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              className="group-hover:bg-accent/5"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              <ChevronDown className={`w-4 h-4 mr-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+              {isOpen ? 'Masquer la recette' : 'Afficher la recette'}
+            </Button>
+          </div>
         </div>
       </div>
     </Card>
