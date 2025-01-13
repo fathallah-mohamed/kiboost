@@ -38,20 +38,16 @@ export const useRecipePlanning = () => {
 
         try {
           if (existingMeal) {
-            // Si un repas existe et qu'il est différent, on le met à jour
-            if (existingMeal.recipe_id !== recipe.id) {
-              const { error: updateError } = await supabase
-                .from('meal_plans')
-                .update({
-                  recipe_id: recipe.id,
-                  updated_at: new Date().toISOString()
-                })
-                .match({
-                  id: existingMeal.id
-                });
+            // Si un repas existe, on le met à jour
+            const { error: updateError } = await supabase
+              .from('meal_plans')
+              .update({
+                recipe_id: recipe.id,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingMeal.id);
 
-              if (updateError) throw updateError;
-            }
+            if (updateError) throw updateError;
           } else {
             // Si aucun repas n'existe, on en crée un nouveau
             const { error: insertError } = await supabase
