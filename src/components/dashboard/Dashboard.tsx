@@ -9,6 +9,7 @@ import { MealPlanner } from './MealPlanner';
 import { ShoppingList } from './ShoppingList';
 import { RecipeGenerator } from './RecipeGenerator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChildProfile } from './types';
 
 interface DashboardProps {
   session: Session;
@@ -17,7 +18,7 @@ interface DashboardProps {
 export const Dashboard = ({ session }: DashboardProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [selectedChild, setSelectedChild] = useState(null);
+  const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
 
   const handleSignOut = async () => {
     try {
@@ -66,7 +67,7 @@ export const Dashboard = ({ session }: DashboardProps) => {
 
         <TabsContent value="recipes">
           <Card className="p-6">
-            <RecipeGenerator selectedChild={selectedChild} />
+            <RecipeGenerator />
           </Card>
         </TabsContent>
 

@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Recipe } from "../types";
-import { Utensils, Clock, Heart, Beef, Wheat, Fire, Cookie } from "lucide-react";
+import { Utensils, Clock, Heart, Beef, Wheat, Flame, Cookie } from "lucide-react";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -66,7 +66,7 @@ export const RecipeCard = ({ recipe }: RecipeCardProps) => {
         <h4 className="font-semibold mb-4 text-center">Valeurs nutritionnelles</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50">
-            <Fire className="w-5 h-5 text-red-500" />
+            <Flame className="w-5 h-5 text-red-500" />
             <div>
               <div className="text-sm font-medium">Calories</div>
               <div className="text-lg font-bold text-red-600">{recipe.nutritional_info.calories}</div>
