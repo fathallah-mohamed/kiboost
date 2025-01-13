@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Recipe, MealType, Difficulty } from '../types';
-import { format, startOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, addDays, startOfMonth, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export const useMealPlanner = (userId: string) => {
@@ -12,6 +12,7 @@ export const useMealPlanner = (userId: string) => {
   const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
   const [loading, setLoading] = useState(true);
   const [planningRecipe, setPlanningRecipe] = useState(false);
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
 
   const fetchRecipes = async () => {
     try {
@@ -37,7 +38,12 @@ export const useMealPlanner = (userId: string) => {
         difficulty: recipe.difficulty as Difficulty
       })) || [];
 
-      setRecipes(parsedRecipes);
+      // Remove duplicates based on recipe name
+      const uniqueRecipes = parsedRecipes.filter((recipe, index, self) =>
+        index === self.findIndex((r) => r.name === recipe.name)
+      );
+
+      setRecipes(uniqueRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
       toast({
@@ -48,12 +54,24 @@ export const useMealPlanner = (userId: string) => {
     }
   };
 
-  const fetchWeeklyPlannedRecipes = async () => {
+  const fetchPlannedRecipes = async () => {
     try {
-      const startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
-      const dates = Array.from({ length: 7 }, (_, i) => 
-        format(addDays(startDate, i), 'yyyy-MM-dd')
-      );
+      let dates: string[] = [];
+      
+      if (viewMode === 'week') {
+        const startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
+        dates = Array.from({ length: 7 }, (_, i) => 
+          format(addDays(startDate, i), 'yyyy-MM-dd')
+        );
+      } else {
+        const start = startOfMonth(selectedDate);
+        const end = endOfMonth(selectedDate);
+        const daysInMonth = Array.from(
+          { length: end.getDate() },
+          (_, i) => format(addDays(start, i), 'yyyy-MM-dd')
+        );
+        dates = daysInMonth;
+      }
 
       const { data, error } = await supabase
         .from('meal_plans')
@@ -147,8 +165,8 @@ export const useMealPlanner = (userId: string) => {
   }, []);
 
   useEffect(() => {
-    fetchWeeklyPlannedRecipes();
-  }, [selectedDate]);
+    fetchPlannedRecipes();
+  }, [selectedDate, viewMode]);
 
   return {
     selectedDate,
@@ -157,6 +175,8 @@ export const useMealPlanner = (userId: string) => {
     plannedRecipes,
     loading,
     planningRecipe,
-    planRecipe
+    planRecipe,
+    viewMode,
+    setViewMode
   };
 };

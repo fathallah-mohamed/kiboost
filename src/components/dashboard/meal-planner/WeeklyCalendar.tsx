@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card';
-import { format, startOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Recipe } from '../types';
 import { RecipeCard } from '../recipe/RecipeCard';
@@ -8,17 +8,39 @@ interface WeeklyCalendarProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
   plannedRecipes: { [key: string]: Recipe | null };
+  viewMode: 'week' | 'month';
 }
 
-export const WeeklyCalendar = ({ selectedDate, onSelectDate, plannedRecipes }: WeeklyCalendarProps) => {
-  const startOfCurrentWeek = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startOfCurrentWeek, i));
+export const WeeklyCalendar = ({ selectedDate, onSelectDate, plannedRecipes, viewMode }: WeeklyCalendarProps) => {
+  const getDaysToDisplay = () => {
+    if (viewMode === 'week') {
+      const startOfCurrentWeek = startOfWeek(selectedDate, { weekStartsOn: 1 });
+      return Array.from({ length: 7 }, (_, i) => addDays(startOfCurrentWeek, i));
+    } else {
+      const start = startOfMonth(selectedDate);
+      const end = endOfMonth(selectedDate);
+      const startWeek = startOfWeek(start, { weekStartsOn: 1 });
+      const days = [];
+      let day = startWeek;
+      
+      while (day <= end || days.length % 7 !== 0) {
+        days.push(day);
+        day = addDays(day, 1);
+      }
+      
+      return days;
+    }
+  };
+
+  const days = getDaysToDisplay();
+  const gridCols = viewMode === 'week' ? 'md:grid-cols-7' : 'md:grid-cols-7';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-      {weekDays.map((day) => {
+    <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
+      {days.map((day) => {
         const formattedDate = format(day, 'yyyy-MM-dd');
         const recipe = plannedRecipes[formattedDate];
+        const isCurrentMonth = isSameMonth(day, selectedDate);
         
         return (
           <Card 
@@ -27,12 +49,14 @@ export const WeeklyCalendar = ({ selectedDate, onSelectDate, plannedRecipes }: W
               format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
                 ? 'border-primary border-2'
                 : ''
+            } ${
+              !isCurrentMonth && viewMode === 'month' ? 'opacity-50' : ''
             }`}
             onClick={() => onSelectDate(day)}
           >
             <div className="text-center mb-2">
               <div className="font-semibold">
-                {format(day, 'EEEE', { locale: fr })}
+                {format(day, viewMode === 'week' ? 'EEEE' : 'EEE', { locale: fr })}
               </div>
               <div className="text-sm text-muted-foreground">
                 {format(day, 'd MMMM', { locale: fr })}
