@@ -7,6 +7,8 @@ import { RecipeList } from "./recipe/RecipeList";
 import { useRecipeGeneration } from "./recipe/useRecipeGeneration";
 import { useRecipeSaving } from "./recipe/hooks/useRecipeSaving";
 import { usePlannedRecipesFetching } from "./recipe/hooks/usePlannedRecipesFetching";
+import { MultiChildSelector } from "./recipe/MultiChildSelector";
+import { Card } from "@/components/ui/card";
 
 export const RecipeGenerator = () => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
@@ -42,12 +44,17 @@ export const RecipeGenerator = () => {
 
   return (
     <div className="space-y-6">
-      <RecipeGeneratorHeader
-        loading={loading || saving}
-        selectedChildren={selectedChildren}
-        onSelectChildren={setSelectedChildren}
-        onGenerateRecipes={handleGenerateRecipes}
-      />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 className="text-2xl font-bold">Générateur de recettes</h2>
+      </div>
+
+      <Card className="p-4">
+        <MultiChildSelector 
+          onSelectChildren={setSelectedChildren}
+          selectedChildren={selectedChildren}
+          mode="compact"
+        />
+      </Card>
 
       <RecipeFilters
         mealType={mealType}
@@ -57,6 +64,15 @@ export const RecipeGenerator = () => {
         difficulty={difficulty}
         setDifficulty={setDifficulty}
       />
+
+      <div className="flex justify-end">
+        <RecipeGeneratorHeader
+          loading={loading || saving}
+          selectedChildren={selectedChildren}
+          onSelectChildren={setSelectedChildren}
+          onGenerateRecipes={handleGenerateRecipes}
+        />
+      </div>
 
       <RecipeList
         recipes={recipes}
