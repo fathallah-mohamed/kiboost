@@ -2,31 +2,24 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Recipe, MealType, Difficulty } from '../types';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { format, startOfWeek, addDays } from 'date-fns';
 
 export const useMealPlanner = (userId: string) => {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
   const [loading, setLoading] = useState(true);
   const [planningRecipe, setPlanningRecipe] = useState(false);
 
   const fetchRecipes = async () => {
     try {
-      console.log('Fetching recipes for user:', userId);
       const { data, error } = await supabase
         .from('recipes')
         .select('*')
         .eq('profile_id', userId);
 
-      if (error) {
-        console.error('Error fetching recipes:', error);
-        throw error;
-      }
-
-      console.log('Fetched recipes:', data);
+      if (error) throw error;
 
       const parsedRecipes: Recipe[] = data?.map(recipe => ({
         ...recipe,
@@ -43,7 +36,6 @@ export const useMealPlanner = (userId: string) => {
         difficulty: recipe.difficulty as Difficulty
       })) || [];
 
-      console.log('Parsed recipes:', parsedRecipes);
       setRecipes(parsedRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
@@ -55,39 +47,50 @@ export const useMealPlanner = (userId: string) => {
     }
   };
 
-  const fetchPlannedRecipe = async () => {
+  const fetchWeeklyPlannedRecipes = async () => {
     try {
+      const startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
+      const dates = Array.from({ length: 7 }, (_, i) => 
+        format(addDays(startDate, i), 'yyyy-MM-dd')
+      );
+
       const { data, error } = await supabase
         .from('meal_plans')
         .select('*, recipes(*)')
         .eq('profile_id', userId)
-        .eq('date', format(selectedDate, 'yyyy-MM-dd'))
-        .maybeSingle();
+        .in('date', dates);
 
       if (error) throw error;
 
-      if (data?.recipes) {
-        const recipe = data.recipes;
-        const parsedRecipe: Recipe = {
-          ...recipe,
-          ingredients: typeof recipe.ingredients === 'string'
-            ? JSON.parse(recipe.ingredients)
-            : recipe.ingredients,
-          nutritional_info: typeof recipe.nutritional_info === 'string'
-            ? JSON.parse(recipe.nutritional_info)
-            : recipe.nutritional_info,
-          instructions: Array.isArray(recipe.instructions)
-            ? recipe.instructions
-            : [recipe.instructions].filter(Boolean),
-          meal_type: recipe.meal_type as MealType,
-          difficulty: recipe.difficulty as Difficulty
-        };
-        setSelectedRecipe(parsedRecipe);
-      } else {
-        setSelectedRecipe(null);
-      }
+      const plannedRecipesByDate: { [key: string]: Recipe | null } = {};
+      dates.forEach(date => {
+        plannedRecipesByDate[date] = null;
+      });
+
+      data.forEach(plan => {
+        if (plan.recipes) {
+          const recipe = plan.recipes;
+          const parsedRecipe: Recipe = {
+            ...recipe,
+            ingredients: typeof recipe.ingredients === 'string'
+              ? JSON.parse(recipe.ingredients)
+              : recipe.ingredients,
+            nutritional_info: typeof recipe.nutritional_info === 'string'
+              ? JSON.parse(recipe.nutritional_info)
+              : recipe.nutritional_info,
+            instructions: Array.isArray(recipe.instructions)
+              ? recipe.instructions
+              : [recipe.instructions].filter(Boolean),
+            meal_type: recipe.meal_type as MealType,
+            difficulty: recipe.difficulty as Difficulty
+          };
+          plannedRecipesByDate[plan.date] = parsedRecipe;
+        }
+      });
+
+      setPlannedRecipes(plannedRecipesByDate);
     } catch (error) {
-      console.error('Error fetching planned recipe:', error);
+      console.error('Error fetching planned recipes:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -117,10 +120,14 @@ export const useMealPlanner = (userId: string) => {
 
       if (error) throw error;
 
-      setSelectedRecipe(recipe);
+      setPlannedRecipes(prev => ({
+        ...prev,
+        [format(selectedDate, 'yyyy-MM-dd')]: recipe
+      }));
+
       toast({
         title: "Planification réussie",
-        description: "La recette a été planifiée pour le " + format(selectedDate, 'dd MMMM yyyy', { locale: fr }),
+        description: `La recette a été planifiée pour le ${format(selectedDate, 'dd MMMM yyyy', { locale: fr })}`,
       });
     } catch (error) {
       console.error('Error planning recipe:', error);
@@ -136,14 +143,17 @@ export const useMealPlanner = (userId: string) => {
 
   useEffect(() => {
     fetchRecipes();
-    fetchPlannedRecipe();
+  }, []);
+
+  useEffect(() => {
+    fetchWeeklyPlannedRecipes();
   }, [selectedDate]);
 
   return {
     selectedDate,
     setSelectedDate,
     recipes,
-    selectedRecipe,
+    plannedRecipes,
     loading,
     planningRecipe,
     planRecipe

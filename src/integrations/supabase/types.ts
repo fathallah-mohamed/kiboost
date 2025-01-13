@@ -55,6 +55,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          meal_time: string
           profile_id: string
           recipe_id: string
           updated_at: string
@@ -63,6 +64,7 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
+          meal_time?: string
           profile_id: string
           recipe_id: string
           updated_at?: string
@@ -71,6 +73,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          meal_time?: string
           profile_id?: string
           recipe_id?: string
           updated_at?: string
