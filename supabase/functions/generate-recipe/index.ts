@@ -132,16 +132,16 @@ serve(async (req) => {
 
     // Génération d'une image thématique adaptée aux enfants
     const themes = [
-      'cute food art for kids',
-      'fun food presentation for children',
-      'creative kids meal plating',
-      'colorful healthy kids food',
-      'playful food decoration',
-      'cartoon style food art',
-      'rainbow food presentation',
-      'animal shaped food for kids',
-      'food art characters',
-      'healthy kids meal presentation'
+      'superhero themed food art',
+      'disney character food plating',
+      'pokemon inspired food decoration',
+      'marvel heroes food art',
+      'princess themed food presentation',
+      'ninja turtle food design',
+      'space explorer food art',
+      'pirate treasure food plating',
+      'magical wizard food decoration',
+      'dinosaur shaped food art'
     ];
     
     const randomTheme = themes[Math.floor(Math.random() * themes.length)];
