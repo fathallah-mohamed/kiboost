@@ -38,6 +38,19 @@ serve(async (req) => {
   }
 
   try {
+    // Get the JWT token from the Authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    // Extract the user ID from the JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+    const userId = tokenPayload.sub;
+
+    console.log('User ID extracted from token:', userId);
+
     if (!openAIApiKey) {
       console.error('OpenAI API key not configured');
       throw new Error('OpenAI API key is not configured. Please set up the OPENAI_API_KEY secret.');
@@ -139,10 +152,11 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
+      // Use the extracted userId instead of the JWT token
       const { data: recipe, error: insertError } = await supabaseClient
         .from('recipes')
         .insert({
-          profile_id: req.headers.get('authorization')?.split(' ')[1],
+          profile_id: userId,
           name: recipeContent.name,
           ingredients: recipeContent.ingredients,
           instructions: recipeContent.instructions,
