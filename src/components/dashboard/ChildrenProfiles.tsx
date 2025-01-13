@@ -16,15 +16,17 @@ interface ChildProfile {
 
 interface ChildrenProfilesProps {
   userId: string;
+  onSelectChild?: (child: ChildProfile | null) => void;
 }
 
-export const ChildrenProfiles = ({ userId }: ChildrenProfilesProps) => {
+export const ChildrenProfiles = ({ userId, onSelectChild }: ChildrenProfilesProps) => {
   const [profiles, setProfiles] = useState<ChildProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [allergies, setAllergies] = useState('');
   const [preferences, setPreferences] = useState('');
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -98,6 +100,11 @@ export const ChildrenProfiles = ({ userId }: ChildrenProfilesProps) => {
       if (error) throw error;
 
       setProfiles(profiles.filter(profile => profile.id !== id));
+      if (selectedProfileId === id) {
+        setSelectedProfileId(null);
+        onSelectChild?.(null);
+      }
+      
       toast({
         title: "Profil supprimé",
         description: "Le profil a été supprimé avec succès.",
@@ -109,6 +116,12 @@ export const ChildrenProfiles = ({ userId }: ChildrenProfilesProps) => {
         description: "Impossible de supprimer le profil.",
       });
     }
+  };
+
+  const handleSelectProfile = (profile: ChildProfile) => {
+    const newSelectedId = selectedProfileId === profile.id ? null : profile.id;
+    setSelectedProfileId(newSelectedId);
+    onSelectChild?.(newSelectedId ? profile : null);
   };
 
   if (loading) {
@@ -153,12 +166,21 @@ export const ChildrenProfiles = ({ userId }: ChildrenProfilesProps) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {profiles.map((profile) => (
-          <Card key={profile.id} className="p-4 relative">
+          <Card 
+            key={profile.id} 
+            className={`p-4 relative cursor-pointer transition-colors ${
+              selectedProfileId === profile.id ? 'ring-2 ring-primary' : ''
+            }`}
+            onClick={() => handleSelectProfile(profile)}
+          >
             <Button
               variant="ghost"
               size="icon"
               className="absolute top-2 right-2"
-              onClick={() => handleDelete(profile.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(profile.id);
+              }}
             >
               <X className="w-4 h-4" />
             </Button>
