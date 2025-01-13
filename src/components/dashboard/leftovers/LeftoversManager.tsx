@@ -120,16 +120,17 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
         unit: leftover.unit
       }));
 
-      const recipe: Partial<Recipe> = {
+      const recipeData = {
+        profile_id: userId,
         name: "Recette avec restes du " + format(new Date(), 'dd/MM/yyyy'),
-        ingredients,
-        instructions: ["Utilisez les restes disponibles pour créer votre recette"],
-        nutritional_info: {
+        ingredients: JSON.stringify(ingredients),
+        instructions: "Utilisez les restes disponibles pour créer votre recette",
+        nutritional_info: JSON.stringify({
           calories: 0,
           protein: 0,
           carbs: 0,
           fat: 0
-        },
+        }),
         meal_type: "dinner",
         preparation_time: 30,
         difficulty: "medium",
@@ -138,10 +139,7 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
 
       const { data: savedRecipe, error } = await supabase
         .from("recipes")
-        .insert({
-          ...recipe,
-          profile_id: userId
-        })
+        .insert(recipeData)
         .select()
         .single();
 
@@ -151,10 +149,8 @@ export const LeftoversManager = ({ userId }: LeftoversManagerProps) => {
         title: "Recette créée",
         description: "Une nouvelle recette a été créée à partir des restes.",
       });
-
-      // Optionally, clear used leftovers
-      // await Promise.all(leftovers.map(leftover => handleDeleteLeftover(leftover.id)));
     } catch (error) {
+      console.error('Error creating recipe:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
