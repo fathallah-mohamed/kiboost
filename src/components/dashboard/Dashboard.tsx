@@ -11,6 +11,7 @@ import { RecipeGenerator } from './RecipeGenerator';
 import { StatsAndLeftovers } from './statistics/StatsAndLeftovers';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChildProfile } from './types';
+import { LeftoversManager } from './leftovers/LeftoversManager';
 
 interface DashboardProps {
   session: Session;
@@ -55,6 +56,7 @@ export const Dashboard = ({ session }: DashboardProps) => {
           <TabsTrigger value="recipes">Recettes</TabsTrigger>
           <TabsTrigger value="planner">Planificateur</TabsTrigger>
           <TabsTrigger value="shopping">Liste de courses</TabsTrigger>
+          <TabsTrigger value="leftovers">Restes</TabsTrigger>
           <TabsTrigger value="stats">Statistiques</TabsTrigger>
         </TabsList>
 
@@ -82,6 +84,12 @@ export const Dashboard = ({ session }: DashboardProps) => {
         <TabsContent value="shopping">
           <Card className="p-6">
             <ShoppingList userId={session.user.id} />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="leftovers">
+          <Card className="p-6">
+            <LeftoversManager userId={session.user.id} />
           </Card>
         </TabsContent>
 
