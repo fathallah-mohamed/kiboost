@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRecipes } from './hooks/useRecipes';
 import { usePlannedRecipes } from './hooks/usePlannedRecipes';
 import { useRecipePlanning } from './hooks/useRecipePlanning';
@@ -19,9 +19,13 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
 
   const loading = recipesLoading || plannedRecipesLoading;
 
+  // Force refresh on mount
+  useEffect(() => {
+    clearRecipes();
+  }, []);
+
   const handlePlanRecipe = (recipe: Recipe, children: ChildProfile[]) => {
     planRecipe(recipe, children, selectedDate, userId);
-    // Clear recipes after planning
     clearRecipes();
   };
 

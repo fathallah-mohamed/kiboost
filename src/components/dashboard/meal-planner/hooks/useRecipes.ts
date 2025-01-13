@@ -18,7 +18,7 @@ export const useRecipes = (userId: string) => {
 
       if (error) throw error;
 
-      setRecipes(data.map(recipe => ({
+      setRecipes((data || []).map(recipe => ({
         ...recipe,
         ingredients: typeof recipe.ingredients === 'string'
           ? JSON.parse(recipe.ingredients)
@@ -48,6 +48,7 @@ export const useRecipes = (userId: string) => {
 
   const clearRecipes = () => {
     setRecipes([]);
+    setLoading(false);
   };
 
   useEffect(() => {
