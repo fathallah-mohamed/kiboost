@@ -1,20 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { Recipe } from "../types";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Utensils, Clock, Heart } from "lucide-react";
+import { Utensils, Clock, Heart, Beef, Wheat, Fire, Cookie } from "lucide-react";
 
 interface RecipeCardProps {
   recipe: Recipe;
 }
 
 export const RecipeCard = ({ recipe }: RecipeCardProps) => {
-  const nutritionalData = [
-    { name: 'Calories', value: recipe.nutritional_info.calories, color: '#FF9494' },
-    { name: 'Protéines', value: recipe.nutritional_info.protein, color: '#94B3FD' },
-    { name: 'Glucides', value: recipe.nutritional_info.carbs, color: '#FFD1D1' },
-    { name: 'Lipides', value: recipe.nutritional_info.fat, color: '#B983FF' },
-  ];
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center">
@@ -72,30 +64,35 @@ export const RecipeCard = ({ recipe }: RecipeCardProps) => {
 
       <Card className="p-4">
         <h4 className="font-semibold mb-4 text-center">Valeurs nutritionnelles</h4>
-        <div className="h-[200px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={nutritionalData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-              <XAxis dataKey="name" fontSize={12} />
-              <YAxis fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'white',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  padding: '8px'
-                }}
-              />
-              <Bar 
-                dataKey="value" 
-                fill="var(--color)"
-                radius={[4, 4, 0, 0]}
-                data={nutritionalData.map(item => ({
-                  ...item,
-                  fill: item.color
-                }))}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50">
+            <Fire className="w-5 h-5 text-red-500" />
+            <div>
+              <div className="text-sm font-medium">Calories</div>
+              <div className="text-lg font-bold text-red-600">{recipe.nutritional_info.calories}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50">
+            <Beef className="w-5 h-5 text-blue-500" />
+            <div>
+              <div className="text-sm font-medium">Protéines</div>
+              <div className="text-lg font-bold text-blue-600">{recipe.nutritional_info.protein}g</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-50">
+            <Wheat className="w-5 h-5 text-yellow-500" />
+            <div>
+              <div className="text-sm font-medium">Glucides</div>
+              <div className="text-lg font-bold text-yellow-600">{recipe.nutritional_info.carbs}g</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50">
+            <Cookie className="w-5 h-5 text-purple-500" />
+            <div>
+              <div className="text-sm font-medium">Lipides</div>
+              <div className="text-lg font-bold text-purple-600">{recipe.nutritional_info.fat}g</div>
+            </div>
+          </div>
         </div>
       </Card>
     </div>

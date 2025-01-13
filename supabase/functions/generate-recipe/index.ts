@@ -36,6 +36,7 @@ serve(async (req) => {
     4. Sûre en tenant compte des allergies
     5. Amusante et attrayante pour l'enfant
     6. Avec un nom créatif et ludique
+    7. Les instructions doivent inclure les quantités spécifiques, par exemple : "Verse 1 tasse de lait" au lieu de "Ajoute le lait"
     
     IMPORTANT: Réponds UNIQUEMENT avec un objet JSON valide, sans formatage markdown, sans backticks (\`\`\`), avec EXACTEMENT cette structure :
     {
@@ -43,7 +44,7 @@ serve(async (req) => {
       "ingredients": [
         {"item": "nom ingrédient", "quantity": "quantité", "unit": "unité de mesure"}
       ],
-      "instructions": ["étape 1", "étape 2", "etc"],
+      "instructions": ["étape 1 avec quantités", "étape 2 avec quantités", "etc"],
       "nutritional_info": {
         "calories": nombre,
         "protein": nombre,
@@ -85,10 +86,7 @@ serve(async (req) => {
       throw new Error('Structure de réponse OpenAI invalide');
     }
 
-    // Clean the response content to ensure it's valid JSON
     let content = data.choices[0].message.content.trim();
-    
-    // Remove any markdown formatting if present
     if (content.startsWith('```')) {
       content = content.replace(/```json\n?/, '').replace(/```\n?$/, '');
     }
@@ -102,7 +100,6 @@ serve(async (req) => {
       throw new Error(`Échec du parsing JSON : ${error.message}`);
     }
 
-    // Validate the recipe structure
     if (!recipeContent.name || 
         !Array.isArray(recipeContent.ingredients) || 
         !Array.isArray(recipeContent.instructions) || 
@@ -111,7 +108,6 @@ serve(async (req) => {
       throw new Error('Structure de la recette invalide');
     }
 
-    // Ensure all fields are in the correct format
     recipeContent.instructions = recipeContent.instructions.map(String);
     recipeContent.ingredients = recipeContent.ingredients.map(ing => ({
       item: String(ing.item),
