@@ -2,12 +2,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NutritionalStats } from "./NutritionalStats";
 import { MealFrequency } from "./MealFrequency";
 import { LeftoversManager } from "../leftovers/LeftoversManager";
-import { useAuth } from "@supabase/auth-helpers-react";
+import { useSession } from "@supabase/auth-helpers-react";
 
 export const StatsAndLeftovers = () => {
-  const user = useAuth();
+  const session = useSession();
 
-  if (!user) return null;
+  if (!session) return null;
 
   return (
     <div className="space-y-6">
@@ -29,7 +29,7 @@ export const StatsAndLeftovers = () => {
         </TabsContent>
 
         <TabsContent value="leftovers">
-          <LeftoversManager userId={user.id} />
+          <LeftoversManager userId={session.user.id} />
         </TabsContent>
       </Tabs>
     </div>
