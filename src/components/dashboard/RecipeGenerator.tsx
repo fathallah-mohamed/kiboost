@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ChildProfile, Recipe, MealType, Difficulty } from "./types";
 import { RecipeFilters } from "./recipe/RecipeFilters";
@@ -25,7 +25,7 @@ export const RecipeGenerator = () => {
   const { plannedRecipes } = usePlannedRecipesFetching(selectedChildren);
 
   // Force clear recipes on mount
-  useState(() => {
+  useEffect(() => {
     clearRecipes();
   }, []);
 
