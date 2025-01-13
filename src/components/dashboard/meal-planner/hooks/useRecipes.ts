@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Recipe } from '../../types';
+import { Recipe, MealType, Difficulty } from '../../types';
 import { useToast } from '@/components/ui/use-toast';
 
 export const useRecipes = (userId: string) => {
@@ -28,7 +28,11 @@ export const useRecipes = (userId: string) => {
           : recipe.nutritional_info,
         instructions: Array.isArray(recipe.instructions)
           ? recipe.instructions
-          : [recipe.instructions].filter(Boolean)
+          : [recipe.instructions].filter(Boolean),
+        meal_type: recipe.meal_type as MealType,
+        difficulty: recipe.difficulty as Difficulty,
+        is_generated: recipe.is_generated || false,
+        image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
       })));
     } catch (error) {
       console.error('Error fetching recipes:', error);
