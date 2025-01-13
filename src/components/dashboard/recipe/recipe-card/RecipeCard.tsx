@@ -11,9 +11,10 @@ interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
   onAdd?: (recipe: Recipe) => void;
+  compact?: boolean;
 }
 
-export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
@@ -29,8 +30,37 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
     }
   };
 
+  if (compact) {
+    return (
+      <div className="p-2 bg-white rounded-lg shadow">
+        <h4 className="font-medium text-sm">{recipe.name}</h4>
+        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+          <Clock className="w-3 h-3" />
+          {recipe.preparation_time} min
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
+      {recipe.image_url && (
+        <div className="relative h-48 overflow-hidden">
+          <img 
+            src={recipe.image_url} 
+            alt={recipe.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute bottom-4 left-4 text-white">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span>{recipe.preparation_time} min</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="p-6">
         <div className="flex flex-col gap-6">
           {/* En-tête avec les informations principales */}
@@ -40,24 +70,21 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
                 {recipe.name}
               </h3>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {recipe.preparation_time} min
-                </span>
-                <span className="text-2xl">•</span>
                 <span className="capitalize">{recipe.difficulty}</span>
               </div>
             </div>
 
             {/* Actions principales */}
             <div className="flex items-center gap-2">
-              <Button
-                onClick={() => onAdd?.(recipe)}
-                disabled={isPlanned}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {isPlanned ? 'Déjà planifiée' : 'Planifier'}
-              </Button>
+              {onAdd && (
+                <Button
+                  onClick={() => onAdd(recipe)}
+                  disabled={isPlanned}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {isPlanned ? 'Déjà planifiée' : 'Planifier'}
+                </Button>
+              )}
             </div>
 
             {/* Actions secondaires */}

@@ -28,6 +28,11 @@ export interface Recipe {
   preparation_time: number;
   difficulty: Difficulty;
   servings: number;
+  image_url?: string;
+  is_generated?: boolean;
+  created_at: string;
+  updated_at: string;
+  profile_id: string;
 }
 
 export interface RecipeRating {

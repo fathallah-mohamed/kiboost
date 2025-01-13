@@ -32,7 +32,6 @@ export const useRecipeGeneration = () => {
 
         if (response.error) throw response.error;
         
-        // Save the generated recipe to Supabase
         const recipeData = {
           ...response.data,
           profile_id: session.user.id,
@@ -46,7 +45,22 @@ export const useRecipeGeneration = () => {
           .single();
 
         if (saveError) throw saveError;
-        return savedRecipe;
+
+        // Ensure the saved recipe conforms to the Recipe type
+        const recipe: Recipe = {
+          ...savedRecipe,
+          ingredients: typeof savedRecipe.ingredients === 'string' 
+            ? JSON.parse(savedRecipe.ingredients) 
+            : savedRecipe.ingredients,
+          nutritional_info: typeof savedRecipe.nutritional_info === 'string'
+            ? JSON.parse(savedRecipe.nutritional_info)
+            : savedRecipe.nutritional_info,
+          instructions: Array.isArray(savedRecipe.instructions)
+            ? savedRecipe.instructions
+            : [savedRecipe.instructions].filter(Boolean),
+        };
+
+        return recipe;
       });
 
       const generatedRecipes = await Promise.all(recipePromises);
