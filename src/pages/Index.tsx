@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Utensils, Calendar, ShoppingCart } from "lucide-react";

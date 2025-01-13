@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AuthForm = () => {
   const [email, setEmail] = useState('');
