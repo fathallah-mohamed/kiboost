@@ -9,10 +9,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Fonction utilitaire pour attendre un certain temps
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Fonction pour réessayer avec délai en cas d'erreur
 async function retryWithDelay(fn: () => Promise<any>, maxRetries = 3, initialDelay = 1000) {
   let lastError;
   for (let i = 0; i < maxRetries; i++) {
@@ -75,9 +73,11 @@ serve(async (req) => {
 
     const generateRecipeWithOpenAI = async () => {
       if (!openAIApiKey) {
+        console.error('OpenAI API key not found');
         throw new Error('OpenAI API key is not configured');
       }
 
+      console.log('Making request to OpenAI API...');
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
