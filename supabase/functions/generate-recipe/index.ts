@@ -9,8 +9,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Fonction utilitaire pour attendre un certain temps
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Fonction pour réessayer avec délai en cas d'erreur
+async function retryWithDelay(fn: () => Promise<any>, maxRetries = 3, initialDelay = 1000) {
+  let lastError;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      console.error(`Attempt ${i + 1} failed:`, error);
+      
+      if (error.message.includes('Too Many Requests')) {
+        const waitTime = initialDelay * Math.pow(2, i);
+        console.log(`Waiting ${waitTime}ms before retry...`);
+        await delay(waitTime);
+      } else {
+        throw error; // Si ce n'est pas une erreur de limite de taux, on la propage
+      }
+    }
+  }
+  throw lastError;
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -19,7 +43,6 @@ serve(async (req) => {
     const { childProfile } = await req.json();
     console.log('Generating recipe for child profile:', childProfile);
 
-    // Construct the prompt based on child's profile
     const prompt = `Generate a healthy breakfast recipe suitable for a ${childProfile.age} year old child.
     ${childProfile.allergies.length > 0 ? `Allergies to avoid: ${childProfile.allergies.join(', ')}` : ''}
     ${childProfile.preferences.length > 0 ? `Food preferences: ${childProfile.preferences.join(', ')}` : ''}
@@ -50,47 +73,50 @@ serve(async (req) => {
       }
     }`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional nutritionist specializing in children\'s dietary needs. Generate appropriate, safe, and healthy breakfast recipes.'
-          },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-      }),
-    });
+    const generateRecipeWithOpenAI = async () => {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a professional nutritionist specializing in children\'s dietary needs. Generate appropriate, safe, and healthy breakfast recipes.'
+            },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
-    }
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
+      }
 
-    const data = await response.json();
+      return response.json();
+    };
+
+    const data = await retryWithDelay(generateRecipeWithOpenAI);
     console.log('OpenAI response received');
     
     try {
       const recipeContent = JSON.parse(data.choices[0].message.content);
       console.log('Recipe generated:', recipeContent);
 
-      // Create Supabase client
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
-      // Save recipe to database
       const { data: recipe, error: insertError } = await supabaseClient
         .from('recipes')
         .insert({
-          profile_id: req.headers.get('x-user-id'),
+          profile_id: req.headers.get('authorization')?.split(' ')[1],
           name: recipeContent.name,
           ingredients: recipeContent.ingredients,
           instructions: recipeContent.instructions,
