@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
 import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from "../types";
@@ -8,6 +8,46 @@ export const useRecipeGeneration = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Load persisted recipes on mount
+  useEffect(() => {
+    const loadPersistedRecipes = async () => {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session?.session?.user?.id) return;
+
+        const { data, error } = await supabase
+          .from('recipes')
+          .select('*')
+          .eq('profile_id', session.session.user.id)
+          .eq('is_generated', true)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const parsedRecipes: Recipe[] = data?.map(recipe => ({
+          ...recipe,
+          ingredients: typeof recipe.ingredients === 'string' 
+            ? JSON.parse(recipe.ingredients) 
+            : recipe.ingredients,
+          nutritional_info: typeof recipe.nutritional_info === 'string'
+            ? JSON.parse(recipe.nutritional_info)
+            : recipe.nutritional_info,
+          instructions: Array.isArray(recipe.instructions)
+            ? recipe.instructions
+            : [recipe.instructions].filter(Boolean),
+          meal_type: recipe.meal_type as MealType,
+          difficulty: recipe.difficulty as Difficulty
+        })) || [];
+
+        setRecipes(parsedRecipes);
+      } catch (error) {
+        console.error('Error loading persisted recipes:', error);
+      }
+    };
+
+    loadPersistedRecipes();
+  }, []);
 
   const validateMealType = (mealType: string): MealType => {
     const validMealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -97,7 +137,7 @@ export const useRecipeGeneration = () => {
       });
 
       const generatedRecipes = await Promise.all(recipePromises);
-      setRecipes(prev => [...prev, ...generatedRecipes]);
+      setRecipes(prev => [...generatedRecipes, ...prev]);
       
       toast({
         title: "Recettes générées",

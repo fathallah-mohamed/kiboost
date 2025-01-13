@@ -10,6 +10,7 @@ import { usePlannedRecipesFetching } from "./recipe/hooks/usePlannedRecipesFetch
 import { MultiChildSelector } from "./recipe/MultiChildSelector";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 export const RecipeGenerator = () => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
@@ -49,7 +50,18 @@ export const RecipeGenerator = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-lg font-medium">Génération des recettes en cours...</p>
+            <p className="text-sm text-muted-foreground">Veuillez patienter, cela peut prendre quelques instants</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold">Générateur de recettes</h2>
       </div>
