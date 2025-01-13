@@ -2,29 +2,22 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Clock, ArrowRight, Plus, Heart, Star, Share2 } from "lucide-react";
+import { Clock, Heart, Star, Share2, ArrowRight, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Recipe } from "../../types";
+import { DietaryLabel } from "./DietaryLabel";
+import { HealthScore } from "./HealthScore";
+import { NutritionalBadge } from "./NutritionalBadge";
 
 interface RecipeCardProps {
   recipe: Recipe;
-  onAdd?: (recipe: Recipe) => void;
   isPlanned?: boolean;
+  onAdd?: (recipe: Recipe) => void;
 }
 
-export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
-
-  const handleAdd = () => {
-    if (onAdd) {
-      onAdd(recipe);
-      toast({
-        title: "Recette ajoutée",
-        description: "La recette a été ajoutée au planificateur",
-      });
-    }
-  };
 
   const handleShare = async () => {
     try {
@@ -39,12 +32,12 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
   };
 
   return (
-    <>
-      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
-        <div className="p-6 space-y-4">
-          {/* En-tête de la recette */}
-          <div className="space-y-2">
-            <h3 className="text-2xl font-bold text-primary group-hover:text-primary/80 transition-colors">
+    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
+      <div className="p-6">
+        <div className="flex items-center justify-between gap-6">
+          {/* Informations principales */}
+          <div className="flex-1">
+            <h3 className="text-2xl font-bold text-primary group-hover:text-primary/80 transition-colors mb-2">
               {recipe.name}
             </h3>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -57,25 +50,18 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
             </div>
           </div>
 
-          {/* Informations nutritionnelles simplifiées */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{recipe.nutritional_info.calories} calories</span>
-            <span>{recipe.nutritional_info.protein}g protéines</span>
-          </div>
-
           {/* Actions principales */}
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              className="flex-1 group-hover:bg-accent/5"
+              className="group-hover:bg-accent/5"
               onClick={() => setShowDetails(true)}
             >
               <ArrowRight className="w-4 h-4 mr-2" />
               Afficher détails
             </Button>
             <Button
-              className="flex-1"
-              onClick={handleAdd}
+              onClick={() => onAdd?.(recipe)}
               disabled={isPlanned}
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -84,22 +70,19 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
           </div>
 
           {/* Actions secondaires */}
-          <div className="flex gap-2 justify-end pt-2">
+          <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm">
-              <Heart className="w-4 h-4 mr-2" />
-              Favoris
+              <Heart className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="sm">
-              <Star className="w-4 h-4 mr-2" />
-              Évaluer
+              <Star className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="sm" onClick={handleShare}>
-              <Share2 className="w-4 h-4 mr-2" />
-              Partager
+              <Share2 className="w-4 h-4" />
             </Button>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Modal de détails */}
       <Sheet open={showDetails} onOpenChange={setShowDetails}>
@@ -129,6 +112,6 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
           </div>
         </SheetContent>
       </Sheet>
-    </>
+    </Card>
   );
 };
