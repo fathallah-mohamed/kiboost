@@ -23,34 +23,43 @@ serve(async (req) => {
       throw new Error('Clé API OpenAI non configurée');
     }
 
-    const { childProfile } = await req.json();
+    const { childProfile, filters, excludeRecipes } = await req.json();
 
-    const prompt = `Génère une recette de petit-déjeuner saine et amusante adaptée à un enfant de ${childProfile.age} ans.
-    ${childProfile.allergies?.length > 0 ? `Allergies à éviter : ${childProfile.allergies.join(', ')}` : ''}
-    ${childProfile.preferences?.length > 0 ? `Préférences alimentaires : ${childProfile.preferences.join(', ')}` : ''}
+    const mealTypePrompt = filters?.mealType ? `pour le ${filters.mealType}` : 'pour n\'importe quel repas';
+    const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
+    const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
+
+    const prompt = `En tant que chef cuisinier français créatif, crée une recette unique et amusante ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
+
+    ${childProfile.allergies?.length > 0 ? `⚠️ IMPORTANT: Évite absolument ces allergènes : ${childProfile.allergies.join(', ')}` : ''}
+    ${childProfile.preferences?.length > 0 ? `✨ Préférences alimentaires à favoriser : ${childProfile.preferences.join(', ')}` : ''}
     
     La recette doit être :
-    1. Adaptée à l'âge de l'enfant
-    2. Équilibrée nutritionnellement
-    3. Facile à préparer
-    4. Sûre en tenant compte des allergies
-    5. Amusante et attrayante pour l'enfant
-    6. Avec un nom créatif et ludique
-    7. Les instructions doivent inclure les quantités spécifiques, par exemple : "Verse 1 tasse de lait" au lieu de "Ajoute le lait"
+    1. 👶 Parfaitement adaptée à l'âge de l'enfant (${childProfile.age} ans)
+    2. 🥗 Équilibrée nutritionnellement
+    3. 👨‍🍳 Facile et sécurisée à préparer avec un adulte
+    4. 🎨 Colorée et visuellement attrayante
+    5. 🎯 Avec un nom créatif et amusant qui donne envie à l'enfant
+    6. 📝 Instructions détaillées avec des quantités précises
+    7. 🌈 Utilisant des ingrédients variés et de saison
     
     IMPORTANT: Réponds UNIQUEMENT avec un objet JSON valide, sans formatage markdown, sans backticks (\`\`\`), avec EXACTEMENT cette structure :
     {
-      "name": "Nom créatif de la recette",
+      "name": "Nom créatif et amusant de la recette",
       "ingredients": [
-        {"item": "nom ingrédient", "quantity": "quantité", "unit": "unité de mesure"}
+        {"item": "nom ingrédient", "quantity": "quantité précise", "unit": "unité de mesure"}
       ],
-      "instructions": ["étape 1 avec quantités", "étape 2 avec quantités", "etc"],
+      "instructions": ["étape 1 détaillée", "étape 2 détaillée", "etc"],
       "nutritional_info": {
         "calories": nombre,
         "protein": nombre,
         "carbs": nombre,
         "fat": nombre
-      }
+      },
+      "meal_type": "${filters?.mealType || 'dinner'}",
+      "preparation_time": nombre (en minutes),
+      "difficulty": "${filters?.difficulty || 'medium'}",
+      "servings": 4
     }`;
 
     console.log('Sending request to OpenAI...');
@@ -61,15 +70,15 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',  // Fixed: Changed from 'gpt-4o' to 'gpt-4o-mini'
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier français spécialisé dans la création de recettes amusantes et saines pour les enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire ni formatage.'
+            content: 'Tu es un chef cuisinier français créatif, spécialisé dans la création de recettes amusantes, saines et adaptées aux enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire ni formatage.'
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
+        temperature: 0.9,
       }),
     });
 
@@ -100,6 +109,7 @@ serve(async (req) => {
       throw new Error(`Échec du parsing JSON : ${error.message}`);
     }
 
+    // Vérification de la structure de la recette
     if (!recipeContent.name || 
         !Array.isArray(recipeContent.ingredients) || 
         !Array.isArray(recipeContent.instructions) || 
@@ -108,12 +118,16 @@ serve(async (req) => {
       throw new Error('Structure de la recette invalide');
     }
 
-    recipeContent.instructions = recipeContent.instructions.map(String);
-    recipeContent.ingredients = recipeContent.ingredients.map(ing => ({
-      item: String(ing.item),
-      quantity: String(ing.quantity),
-      unit: String(ing.unit)
-    }));
+    // Génération d'une image aléatoire parmi plusieurs thèmes
+    const themes = [
+      'colorful food photography',
+      'healthy meal plating',
+      'kids food art',
+      'creative food presentation',
+      'appetizing food styling'
+    ];
+    const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+    recipeContent.image_url = `https://source.unsplash.com/featured/?${encodeURIComponent(randomTheme)},${encodeURIComponent(recipeContent.name)}`;
 
     return new Response(JSON.stringify(recipeContent), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

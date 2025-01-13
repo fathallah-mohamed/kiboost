@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
-import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from "../types";
+import { Recipe, ChildProfile, RecipeFilters } from "../types";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -44,7 +44,6 @@ export const useRecipeGeneration = () => {
           ...response.data,
           profile_id: session.user.id,
           is_generated: true,
-          image_url: `https://source.unsplash.com/featured/?food,${response.data.name.replace(/\s+/g, ',')}`,
         };
 
         const { data: savedRecipe, error: saveError } = await supabase
@@ -67,9 +66,9 @@ export const useRecipeGeneration = () => {
           nutritional_info: typeof savedRecipe.nutritional_info === 'string'
             ? JSON.parse(savedRecipe.nutritional_info)
             : savedRecipe.nutritional_info,
-          meal_type: savedRecipe.meal_type as MealType,
+          meal_type: savedRecipe.meal_type,
           preparation_time: savedRecipe.preparation_time,
-          difficulty: savedRecipe.difficulty as Difficulty,
+          difficulty: savedRecipe.difficulty,
           servings: savedRecipe.servings,
           image_url: savedRecipe.image_url,
           is_generated: savedRecipe.is_generated,
@@ -86,7 +85,7 @@ export const useRecipeGeneration = () => {
       
       toast({
         title: "Recettes générées",
-        description: "De nouvelles recettes ont été créées pour " + selectedChild.name,
+        description: `${generatedRecipes.length} nouvelles recettes ont été créées pour ${selectedChild.name}`,
       });
     } catch (error: any) {
       console.error('Error generating recipes:', error);
@@ -94,7 +93,7 @@ export const useRecipeGeneration = () => {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de générer les recettes. Veuillez réessayer dans quelques instants.",
+        description: "Impossible de générer les recettes. Veuillez réessayer.",
       });
     } finally {
       setLoading(false);
