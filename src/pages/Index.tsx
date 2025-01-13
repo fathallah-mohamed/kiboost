@@ -5,17 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Utensils, Calendar, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Dashboard } from '@/components/dashboard/Dashboard';
 
 const Index = () => {
   const [session, setSession] = useState(null);
 
   useEffect(() => {
-    // Récupérer la session actuelle
+    // Get current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
-    // Écouter les changements d'auth
+    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -26,14 +27,7 @@ const Index = () => {
   }, []);
 
   if (session) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Tableau de bord</h1>
-        <Button onClick={() => supabase.auth.signOut()}>
-          Se déconnecter
-        </Button>
-      </div>
-    );
+    return <Dashboard session={session} />;
   }
 
   return (
