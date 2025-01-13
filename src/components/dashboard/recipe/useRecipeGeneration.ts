@@ -17,7 +17,6 @@ export const useRecipeGeneration = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Non authentifié");
 
-      // Générer 3 recettes différentes
       const recipePromises = Array(3).fill(null).map(async () => {
         const response = await supabase.functions.invoke('generate-recipe', {
           body: {
@@ -48,16 +47,26 @@ export const useRecipeGeneration = () => {
 
         // Ensure the saved recipe conforms to the Recipe type
         const recipe: Recipe = {
-          ...savedRecipe,
+          id: savedRecipe.id,
+          name: savedRecipe.name,
           ingredients: typeof savedRecipe.ingredients === 'string' 
             ? JSON.parse(savedRecipe.ingredients) 
             : savedRecipe.ingredients,
-          nutritional_info: typeof savedRecipe.nutritional_info === 'string'
-            ? JSON.parse(savedRecipe.nutritional_info)
-            : savedRecipe.nutritional_info,
           instructions: Array.isArray(savedRecipe.instructions)
             ? savedRecipe.instructions
             : [savedRecipe.instructions].filter(Boolean),
+          nutritional_info: typeof savedRecipe.nutritional_info === 'string'
+            ? JSON.parse(savedRecipe.nutritional_info)
+            : savedRecipe.nutritional_info,
+          meal_type: savedRecipe.meal_type as MealType,
+          preparation_time: savedRecipe.preparation_time,
+          difficulty: savedRecipe.difficulty as Difficulty,
+          servings: savedRecipe.servings,
+          image_url: savedRecipe.image_url,
+          is_generated: savedRecipe.is_generated,
+          created_at: savedRecipe.created_at,
+          updated_at: savedRecipe.updated_at,
+          profile_id: savedRecipe.profile_id,
         };
 
         return recipe;
