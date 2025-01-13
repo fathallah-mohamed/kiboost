@@ -28,12 +28,18 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
 
   const fetchRecipes = async () => {
     try {
+      console.log('Fetching recipes for user:', userId);
       const { data, error } = await supabase
         .from('recipes')
         .select('*')
         .eq('profile_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching recipes:', error);
+        throw error;
+      }
+
+      console.log('Fetched recipes:', data);
 
       // Parse JSON data
       const parsedRecipes: Recipe[] = data?.map(recipe => ({
@@ -49,6 +55,7 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
           : [recipe.instructions].filter(Boolean)
       })) || [];
 
+      console.log('Parsed recipes:', parsedRecipes);
       setRecipes(parsedRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
@@ -167,24 +174,30 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
 
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Recettes disponibles</h3>
-          {recipes.map((recipe) => (
-            <Card key={recipe.id} className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-medium">{recipe.name}</h4>
-                  <p className="text-sm text-gray-500">
-                    {recipe.nutritional_info.calories} calories
-                  </p>
+          {loading ? (
+            <p>Chargement des recettes...</p>
+          ) : recipes.length === 0 ? (
+            <p>Aucune recette disponible. Générez d'abord des recettes dans l'onglet "Recettes".</p>
+          ) : (
+            recipes.map((recipe) => (
+              <Card key={recipe.id} className="p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-medium">{recipe.name}</h4>
+                    <p className="text-sm text-gray-500">
+                      {recipe.nutritional_info.calories} calories
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => planRecipe(recipe)}
+                    disabled={planningRecipe}
+                  >
+                    Planifier
+                  </Button>
                 </div>
-                <Button 
-                  onClick={() => planRecipe(recipe)}
-                  disabled={planningRecipe}
-                >
-                  Planifier
-                </Button>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))
+          )}
         </div>
       </div>
     </div>
