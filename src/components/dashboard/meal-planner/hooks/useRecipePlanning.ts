@@ -1,19 +1,24 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
-import { Recipe, ChildProfile } from '../../types';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Recipe } from "../../types";
+import { ChildProfile } from "../../types";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 
-export const useRecipePlanning = (userId: string) => {
-  const { toast } = useToast();
-  const [planningRecipe, setPlanningRecipe] = useState(false);
+export const useRecipePlanning = () => {
+  const [saving, setSaving] = useState(false);
 
-  const planRecipe = async (recipe: Recipe, children: ChildProfile[], date: Date) => {
-    setPlanningRecipe(true);
+  const planRecipe = async (
+    recipe: Recipe,
+    children: ChildProfile[],
+    date: Date,
+    userId: string
+  ) => {
+    setSaving(true);
+    const formattedDate = format(date, 'yyyy-MM-dd');
+
     try {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      
       // Pour chaque enfant, on va d'abord vérifier si un repas existe déjà
       for (const child of children) {
         // Vérifier si un repas existe déjà pour cet enfant à cette date et ce moment de la journée
@@ -70,21 +75,28 @@ export const useRecipePlanning = (userId: string) => {
         }
       }
 
-      toast({
-        title: "Recette planifiée",
-        description: `La recette a été planifiée pour ${children.length} enfant(s) le ${format(date, 'dd MMMM yyyy', { locale: fr })}`,
+      // Afficher une notification de succès avec Sonner
+      toast.success("Recette planifiée !", {
+        description: `${recipe.name} a été planifiée pour ${children.length} enfant(s) le ${format(date, 'dd MMMM yyyy', { locale: fr })}`,
+        duration: 4000,
+        action: {
+          label: "Voir le planning",
+          onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' })
+        },
       });
+
     } catch (error: any) {
       console.error('Error planning recipe:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de planifier la recette.",
+      toast.error("Erreur lors de la planification", {
+        description: "Une erreur est survenue lors de la planification de la recette.",
       });
     } finally {
-      setPlanningRecipe(false);
+      setSaving(false);
     }
   };
 
-  return { planningRecipe, planRecipe };
+  return {
+    planRecipe,
+    saving
+  };
 };
