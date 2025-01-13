@@ -21,22 +21,22 @@ export const useRecipePlanning = () => {
     try {
       // Pour chaque enfant, on va gérer le repas
       for (const child of children) {
-        // Vérifier si un repas existe déjà pour cet enfant à cette date et ce moment de la journée
-        const { data: existingMeal, error: queryError } = await supabase
-          .from('meal_plans')
-          .select()
-          .eq('profile_id', userId)
-          .eq('date', formattedDate)
-          .eq('meal_time', recipe.meal_type)
-          .eq('child_id', child.id)
-          .maybeSingle();
-
-        if (queryError) {
-          console.error('Error checking existing meal:', queryError);
-          throw queryError;
-        }
-
         try {
+          // Vérifier si un repas existe déjà pour cet enfant à cette date
+          const { data: existingMeal, error: queryError } = await supabase
+            .from('meal_plans')
+            .select()
+            .eq('profile_id', userId)
+            .eq('date', formattedDate)
+            .eq('child_id', child.id)
+            .eq('meal_time', recipe.meal_type)
+            .maybeSingle();
+
+          if (queryError) {
+            console.error('Error checking existing meal:', queryError);
+            throw queryError;
+          }
+
           if (existingMeal) {
             // Si un repas existe, on le met à jour
             const { error: updateError } = await supabase
@@ -60,25 +60,7 @@ export const useRecipePlanning = () => {
                 meal_time: recipe.meal_type || 'dinner'
               });
 
-            if (insertError) {
-              // Si l'erreur est due à une violation de contrainte unique, on tente une mise à jour
-              if (insertError.code === '23505') {
-                const { error: retryError } = await supabase
-                  .from('meal_plans')
-                  .update({
-                    recipe_id: recipe.id,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('profile_id', userId)
-                  .eq('date', formattedDate)
-                  .eq('meal_time', recipe.meal_type)
-                  .eq('child_id', child.id);
-
-                if (retryError) throw retryError;
-              } else {
-                throw insertError;
-              }
-            }
+            if (insertError) throw insertError;
           }
         } catch (error: any) {
           console.error('Error managing meal plan:', error);
