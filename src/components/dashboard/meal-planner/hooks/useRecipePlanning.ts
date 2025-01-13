@@ -20,7 +20,7 @@ export const useRecipePlanning = () => {
     try {
       for (const child of children) {
         try {
-          // Try to upsert with an ON CONFLICT clause
+          // Try to upsert the meal plan
           const { error } = await supabase
             .from('meal_plans')
             .upsert(
@@ -33,8 +33,7 @@ export const useRecipePlanning = () => {
                 updated_at: new Date().toISOString()
               },
               {
-                onConflict: 'date,profile_id,child_id,meal_time',
-                ignoreDuplicates: false
+                onConflict: 'profile_id,date,child_id,meal_time'
               }
             );
 
