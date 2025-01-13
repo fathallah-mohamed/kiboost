@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
-import { ChildProfile, Recipe } from "./types";
+import { ChildProfile, Recipe, MealType, Difficulty } from "./types";
 import { RecipeFilters } from "./recipe/RecipeFilters";
 import { RecipeGeneratorHeader } from "./recipe/RecipeGeneratorHeader";
 import { RecipeList } from "./recipe/RecipeList";

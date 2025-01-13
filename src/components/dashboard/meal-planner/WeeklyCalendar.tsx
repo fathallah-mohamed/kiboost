@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Recipe } from '../types';
+import { Recipe, ChildProfile } from '../types';
 import { RecipeCard } from '../recipe/RecipeCard';
 
 interface WeeklyCalendarProps {
