@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Clock, Heart, Star, Share2, ArrowRight, Plus } from "lucide-react";
+import { Clock, Heart, Star, Share2, ChevronDown, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Recipe } from "../../types";
 import { NutritionalScore } from "./NutritionalScore";
@@ -56,8 +56,8 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
                 className="group-hover:bg-accent/5"
                 onClick={() => setShowDetails(true)}
               >
-                <ArrowRight className="w-4 h-4 mr-2" />
-                Afficher détails
+                <ChevronDown className="w-4 h-4 mr-2" />
+                Déplier la recette
               </Button>
               <Button
                 onClick={() => onAdd?.(recipe)}
