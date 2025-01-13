@@ -21,6 +21,13 @@ interface NutritionalInfo {
   fat: number;
 }
 
+interface MealPlan {
+  date: string;
+  recipes: {
+    nutritional_info: NutritionalInfo;
+  } | null;
+}
+
 export const NutritionalStats = () => {
   const startDate = startOfWeek(new Date(), { weekStartsOn: 1 });
   const endDate = endOfWeek(new Date(), { weekStartsOn: 1 });
@@ -41,9 +48,9 @@ export const NutritionalStats = () => {
 
       if (error) throw error;
 
-      const dailyNutrition = mealPlans.reduce((acc: any, plan) => {
+      const dailyNutrition = (mealPlans as MealPlan[]).reduce((acc: Record<string, any>, plan) => {
         const date = format(new Date(plan.date), "EEEE", { locale: fr });
-        const nutrition = plan.recipes?.nutritional_info as NutritionalInfo || {
+        const defaultNutrition: NutritionalInfo = {
           calories: 0,
           protein: 0,
           carbs: 0,
@@ -53,17 +60,17 @@ export const NutritionalStats = () => {
         if (!acc[date]) {
           acc[date] = {
             day: date,
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
+            ...defaultNutrition,
           };
         }
 
-        acc[date].calories += nutrition.calories;
-        acc[date].protein += nutrition.protein;
-        acc[date].carbs += nutrition.carbs;
-        acc[date].fat += nutrition.fat;
+        if (plan.recipes?.nutritional_info) {
+          const nutrition = plan.recipes.nutritional_info;
+          acc[date].calories += nutrition.calories;
+          acc[date].protein += nutrition.protein;
+          acc[date].carbs += nutrition.carbs;
+          acc[date].fat += nutrition.fat;
+        }
 
         return acc;
       }, {});

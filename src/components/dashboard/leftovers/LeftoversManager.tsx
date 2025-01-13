@@ -11,6 +11,14 @@ import { fr } from "date-fns/locale";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
 
+interface Leftover {
+  id: string;
+  ingredient_name: string;
+  quantity: number;
+  unit: string;
+  expiry_date: string;
+}
+
 export const LeftoversManager = () => {
   const { toast } = useToast();
   const [newLeftover, setNewLeftover] = useState({
@@ -29,7 +37,7 @@ export const LeftoversManager = () => {
         .order("expiry_date", { ascending: true });
 
       if (error) throw error;
-      return data;
+      return data as Leftover[];
     },
   });
 
