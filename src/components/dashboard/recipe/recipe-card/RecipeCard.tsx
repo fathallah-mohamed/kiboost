@@ -3,7 +3,7 @@ import { Recipe } from "../../types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Clock, Eye, Plus, Droplet, Cube, Wheat } from "lucide-react";
+import { Clock, Eye, Plus, Droplet, Candy, Wheat } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NutritionalBadge } from "./NutritionalBadge";
 import { HealthScore } from "./HealthScore";
@@ -96,7 +96,7 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
             <HealthScore
               label="Sucres"
               score={getSugarScore()}
-              icon={<Cube className="w-4 h-4" />}
+              icon={<Candy className="w-4 h-4" />}
             />
             <HealthScore
               label="Gras"
