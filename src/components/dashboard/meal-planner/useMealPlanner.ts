@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Recipe, MealType, Difficulty } from '../types';
 import { format, startOfWeek, addDays } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export const useMealPlanner = (userId: string) => {
   const { toast } = useToast();

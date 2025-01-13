@@ -12,9 +12,10 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface RecipeCardProps {
   recipe: Recipe;
+  compact?: boolean;
 }
 
-export const RecipeCard = ({ recipe }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, compact = false }: RecipeCardProps) => {
   const [showRating, setShowRating] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const { toast } = useToast();
@@ -64,6 +65,24 @@ export const RecipeCard = ({ recipe }: RecipeCardProps) => {
       console.error('Error sharing:', error);
     }
   };
+
+  if (compact) {
+    return (
+      <div className="text-sm">
+        <h4 className="font-medium">{recipe.name}</h4>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {recipe.preparation_time}min
+          </span>
+          <span className="flex items-center gap-1">
+            <Utensils className="w-3 h-3" />
+            {recipe.difficulty}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
