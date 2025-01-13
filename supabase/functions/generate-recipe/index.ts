@@ -48,7 +48,7 @@ serve(async (req) => {
     const userId = tokenPayload.sub;
 
     if (!openAIApiKey) {
-      throw new Error('Clé API OpenAI non configurée. Veuillez configurer la variable OPENAI_API_KEY.');
+      throw new Error('Clé API OpenAI non configurée');
     }
 
     const { childProfile } = await req.json();
@@ -87,7 +87,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
@@ -118,6 +118,7 @@ serve(async (req) => {
       const content = data.choices[0].message.content.trim();
       let recipeContent = JSON.parse(content);
 
+      // Validation des données
       if (!recipeContent.name || 
           !Array.isArray(recipeContent.ingredients) || 
           !Array.isArray(recipeContent.instructions) || 
@@ -125,6 +126,7 @@ serve(async (req) => {
         throw new Error('Les données de la recette sont manquantes ou ont des types invalides');
       }
 
+      // Conversion explicite des instructions en tableau de chaînes
       recipeContent.instructions = recipeContent.instructions.map(String);
 
       const supabaseClient = createClient(
@@ -155,6 +157,7 @@ serve(async (req) => {
       throw new Error(`Échec de l'analyse ou de la validation des données de la recette : ${parseError.message}`);
     }
   } catch (error) {
+    console.error('Erreur dans la fonction generate-recipe:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

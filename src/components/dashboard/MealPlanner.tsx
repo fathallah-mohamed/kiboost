@@ -34,8 +34,24 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
         .eq('profile_id', userId);
 
       if (error) throw error;
-      setRecipes(data || []);
+
+      // Parse JSON data
+      const parsedRecipes: Recipe[] = data?.map(recipe => ({
+        ...recipe,
+        ingredients: typeof recipe.ingredients === 'string' 
+          ? JSON.parse(recipe.ingredients) 
+          : recipe.ingredients,
+        nutritional_info: typeof recipe.nutritional_info === 'string'
+          ? JSON.parse(recipe.nutritional_info)
+          : recipe.nutritional_info,
+        instructions: Array.isArray(recipe.instructions)
+          ? recipe.instructions
+          : [recipe.instructions].filter(Boolean)
+      })) || [];
+
+      setRecipes(parsedRecipes);
     } catch (error) {
+      console.error('Error fetching recipes:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -51,11 +67,30 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
         .select('*, recipes(*)')
         .eq('profile_id', userId)
         .eq('date', format(selectedDate, 'yyyy-MM-dd'))
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
-      setSelectedRecipe(data?.recipes || null);
+      if (error) throw error;
+
+      if (data?.recipes) {
+        const recipe = data.recipes;
+        const parsedRecipe: Recipe = {
+          ...recipe,
+          ingredients: typeof recipe.ingredients === 'string'
+            ? JSON.parse(recipe.ingredients)
+            : recipe.ingredients,
+          nutritional_info: typeof recipe.nutritional_info === 'string'
+            ? JSON.parse(recipe.nutritional_info)
+            : recipe.nutritional_info,
+          instructions: Array.isArray(recipe.instructions)
+            ? recipe.instructions
+            : [recipe.instructions].filter(Boolean)
+        };
+        setSelectedRecipe(parsedRecipe);
+      } else {
+        setSelectedRecipe(null);
+      }
     } catch (error) {
+      console.error('Error fetching planned recipe:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -93,6 +128,7 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
         description: "La recette a été planifiée pour le " + format(selectedDate, 'dd MMMM yyyy', { locale: fr }),
       });
     } catch (error) {
+      console.error('Error planning recipe:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -121,7 +157,9 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
 
           {selectedRecipe && (
             <Card className="mt-4 p-4">
-              <h3 className="text-lg font-semibold mb-2">Recette planifiée pour le {format(selectedDate, 'dd MMMM yyyy', { locale: fr })}</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Recette planifiée pour le {format(selectedDate, 'dd MMMM yyyy', { locale: fr })}
+              </h3>
               <RecipeCard recipe={selectedRecipe} />
             </Card>
           )}
