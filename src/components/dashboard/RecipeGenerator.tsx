@@ -76,7 +76,15 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
 
           if (response.error) throw response.error;
           
-          setRecipe(response.data);
+          // Ensure instructions is an array of strings
+          const recipeData = {
+            ...response.data,
+            instructions: Array.isArray(response.data.instructions) 
+              ? response.data.instructions 
+              : [response.data.instructions].filter(Boolean)
+          };
+          
+          setRecipe(recipeData);
           toast({
             title: "Recette générée",
             description: "Une nouvelle recette a été créée pour " + selectedChild.name,
@@ -155,9 +163,13 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
             <div>
               <h4 className="font-semibold mb-2">Instructions</h4>
               <ol className="list-decimal list-inside space-y-1">
-                {recipe.instructions.map((step, index) => (
-                  <li key={index}>{step}</li>
-                ))}
+                {Array.isArray(recipe.instructions) ? (
+                  recipe.instructions.map((step, index) => (
+                    <li key={index}>{step}</li>
+                  ))
+                ) : (
+                  <li>Instructions non disponibles</li>
+                )}
               </ol>
             </div>
           </div>
