@@ -29,7 +29,7 @@ serve(async (req) => {
     const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
     const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
 
-    const prompt = `En tant que chef cuisinier français créatif, crée une recette unique et amusante ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
+    const prompt = `En tant que chef cuisinier français créatif et passionné, crée une recette unique, amusante et délicieuse ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
 
     ${childProfile.allergies?.length > 0 ? `⚠️ IMPORTANT: Évite absolument ces allergènes : ${childProfile.allergies.join(', ')}` : ''}
     ${childProfile.preferences?.length > 0 ? `✨ Préférences alimentaires à favoriser : ${childProfile.preferences.join(', ')}` : ''}
@@ -42,6 +42,7 @@ serve(async (req) => {
     5. 🎯 Avec un nom créatif et amusant qui donne envie à l'enfant
     6. 📝 Instructions détaillées avec des quantités précises
     7. 🌈 Utilisant des ingrédients variés et de saison
+    8. 🎪 Avec une présentation ludique et originale
     
     IMPORTANT: Réponds UNIQUEMENT avec un objet JSON valide, sans formatage markdown, sans backticks (\`\`\`), avec EXACTEMENT cette structure :
     {
@@ -74,7 +75,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier français créatif, spécialisé dans la création de recettes amusantes, saines et adaptées aux enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire ni formatage.'
+            content: 'Tu es un chef cuisinier français créatif et passionné, spécialisé dans la création de recettes amusantes, saines et adaptées aux enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire ni formatage.'
           },
           { role: 'user', content: prompt }
         ],
@@ -118,16 +119,23 @@ serve(async (req) => {
       throw new Error('Structure de la recette invalide');
     }
 
-    // Génération d'une image aléatoire parmi plusieurs thèmes
+    // Génération d'une image thématique
     const themes = [
-      'colorful food photography',
-      'healthy meal plating',
-      'kids food art',
-      'creative food presentation',
-      'appetizing food styling'
+      'colorful kids food art',
+      'creative food plating for children',
+      'fun food presentation',
+      'cute food decoration',
+      'playful food styling',
+      'food art for kids',
+      'healthy kids meal presentation',
+      'whimsical food plating',
+      'cartoon food art',
+      'rainbow food presentation'
     ];
+    
     const randomTheme = themes[Math.floor(Math.random() * themes.length)];
-    recipeContent.image_url = `https://source.unsplash.com/featured/?${encodeURIComponent(randomTheme)},${encodeURIComponent(recipeContent.name)}`;
+    const searchQuery = `${encodeURIComponent(randomTheme)},${encodeURIComponent(recipeContent.name)}`;
+    recipeContent.image_url = `https://source.unsplash.com/featured/?${searchQuery}&${Date.now()}`;
 
     return new Response(JSON.stringify(recipeContent), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
