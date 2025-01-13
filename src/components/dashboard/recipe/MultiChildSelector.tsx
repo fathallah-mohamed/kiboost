@@ -8,11 +8,13 @@ import { ChildrenGrid } from './child-selector/ChildrenGrid';
 interface MultiChildSelectorProps {
   onSelectChildren: (children: ChildProfile[]) => void;
   selectedChildren: ChildProfile[];
+  mode?: 'default' | 'compact';
 }
 
 export const MultiChildSelector = ({ 
   onSelectChildren,
   selectedChildren,
+  mode = 'default'
 }: MultiChildSelectorProps) => {
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +78,7 @@ export const MultiChildSelector = ({
         children={children}
         selectedChildren={selectedChildren}
         onToggleChild={handleToggleChild}
+        mode={mode}
       />
     </div>
   );
