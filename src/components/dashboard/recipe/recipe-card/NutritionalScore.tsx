@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { 
-  Leaf, Apple, Wheat, Flame, Droplet, Salt, Cookie, Boxes, 
-  CircleDot 
+  Leaf, Apple, Wheat, Flame, Droplet, CircleDot, Cookie, Boxes,
+  Waves // Remplacé Salt par Waves qui est plus approprié pour représenter le sel
 } from "lucide-react";
 
 type ScoreLevel = 'excellent' | 'good' | 'moderate' | 'poor';
@@ -110,7 +110,7 @@ const typeConfig = {
     unit: "g"
   },
   sel: {
-    icon: Salt,
+    icon: Waves,
     label: "Sel",
     defaultMax: 5,
     unit: "g"
