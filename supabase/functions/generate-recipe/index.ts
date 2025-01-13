@@ -47,7 +47,7 @@ serve(async (req) => {
     3. 👩‍🍳 Être simple à préparer, sécurisée pour un enfant et amusante à réaliser avec un adulte.
     4. 🎨 Inclure des couleurs vibrantes et une présentation ludique pour capter l'attention de l'enfant.
     5. 🧠 Favoriser le développement cérébral et physique avec des superaliments adaptés (ex. : noix, graines, légumes verts, etc.).
-    6. 💡 Avoir un nom attractif et créatif qui donne envie à l'enfant.
+    6. 💡 Avoir un nom créatif et amusant qui s'inspire des héros, des animaux, des personnages de dessins animés ou des peluches préférés des enfants (ex: "Le Sandwich du Super-Héros", "Les Nuggets du Petit Dragon", "La Soupe Magique de la Licorne", "Le Bol du Petit Tigre").
     7. 📋 Fournir des instructions claires et détaillées, avec des quantités exactes.
     8. 🌍 Incorporer des options écoresponsables (ex. : éviter le gaspillage alimentaire, utiliser des produits locaux).
     
