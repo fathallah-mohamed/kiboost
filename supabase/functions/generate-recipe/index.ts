@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -20,10 +19,6 @@ serve(async (req) => {
       throw new Error('Pas d\'en-tête d\'autorisation');
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-    const userId = tokenPayload.sub;
-
     if (!openAIApiKey) {
       throw new Error('Clé API OpenAI non configurée');
     }
@@ -42,7 +37,7 @@ serve(async (req) => {
     5. Amusante et attrayante pour l'enfant
     6. Avec un nom créatif et ludique
     
-    La réponse DOIT être un objet JSON valide en français avec EXACTEMENT cette structure :
+    IMPORTANT: Réponds UNIQUEMENT avec un objet JSON valide, sans formatage markdown, sans backticks (\`\`\`), avec EXACTEMENT cette structure :
     {
       "name": "Nom créatif de la recette",
       "ingredients": [
@@ -57,6 +52,7 @@ serve(async (req) => {
       }
     }`;
 
+    console.log('Sending request to OpenAI...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -68,7 +64,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier français spécialisé dans la création de recettes amusantes et saines pour les enfants. Réponds uniquement en français avec un JSON valide.'
+            content: 'Tu es un chef cuisinier français spécialisé dans la création de recettes amusantes et saines pour les enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire ni formatage.'
           },
           { role: 'user', content: prompt }
         ],
@@ -78,57 +74,56 @@ serve(async (req) => {
 
     if (!response.ok) {
       const error = await response.json();
+      console.error('OpenAI API error:', error);
       throw new Error(`Erreur API OpenAI : ${error.error?.message || response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('OpenAI response received:', data);
     
-    try {
-      if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Structure de réponse OpenAI invalide');
-      }
-
-      const content = data.choices[0].message.content.trim();
-      let recipeContent = JSON.parse(content);
-
-      if (!recipeContent.name || 
-          !Array.isArray(recipeContent.ingredients) || 
-          !Array.isArray(recipeContent.instructions) || 
-          !recipeContent.nutritional_info) {
-        throw new Error('Les données de la recette sont manquantes ou ont des types invalides');
-      }
-
-      recipeContent.instructions = recipeContent.instructions.map(String);
-
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-
-      const { data: recipe, error: insertError } = await supabaseClient
-        .from('recipes')
-        .insert({
-          profile_id: userId,
-          name: recipeContent.name,
-          ingredients: recipeContent.ingredients,
-          instructions: recipeContent.instructions,
-          nutritional_info: recipeContent.nutritional_info,
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        throw insertError;
-      }
-
-      return new Response(JSON.stringify(recipe), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } catch (parseError) {
-      throw new Error(`Échec de l'analyse ou de la validation des données de la recette : ${parseError.message}`);
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Structure de réponse OpenAI invalide');
     }
+
+    // Clean the response content to ensure it's valid JSON
+    let content = data.choices[0].message.content.trim();
+    
+    // Remove any markdown formatting if present
+    if (content.startsWith('```')) {
+      content = content.replace(/```json\n?/, '').replace(/```\n?$/, '');
+    }
+
+    console.log('Parsing JSON response:', content);
+    let recipeContent;
+    try {
+      recipeContent = JSON.parse(content);
+    } catch (error) {
+      console.error('JSON parse error:', error);
+      throw new Error(`Échec du parsing JSON : ${error.message}`);
+    }
+
+    // Validate the recipe structure
+    if (!recipeContent.name || 
+        !Array.isArray(recipeContent.ingredients) || 
+        !Array.isArray(recipeContent.instructions) || 
+        !recipeContent.nutritional_info) {
+      console.error('Invalid recipe structure:', recipeContent);
+      throw new Error('Structure de la recette invalide');
+    }
+
+    // Ensure all fields are in the correct format
+    recipeContent.instructions = recipeContent.instructions.map(String);
+    recipeContent.ingredients = recipeContent.ingredients.map(ing => ({
+      item: String(ing.item),
+      quantity: String(ing.quantity),
+      unit: String(ing.unit)
+    }));
+
+    return new Response(JSON.stringify(recipeContent), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    console.error('Erreur dans la fonction generate-recipe:', error);
+    console.error('Error in generate-recipe function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
