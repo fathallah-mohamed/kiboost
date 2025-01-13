@@ -1,13 +1,27 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
-import { Recipe, ChildProfile, RecipeFilters } from "../types";
+import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from "../types";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const validateMealType = (mealType: string): MealType => {
+    const validMealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+    return validMealTypes.includes(mealType as MealType) 
+      ? mealType as MealType 
+      : 'dinner';
+  };
+
+  const validateDifficulty = (difficulty: string): Difficulty => {
+    const validDifficulties: Difficulty[] = ['easy', 'medium', 'hard'];
+    return validDifficulties.includes(difficulty as Difficulty) 
+      ? difficulty as Difficulty 
+      : 'medium';
+  };
 
   const generateRecipes = async (selectedChild: ChildProfile, filters?: RecipeFilters) => {
     setLoading(true);
@@ -44,6 +58,8 @@ export const useRecipeGeneration = () => {
           ...response.data,
           profile_id: session.user.id,
           is_generated: true,
+          meal_type: validateMealType(response.data.meal_type),
+          difficulty: validateDifficulty(response.data.difficulty),
         };
 
         const { data: savedRecipe, error: saveError } = await supabase
@@ -66,9 +82,9 @@ export const useRecipeGeneration = () => {
           nutritional_info: typeof savedRecipe.nutritional_info === 'string'
             ? JSON.parse(savedRecipe.nutritional_info)
             : savedRecipe.nutritional_info,
-          meal_type: savedRecipe.meal_type,
+          meal_type: validateMealType(savedRecipe.meal_type),
           preparation_time: savedRecipe.preparation_time,
-          difficulty: savedRecipe.difficulty,
+          difficulty: validateDifficulty(savedRecipe.difficulty),
           servings: savedRecipe.servings,
           image_url: savedRecipe.image_url,
           is_generated: savedRecipe.is_generated,
