@@ -19,9 +19,9 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
 
   const loading = recipesLoading || plannedRecipesLoading;
 
-  const handlePlanRecipe = async (recipe: Recipe, children: ChildProfile[]) => {
-    await planRecipe(recipe, children, selectedDate, userId);
-    // Supprimer toutes les recettes après la planification
+  const handlePlanRecipe = (recipe: Recipe, children: ChildProfile[]) => {
+    planRecipe(recipe, children, selectedDate, userId);
+    // Clear recipes after planning
     clearRecipes();
   };
 
@@ -34,7 +34,6 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
     planningRecipe: saving,
     planRecipe: handlePlanRecipe,
     viewMode,
-    setViewMode,
-    clearRecipes // Exposer la fonction pour permettre la suppression manuelle
+    setViewMode
   };
 };
