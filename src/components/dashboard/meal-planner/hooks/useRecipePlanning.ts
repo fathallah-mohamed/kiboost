@@ -14,40 +14,49 @@ export const useRecipePlanning = (userId: string) => {
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
       
-      // Créer un tableau de promesses pour la suppression des repas existants
-      const deletePromises = children.map(child => 
-        supabase
+      // Pour chaque enfant, on va d'abord vérifier si un repas existe déjà
+      for (const child of children) {
+        // Vérifier si un repas existe déjà pour cet enfant à cette date et ce moment de la journée
+        const { data: existingMeal } = await supabase
           .from('meal_plans')
-          .delete()
+          .select()
           .match({
             profile_id: userId,
             date: formattedDate,
             meal_time: recipe.meal_type,
             child_id: child.id
           })
-      );
+          .single();
 
-      // Attendre que toutes les suppressions soient terminées
-      await Promise.all(deletePromises);
+        if (existingMeal) {
+          // Si un repas existe, on le met à jour
+          const { error: updateError } = await supabase
+            .from('meal_plans')
+            .update({
+              recipe_id: recipe.id,
+              updated_at: new Date().toISOString()
+            })
+            .match({
+              profile_id: userId,
+              date: formattedDate,
+              meal_time: recipe.meal_type,
+              child_id: child.id
+            });
 
-      // Créer les nouveaux meal plans
-      const mealPlans = children.map(child => ({
-        profile_id: userId,
-        recipe_id: recipe.id,
-        date: formattedDate,
-        child_id: child.id,
-        meal_time: recipe.meal_type || 'dinner'
-      }));
+          if (updateError) throw updateError;
+        } else {
+          // Si aucun repas n'existe, on en crée un nouveau
+          const { error: insertError } = await supabase
+            .from('meal_plans')
+            .insert({
+              profile_id: userId,
+              recipe_id: recipe.id,
+              date: formattedDate,
+              child_id: child.id,
+              meal_time: recipe.meal_type || 'dinner'
+            });
 
-      // Insérer les nouveaux meal plans un par un pour éviter les conflits
-      for (const mealPlan of mealPlans) {
-        const { error } = await supabase
-          .from('meal_plans')
-          .insert(mealPlan);
-
-        if (error) {
-          console.error('Error inserting meal plan:', error);
-          throw error;
+          if (insertError) throw insertError;
         }
       }
 
