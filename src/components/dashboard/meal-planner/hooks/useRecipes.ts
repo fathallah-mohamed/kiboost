@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Recipe } from '../../types';
 import { useToast } from '@/components/ui/use-toast';
-import { Recipe, MealType, Difficulty } from '../../types';
 
 export const useRecipes = (userId: string) => {
-  const { toast } = useToast();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const fetchRecipes = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('recipes')
         .select('*')
@@ -17,26 +18,18 @@ export const useRecipes = (userId: string) => {
 
       if (error) throw error;
 
-      const parsedRecipes: Recipe[] = data?.map(recipe => ({
+      setRecipes(data.map(recipe => ({
         ...recipe,
-        ingredients: typeof recipe.ingredients === 'string' 
-          ? JSON.parse(recipe.ingredients) 
+        ingredients: typeof recipe.ingredients === 'string'
+          ? JSON.parse(recipe.ingredients)
           : recipe.ingredients,
         nutritional_info: typeof recipe.nutritional_info === 'string'
           ? JSON.parse(recipe.nutritional_info)
           : recipe.nutritional_info,
         instructions: Array.isArray(recipe.instructions)
           ? recipe.instructions
-          : [recipe.instructions].filter(Boolean),
-        meal_type: recipe.meal_type as MealType,
-        difficulty: recipe.difficulty as Difficulty
-      })) || [];
-
-      const uniqueRecipes = parsedRecipes.filter((recipe, index, self) =>
-        index === self.findIndex((r) => r.name === recipe.name)
-      );
-
-      setRecipes(uniqueRecipes);
+          : [recipe.instructions].filter(Boolean)
+      })));
     } catch (error) {
       console.error('Error fetching recipes:', error);
       toast({
@@ -49,9 +42,13 @@ export const useRecipes = (userId: string) => {
     }
   };
 
+  const clearRecipes = () => {
+    setRecipes([]);
+  };
+
   useEffect(() => {
     fetchRecipes();
   }, [userId]);
 
-  return { recipes, loading };
+  return { recipes, loading, clearRecipes };
 };

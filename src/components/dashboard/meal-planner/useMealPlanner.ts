@@ -8,7 +8,7 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
 
-  const { recipes, loading: recipesLoading } = useRecipes(userId);
+  const { recipes: availableRecipes, loading: recipesLoading, clearRecipes } = useRecipes(userId);
   const { plannedRecipes, loading: plannedRecipesLoading } = usePlannedRecipes(
     userId,
     selectedDate,
@@ -21,12 +21,14 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
 
   const handlePlanRecipe = (recipe: Recipe, children: ChildProfile[]) => {
     planRecipe(recipe, children, selectedDate, userId);
+    // Clear recipes after planning
+    clearRecipes();
   };
 
   return {
     selectedDate,
     setSelectedDate,
-    recipes,
+    recipes: availableRecipes,
     plannedRecipes,
     loading,
     planningRecipe: saving,
