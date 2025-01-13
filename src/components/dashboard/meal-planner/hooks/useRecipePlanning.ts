@@ -1,10 +1,63 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Recipe } from "../../types";
-import { ChildProfile } from "../../types";
+import { Recipe, ChildProfile } from "../../types";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+
+interface MealPlanOperation {
+  userId: string;
+  child: ChildProfile;
+  recipe: Recipe;
+  formattedDate: string;
+}
+
+const checkExistingMeal = async ({ userId, child, recipe, formattedDate }: MealPlanOperation) => {
+  const { data: existingMeal, error } = await supabase
+    .from('meal_plans')
+    .select()
+    .eq('profile_id', userId)
+    .eq('date', formattedDate)
+    .eq('child_id', child.id)
+    .eq('meal_time', recipe.meal_type)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error checking existing meal:', error);
+    throw error;
+  }
+
+  return existingMeal;
+};
+
+const updateMealPlan = async ({ userId, child, recipe, formattedDate }: MealPlanOperation) => {
+  const { error } = await supabase
+    .from('meal_plans')
+    .update({
+      recipe_id: recipe.id,
+      updated_at: new Date().toISOString()
+    })
+    .eq('profile_id', userId)
+    .eq('date', formattedDate)
+    .eq('child_id', child.id)
+    .eq('meal_time', recipe.meal_type);
+
+  if (error) throw error;
+};
+
+const createMealPlan = async ({ userId, child, recipe, formattedDate }: MealPlanOperation) => {
+  const { error } = await supabase
+    .from('meal_plans')
+    .insert({
+      profile_id: userId,
+      recipe_id: recipe.id,
+      date: formattedDate,
+      child_id: child.id,
+      meal_time: recipe.meal_type || 'dinner'
+    });
+
+  if (error) throw error;
+};
 
 export const useRecipePlanning = () => {
   const [saving, setSaving] = useState(false);
@@ -19,48 +72,14 @@ export const useRecipePlanning = () => {
     const formattedDate = format(date, 'yyyy-MM-dd');
 
     try {
-      // Pour chaque enfant, on va gérer le repas
       for (const child of children) {
         try {
-          // Vérifier si un repas existe déjà pour cet enfant à cette date
-          const { data: existingMeal, error: queryError } = await supabase
-            .from('meal_plans')
-            .select()
-            .eq('profile_id', userId)
-            .eq('date', formattedDate)
-            .eq('child_id', child.id)
-            .eq('meal_time', recipe.meal_type)
-            .maybeSingle();
-
-          if (queryError) {
-            console.error('Error checking existing meal:', queryError);
-            throw queryError;
-          }
-
+          const existingMeal = await checkExistingMeal({ userId, child, recipe, formattedDate });
+          
           if (existingMeal) {
-            // Si un repas existe, on le met à jour
-            const { error: updateError } = await supabase
-              .from('meal_plans')
-              .update({
-                recipe_id: recipe.id,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', existingMeal.id);
-
-            if (updateError) throw updateError;
+            await updateMealPlan({ userId, child, recipe, formattedDate });
           } else {
-            // Si aucun repas n'existe, on en crée un nouveau
-            const { error: insertError } = await supabase
-              .from('meal_plans')
-              .insert({
-                profile_id: userId,
-                recipe_id: recipe.id,
-                date: formattedDate,
-                child_id: child.id,
-                meal_time: recipe.meal_type || 'dinner'
-              });
-
-            if (insertError) throw insertError;
+            await createMealPlan({ userId, child, recipe, formattedDate });
           }
         } catch (error: any) {
           console.error('Error managing meal plan:', error);
@@ -68,7 +87,6 @@ export const useRecipePlanning = () => {
         }
       }
 
-      // Afficher une notification de succès avec Sonner
       toast.success("Recette planifiée !", {
         description: `${recipe.name} a été planifiée pour ${children.length} enfant(s) le ${format(date, 'dd MMMM yyyy', { locale: fr })}`,
         duration: 4000,
