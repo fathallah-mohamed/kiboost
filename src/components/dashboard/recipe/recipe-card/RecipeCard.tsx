@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Clock, Heart, Star, Share2, ChevronDown, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Recipe } from "../../types";
 import { NutritionalScore } from "./NutritionalScore";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -14,7 +14,7 @@ interface RecipeCardProps {
 }
 
 export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
-  const [showDetails, setShowDetails] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
   const handleShare = async () => {
@@ -54,10 +54,10 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
               <Button
                 variant="outline"
                 className="group-hover:bg-accent/5"
-                onClick={() => setShowDetails(true)}
+                onClick={() => setIsOpen(!isOpen)}
               >
-                <ChevronDown className="w-4 h-4 mr-2" />
-                Déplier la recette
+                <ChevronDown className={`w-4 h-4 mr-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                {isOpen ? 'Replier la recette' : 'Déplier la recette'}
               </Button>
               <Button
                 onClick={() => onAdd?.(recipe)}
@@ -101,37 +101,32 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
               value={recipe.nutritional_info.protein}
             />
           </div>
+
+          {/* Contenu dépliable */}
+          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+            <CollapsibleContent className="space-y-6">
+              <div>
+                <h4 className="font-semibold mb-2">Ingrédients</h4>
+                <ul className="list-disc pl-4 space-y-1">
+                  {recipe.ingredients.map((ingredient, index) => (
+                    <li key={index}>
+                      {ingredient.quantity} {ingredient.unit} {ingredient.item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Instructions</h4>
+                <ol className="list-decimal pl-4 space-y-2">
+                  {recipe.instructions.map((step, index) => (
+                    <li key={index}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </div>
-
-      {/* Modal de détails */}
-      <Sheet open={showDetails} onOpenChange={setShowDetails}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{recipe.name}</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 space-y-6">
-            <div>
-              <h4 className="font-semibold mb-2">Ingrédients</h4>
-              <ul className="list-disc pl-4 space-y-1">
-                {recipe.ingredients.map((ingredient, index) => (
-                  <li key={index}>
-                    {ingredient.quantity} {ingredient.unit} {ingredient.item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">Instructions</h4>
-              <ol className="list-decimal pl-4 space-y-2">
-                {recipe.instructions.map((step, index) => (
-                  <li key={index}>{step}</li>
-                ))}
-              </ol>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
     </Card>
   );
 };
