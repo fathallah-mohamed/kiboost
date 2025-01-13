@@ -19,18 +19,16 @@ export const useRecipePlanning = () => {
     const formattedDate = format(date, 'yyyy-MM-dd');
 
     try {
-      // Pour chaque enfant, on va d'abord vérifier si un repas existe déjà
+      // Pour chaque enfant, on va gérer le repas
       for (const child of children) {
         // Vérifier si un repas existe déjà pour cet enfant à cette date et ce moment de la journée
         const { data: existingMeal, error: queryError } = await supabase
           .from('meal_plans')
           .select()
-          .match({
-            profile_id: userId,
-            date: formattedDate,
-            meal_time: recipe.meal_type,
-            child_id: child.id
-          })
+          .eq('profile_id', userId)
+          .eq('date', formattedDate)
+          .eq('meal_time', recipe.meal_type)
+          .eq('child_id', child.id)
           .maybeSingle();
 
         if (queryError) {
@@ -40,21 +38,20 @@ export const useRecipePlanning = () => {
 
         try {
           if (existingMeal) {
-            // Si un repas existe, on le met à jour
-            const { error: updateError } = await supabase
-              .from('meal_plans')
-              .update({
-                recipe_id: recipe.id,
-                updated_at: new Date().toISOString()
-              })
-              .match({
-                profile_id: userId,
-                date: formattedDate,
-                meal_time: recipe.meal_type,
-                child_id: child.id
-              });
+            // Si un repas existe et qu'il est différent, on le met à jour
+            if (existingMeal.recipe_id !== recipe.id) {
+              const { error: updateError } = await supabase
+                .from('meal_plans')
+                .update({
+                  recipe_id: recipe.id,
+                  updated_at: new Date().toISOString()
+                })
+                .match({
+                  id: existingMeal.id
+                });
 
-            if (updateError) throw updateError;
+              if (updateError) throw updateError;
+            }
           } else {
             // Si aucun repas n'existe, on en crée un nouveau
             const { error: insertError } = await supabase
