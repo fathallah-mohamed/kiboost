@@ -1,124 +1,22 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { Loader2, ChefHat } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-interface ChildProfile {
-  id: string;
-  name: string;
-  age: number;
-  allergies: string[];
-  preferences: string[];
-}
-
-interface Recipe {
-  id: string;
-  name: string;
-  ingredients: Array<{
-    item: string;
-    quantity: string;
-    unit: string;
-  }>;
-  instructions: string[];
-  nutritional_info: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-}
+import { Button } from "@/components/ui/button";
+import { Loader2, ChefHat } from 'lucide-react';
+import { RecipeCard } from "./recipe/RecipeCard";
+import { useRecipeGeneration } from "./recipe/useRecipeGeneration";
+import { ChildProfile } from "./types";
 
 interface RecipeGeneratorProps {
   selectedChild: ChildProfile | null;
 }
 
 export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
-  const [loading, setLoading] = useState(false);
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { loading, recipe, error, generateRecipe } = useRecipeGeneration();
 
-  const generateRecipe = async () => {
+  const handleGenerateRecipe = async () => {
     if (!selectedChild) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Veuillez sélectionner un profil d'enfant",
-      });
       return;
     }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
-
-      const maxRetries = 3;
-      let attempt = 0;
-      let lastError;
-
-      while (attempt < maxRetries) {
-        try {
-          const response = await supabase.functions.invoke('generate-recipe', {
-            body: {
-              childProfile: {
-                age: selectedChild.age,
-                allergies: selectedChild.allergies,
-                preferences: selectedChild.preferences,
-              },
-            },
-          });
-
-          if (response.error) throw response.error;
-          
-          // Ensure instructions is an array of strings
-          const recipeData = {
-            ...response.data,
-            instructions: Array.isArray(response.data.instructions) 
-              ? response.data.instructions 
-              : [response.data.instructions].filter(Boolean)
-          };
-          
-          setRecipe(recipeData);
-          toast({
-            title: "Recette générée",
-            description: "Une nouvelle recette a été créée pour " + selectedChild.name,
-          });
-          return;
-        } catch (error: any) {
-          lastError = error;
-          console.error(`Attempt ${attempt + 1} failed:`, error);
-          
-          if (error.message?.includes('Too Many Requests')) {
-            attempt++;
-            if (attempt < maxRetries) {
-              const delay = Math.pow(2, attempt) * 1000;
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue;
-            }
-          } else {
-            throw error;
-          }
-        }
-      }
-      
-      throw lastError;
-    } catch (error: any) {
-      console.error('Error generating recipe:', error);
-      setError(error.message || "Une erreur est survenue lors de la génération de la recette");
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de générer la recette. Veuillez réessayer dans quelques instants.",
-      });
-    } finally {
-      setLoading(false);
-    }
+    await generateRecipe(selectedChild);
   };
 
   return (
@@ -126,8 +24,8 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Générateur de recettes</h2>
         <Button 
-          onClick={generateRecipe} 
-          disabled={loading}
+          onClick={handleGenerateRecipe} 
+          disabled={loading || !selectedChild}
         >
           {loading ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -144,59 +42,7 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
         </Alert>
       )}
 
-      {recipe && (
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">{recipe.name}</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-2">Ingrédients</h4>
-              <ul className="list-disc list-inside space-y-1">
-                {recipe.ingredients.map((ingredient, index) => (
-                  <li key={index}>
-                    {ingredient.quantity} {ingredient.unit} {ingredient.item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-2">Instructions</h4>
-              <ol className="list-decimal list-inside space-y-1">
-                {Array.isArray(recipe.instructions) ? (
-                  recipe.instructions.map((step, index) => (
-                    <li key={index}>{step}</li>
-                  ))
-                ) : (
-                  <li>Instructions non disponibles</li>
-                )}
-              </ol>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <h4 className="font-semibold mb-2">Informations nutritionnelles</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="text-center p-2 bg-secondary/20 rounded">
-                <div className="font-semibold">{recipe.nutritional_info.calories}</div>
-                <div className="text-sm text-muted-foreground">Calories</div>
-              </div>
-              <div className="text-center p-2 bg-secondary/20 rounded">
-                <div className="font-semibold">{recipe.nutritional_info.protein}g</div>
-                <div className="text-sm text-muted-foreground">Protéines</div>
-              </div>
-              <div className="text-center p-2 bg-secondary/20 rounded">
-                <div className="font-semibold">{recipe.nutritional_info.carbs}g</div>
-                <div className="text-sm text-muted-foreground">Glucides</div>
-              </div>
-              <div className="text-center p-2 bg-secondary/20 rounded">
-                <div className="font-semibold">{recipe.nutritional_info.fat}g</div>
-                <div className="text-sm text-muted-foreground">Lipides</div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
+      {recipe && <RecipeCard recipe={recipe} />}
     </div>
   );
 };
