@@ -4,7 +4,7 @@ import { WeeklyCalendar } from './meal-planner/WeeklyCalendar';
 import { useMealPlanner } from './meal-planner/useMealPlanner';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CalendarDays, CalendarRange } from "lucide-react";
-import { ChildSelector } from './recipe/ChildSelector';
+import { MultiChildSelector } from './recipe/MultiChildSelector';
 import { ChildProfile } from './types';
 import { useState } from 'react';
 
@@ -13,7 +13,7 @@ interface MealPlannerProps {
 }
 
 export const MealPlanner = ({ userId }: MealPlannerProps) => {
-  const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
+  const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   
   const {
     selectedDate,
@@ -25,19 +25,13 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
     planRecipe,
     viewMode,
     setViewMode
-  } = useMealPlanner(userId, selectedChild);
+  } = useMealPlanner(userId, selectedChildren);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold">Planificateur de repas</h2>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-          <div className="w-full sm:w-64">
-            <ChildSelector 
-              onSelectChild={setSelectedChild}
-              selectedChild={selectedChild}
-            />
-          </div>
           <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'week' | 'month')}>
             <ToggleGroupItem value="week" aria-label="Vue semaine">
               <CalendarDays className="h-4 w-4" />
@@ -50,6 +44,13 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
           </ToggleGroup>
         </div>
       </div>
+
+      <Card className="p-4">
+        <MultiChildSelector 
+          onSelectChildren={setSelectedChildren}
+          selectedChildren={selectedChildren}
+        />
+      </Card>
       
       <div className="grid grid-cols-1 gap-6">
         <Card className="p-4">
@@ -58,7 +59,7 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
             onSelectDate={setSelectedDate}
             plannedRecipes={plannedRecipes}
             viewMode={viewMode}
-            selectedChild={selectedChild}
+            selectedChildren={selectedChildren}
           />
         </Card>
 
@@ -66,7 +67,7 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
           recipes={recipes}
           loading={loading}
           planningRecipe={planningRecipe}
-          onPlanRecipe={(recipe) => planRecipe(recipe, selectedChild)}
+          onPlanRecipe={(recipe) => planRecipe(recipe, selectedChildren)}
         />
       </div>
     </div>

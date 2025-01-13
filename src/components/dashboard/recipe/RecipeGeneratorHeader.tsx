@@ -1,34 +1,28 @@
 import { Button } from "@/components/ui/button";
 import { Loader2, ChefHat } from 'lucide-react';
-import { ChildSelector } from "./ChildSelector";
+import { MultiChildSelector } from "./MultiChildSelector";
 import { ChildProfile } from "../types";
 
 interface RecipeGeneratorHeaderProps {
   loading: boolean;
-  selectedChild: ChildProfile | null;
-  onSelectChild: (child: ChildProfile | null) => void;
+  selectedChildren: ChildProfile[];
+  onSelectChildren: (children: ChildProfile[]) => void;
   onGenerateRecipes: () => void;
 }
 
 export const RecipeGeneratorHeader = ({
   loading,
-  selectedChild,
-  onSelectChild,
+  selectedChildren,
+  onSelectChildren,
   onGenerateRecipes
 }: RecipeGeneratorHeaderProps) => {
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <h2 className="text-2xl font-bold">Générateur de recettes</h2>
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-        <div className="w-full sm:w-64">
-          <ChildSelector 
-            onSelectChild={onSelectChild}
-            selectedChild={selectedChild}
-          />
-        </div>
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 className="text-2xl font-bold">Générateur de recettes</h2>
         <Button 
           onClick={onGenerateRecipes} 
-          disabled={loading || !selectedChild}
+          disabled={loading || selectedChildren.length === 0}
           className="whitespace-nowrap"
         >
           {loading ? (
@@ -39,6 +33,11 @@ export const RecipeGeneratorHeader = ({
           Générer des recettes
         </Button>
       </div>
+      <MultiChildSelector 
+        onSelectChildren={onSelectChildren}
+        selectedChildren={selectedChildren}
+        mode="compact"
+      />
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { RecipeList } from "./recipe/RecipeList";
 import { useRecipeGeneration } from "./recipe/useRecipeGeneration";
 
 export const RecipeGenerator = () => {
-  const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
+  const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const [mealType, setMealType] = useState<MealType | "all">("breakfast");
   const [maxPrepTime, setMaxPrepTime] = useState(10);
   const [difficulty, setDifficulty] = useState<Difficulty | "all">("easy");
@@ -19,7 +19,7 @@ export const RecipeGenerator = () => {
 
   useEffect(() => {
     fetchPlannedRecipes();
-  }, [selectedChild]);
+  }, [selectedChildren]);
 
   const fetchPlannedRecipes = async () => {
     try {
@@ -31,8 +31,8 @@ export const RecipeGenerator = () => {
         .select('recipe_id')
         .eq('profile_id', session.user.id);
 
-      if (selectedChild) {
-        query.eq('child_id', selectedChild.id);
+      if (selectedChildren.length > 0) {
+        query.in('child_id', selectedChildren.map(child => child.id));
       }
 
       const { data, error } = await query;
@@ -45,8 +45,16 @@ export const RecipeGenerator = () => {
   };
 
   const handleGenerateRecipes = async () => {
-    if (!selectedChild) return;
-    await generateRecipes(selectedChild, {
+    if (selectedChildren.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Veuillez sélectionner au moins un enfant.",
+      });
+      return;
+    }
+
+    await generateRecipes(selectedChildren[0], {
       mealType: mealType === "all" ? undefined : mealType,
       maxPrepTime,
       difficulty: difficulty === "all" ? undefined : difficulty,
@@ -79,21 +87,23 @@ export const RecipeGenerator = () => {
 
       if (recipeError) throw recipeError;
 
-      // Save to meal plan with child_id
+      // Save to meal plan for each selected child
+      const mealPlans = selectedChildren.map(child => ({
+        profile_id: session.user.id,
+        recipe_id: savedRecipe.id,
+        child_id: child.id,
+        date: new Date().toISOString().split('T')[0],
+      }));
+
       const { error: planError } = await supabase
         .from('meal_plans')
-        .insert([{
-          profile_id: session.user.id,
-          recipe_id: savedRecipe.id,
-          child_id: selectedChild?.id,
-          date: new Date().toISOString().split('T')[0],
-        }]);
+        .insert(mealPlans);
 
       if (planError) throw planError;
 
       toast({
         title: "Recette sauvegardée",
-        description: "La recette a été ajoutée à votre planificateur",
+        description: `La recette a été ajoutée au planificateur pour ${selectedChildren.length} enfant(s)`,
       });
 
       await fetchPlannedRecipes();
@@ -111,8 +121,8 @@ export const RecipeGenerator = () => {
     <div className="space-y-6">
       <RecipeGeneratorHeader
         loading={loading}
-        selectedChild={selectedChild}
-        onSelectChild={setSelectedChild}
+        selectedChildren={selectedChildren}
+        onSelectChildren={setSelectedChildren}
         onGenerateRecipes={handleGenerateRecipes}
       />
 
