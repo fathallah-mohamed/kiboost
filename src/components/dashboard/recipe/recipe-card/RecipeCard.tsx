@@ -11,9 +11,10 @@ interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
   onAdd?: (recipe: Recipe) => void;
+  compact?: boolean;  // Added this prop
 }
 
-export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: RecipeCardProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const { toast } = useToast();
 
@@ -63,6 +64,27 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
     }
   };
 
+  if (compact) {
+    return (
+      <Card className="p-2">
+        <div className="flex items-center gap-2">
+          <img 
+            src={recipe.image_url} 
+            alt={recipe.name}
+            className="w-12 h-12 rounded object-cover"
+          />
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-medium truncate">{recipe.name}</h4>
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <Clock className="w-3 h-3" />
+              <span>{recipe.preparation_time} min</span>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <div className="relative">
@@ -73,7 +95,6 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         
-        {/* Actions flottantes */}
         <div className="absolute top-4 right-4 flex gap-2">
           <Button
             variant="secondary"
@@ -98,7 +119,6 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* En-tête */}
         <div>
           <h3 className="text-2xl font-bold text-primary mb-2">{recipe.name}</h3>
           <div className="flex items-center gap-4 text-gray-600">
@@ -113,7 +133,6 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
           </div>
         </div>
 
-        {/* Informations nutritionnelles */}
         <div className="grid gap-4">
           <NutritionalGauge
             value={recipe.nutritional_info.carbs}
@@ -135,14 +154,12 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
           />
         </div>
 
-        {/* Texte informatif santé */}
         <p className="text-sm text-gray-600 bg-secondary/20 p-4 rounded-lg">
           Cette recette est particulièrement riche en protéines et fibres, idéale pour la croissance 
           et le développement de votre enfant. Les ingrédients choisis favorisent la concentration 
           et l'énergie tout au long de la journée.
         </p>
 
-        {/* Bouton d'action principal */}
         {onAdd && (
           <div className="flex justify-center">
             <Button
