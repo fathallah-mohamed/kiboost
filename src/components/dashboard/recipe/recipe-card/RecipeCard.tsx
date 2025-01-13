@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Recipe } from "../../types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Clock, Eye, Plus, Droplet, Candy, Wheat } from "lucide-react";
+import { Clock, Eye, Plus, Droplet, Candy, Cookie } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NutritionalBadge } from "./NutritionalBadge";
 import { HealthScore } from "./HealthScore";
 import { DietaryLabel } from "./DietaryLabel";
+import { Recipe } from "../../types";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -19,17 +19,6 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
 
-  const handleAdd = () => {
-    if (onAdd) {
-      onAdd(recipe);
-      toast({
-        title: "Recette ajoutée",
-        description: "La recette a été ajoutée au planificateur",
-      });
-    }
-  };
-
-  // Calculer les scores de santé basés sur les valeurs nutritionnelles
   const getSugarScore = () => {
     const carbs = recipe.nutritional_info.carbs;
     if (carbs < 30) return 'low';
@@ -42,6 +31,16 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
     if (fat < 10) return 'low';
     if (fat < 20) return 'medium';
     return 'high';
+  };
+
+  const handleAdd = () => {
+    if (onAdd) {
+      onAdd(recipe);
+      toast({
+        title: "Recette ajoutée",
+        description: "La recette a été ajoutée au planificateur",
+      });
+    }
   };
 
   return (
