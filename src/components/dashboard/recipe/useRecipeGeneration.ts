@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
-import { Recipe, ChildProfile, RecipeFilters } from "../types";
+import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from "../types";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
