@@ -62,9 +62,6 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
             preferences: selectedChild.preferences,
           },
         },
-        headers: {
-          'x-user-id': session.user.id,
-        },
       });
 
       if (response.error) throw response.error;
@@ -74,7 +71,7 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
         title: "Recette générée",
         description: "Une nouvelle recette a été créée pour " + selectedChild.name,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating recipe:', error);
       toast({
         variant: "destructive",
@@ -92,7 +89,7 @@ export const RecipeGenerator = ({ selectedChild }: RecipeGeneratorProps) => {
         <h2 className="text-2xl font-bold">Générateur de recettes</h2>
         <Button 
           onClick={generateRecipe} 
-          disabled={loading || !selectedChild}
+          disabled={loading}
         >
           {loading ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
