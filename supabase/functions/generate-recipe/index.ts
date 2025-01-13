@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -57,24 +56,22 @@ serve(async (req) => {
     4. Safe considering any allergies
     5. Takes into account preferences
     
-    Format the response exactly like this example:
+    The response MUST be a valid JSON object with EXACTLY this structure:
     {
-      "name": "Banana Oatmeal Bowl",
+      "name": "Recipe Name",
       "ingredients": [
-        {"item": "rolled oats", "quantity": "1/2", "unit": "cup"},
-        {"item": "banana", "quantity": "1", "unit": "medium"}
+        {"item": "ingredient name", "quantity": "amount", "unit": "measurement unit"}
       ],
-      "instructions": [
-        "Pour oats into a bowl",
-        "Add milk and microwave for 2 minutes"
-      ],
+      "instructions": ["step 1", "step 2", "etc"],
       "nutritional_info": {
-        "calories": 300,
-        "protein": 8,
-        "carbs": 45,
-        "fat": 6
+        "calories": number,
+        "protein": number,
+        "carbs": number,
+        "fat": number
       }
-    }`;
+    }
+    
+    Make sure all numbers are actual numbers, not strings. The response must be valid JSON.`;
 
     const generateRecipeWithOpenAI = async () => {
       console.log('Making request to OpenAI API...');
@@ -89,7 +86,7 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: 'You are a professional nutritionist specializing in children\'s dietary needs. Generate appropriate, safe, and healthy breakfast recipes.'
+              content: 'You are a professional nutritionist specializing in children\'s dietary needs. You must respond with valid JSON only, no additional text or explanations.'
             },
             { role: 'user', content: prompt }
           ],
@@ -104,7 +101,7 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('OpenAI response received:', data);
+      console.log('Raw OpenAI response:', data);
       return data;
     };
 
@@ -112,7 +109,30 @@ serve(async (req) => {
     console.log('OpenAI response processed');
     
     try {
-      const recipeContent = JSON.parse(data.choices[0].message.content);
+      if (!data.choices?.[0]?.message?.content) {
+        console.error('Invalid OpenAI response structure:', data);
+        throw new Error('Invalid response structure from OpenAI');
+      }
+
+      const content = data.choices[0].message.content.trim();
+      console.log('Attempting to parse content:', content);
+
+      let recipeContent;
+      try {
+        recipeContent = JSON.parse(content);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        console.error('Content that failed to parse:', content);
+        throw new Error('Failed to parse OpenAI response as JSON');
+      }
+
+      // Validate the recipe structure
+      if (!recipeContent.name || !Array.isArray(recipeContent.ingredients) || 
+          !Array.isArray(recipeContent.instructions) || !recipeContent.nutritional_info) {
+        console.error('Invalid recipe structure:', recipeContent);
+        throw new Error('Recipe data is missing required fields');
+      }
+
       console.log('Recipe generated:', recipeContent);
 
       const supabaseClient = createClient(
@@ -141,8 +161,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (parseError) {
-      console.error('Error parsing OpenAI response:', parseError);
-      throw new Error('Failed to parse recipe data from OpenAI response');
+      console.error('Error parsing or validating recipe data:', parseError);
+      throw new Error(`Failed to parse or validate recipe data: ${parseError.message}`);
     }
   } catch (error) {
     console.error('Error in generate-recipe function:', error);
