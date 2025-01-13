@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Clock, Eye, Plus, Droplet, Candy, Cookie } from "lucide-react";
+import { Clock, Eye, Plus, Droplet, Candy, Leaf } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NutritionalBadge } from "./NutritionalBadge";
 import { HealthScore } from "./HealthScore";
@@ -45,16 +45,20 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
 
   return (
     <>
-      <Card className="p-4 hover:shadow-lg transition-shadow duration-200">
-        <div className="space-y-4">
-          {/* En-tête */}
+      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg bg-gradient-to-br from-white to-gray-50">
+        <div className="p-6 space-y-6">
+          {/* En-tête de la recette */}
           <div className="space-y-2">
-            <h3 className="text-xl font-bold text-primary">{recipe.name}</h3>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <h3 className="text-2xl font-bold text-primary group-hover:text-primary/80 transition-colors">
+              {recipe.name}
+            </h3>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
                 {recipe.preparation_time} min
               </span>
+              <span className="text-2xl">•</span>
+              <span className="capitalize">{recipe.difficulty}</span>
             </div>
           </div>
 
@@ -66,7 +70,7 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
           </div>
 
           {/* Valeurs nutritionnelles */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <NutritionalBadge
               label="Calories"
               value={recipe.nutritional_info.calories}
@@ -91,7 +95,7 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
           </div>
 
           {/* Scores de santé */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <HealthScore
               label="Sucres"
               score={getSugarScore()}
@@ -105,10 +109,10 @@ export const RecipeCard = ({ recipe, onAdd, isPlanned }: RecipeCardProps) => {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-3 pt-2">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 group-hover:bg-accent/5"
               onClick={() => setShowDetails(true)}
             >
               <Eye className="w-4 h-4 mr-2" />
