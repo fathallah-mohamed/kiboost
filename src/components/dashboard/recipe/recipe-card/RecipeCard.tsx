@@ -2,20 +2,22 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Recipe } from "../../types";
-import { Clock, Heart, Share2, CalendarPlus, Gauge, Cookie, Beef, Wheat } from "lucide-react";
+import { Clock, Heart, Share2, CalendarPlus, Gauge, Cookie, Beef, Wheat, ChevronDown } from "lucide-react";
 import { NutritionalGauge } from "./NutritionalGauge";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
   onAdd?: (recipe: Recipe) => void;
-  compact?: boolean;  // Added this prop
+  compact?: boolean;
 }
 
 export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: RecipeCardProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
   const toggleFavorite = async () => {
@@ -88,11 +90,13 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: Recipe
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <div className="relative">
-        <img 
-          src={recipe.image_url} 
-          alt={recipe.name}
-          className="w-full h-48 object-cover"
-        />
+        {recipe.image_url && (
+          <img 
+            src={recipe.image_url} 
+            alt={recipe.name}
+            className="w-full h-48 object-cover"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         
         <div className="absolute top-4 right-4 flex gap-2">
@@ -133,26 +137,61 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: Recipe
           </div>
         </div>
 
-        <div className="grid gap-4">
-          <NutritionalGauge
-            value={recipe.nutritional_info.carbs}
-            maxValue={100}
-            label="Glucides"
-            icon={<Cookie className="w-4 h-4" />}
-          />
-          <NutritionalGauge
-            value={recipe.nutritional_info.protein}
-            maxValue={50}
-            label="Protéines"
-            icon={<Beef className="w-4 h-4" />}
-          />
-          <NutritionalGauge
-            value={recipe.nutritional_info.fat}
-            maxValue={50}
-            label="Lipides"
-            icon={<Wheat className="w-4 h-4" />}
-          />
-        </div>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <div className="grid gap-4">
+            <NutritionalGauge
+              value={recipe.nutritional_info.carbs}
+              maxValue={100}
+              label="Glucides"
+              icon={<Cookie className="w-4 h-4" />}
+            />
+            <NutritionalGauge
+              value={recipe.nutritional_info.protein}
+              maxValue={50}
+              label="Protéines"
+              icon={<Beef className="w-4 h-4" />}
+            />
+            <NutritionalGauge
+              value={recipe.nutritional_info.fat}
+              maxValue={50}
+              label="Lipides"
+              icon={<Wheat className="w-4 h-4" />}
+            />
+          </div>
+
+          <CollapsibleContent className="mt-6 space-y-6">
+            <div className="space-y-4">
+              <h4 className="font-semibold text-lg">Ingrédients</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                {recipe.ingredients.map((ingredient, index) => (
+                  <li key={index} className="text-gray-600">
+                    {ingredient.quantity} {ingredient.unit} {ingredient.item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-semibold text-lg">Instructions</h4>
+              <ol className="list-decimal pl-5 space-y-2">
+                {recipe.instructions.map((instruction, index) => (
+                  <li key={index} className="text-gray-600">{instruction}</li>
+                ))}
+              </ol>
+            </div>
+          </CollapsibleContent>
+
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(!isOpen)}
+              className="w-full"
+            >
+              <ChevronDown className={`w-4 h-4 mr-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+              {isOpen ? 'Masquer les détails' : 'Voir les détails'}
+            </Button>
+          </div>
+        </Collapsible>
 
         <p className="text-sm text-gray-600 bg-secondary/20 p-4 rounded-lg">
           Cette recette est particulièrement riche en protéines et fibres, idéale pour la croissance 
