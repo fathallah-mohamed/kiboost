@@ -23,6 +23,7 @@ serve(async (req) => {
 
   try {
     if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
       throw new Error('OpenAI API key not configured');
     }
 
@@ -43,12 +44,13 @@ serve(async (req) => {
       console.log('Successfully parsed recipes:', recipes);
     } catch (error) {
       console.error('JSON parse error:', error);
-      throw new Error(`Échec du parsing JSON : ${error.message}`);
+      console.error('Content that failed to parse:', content);
+      throw new Error(`Failed to parse JSON: ${error.message}`);
     }
 
     if (!Array.isArray(recipes)) {
       console.error('Invalid recipes structure:', recipes);
-      throw new Error('Structure des recettes invalide');
+      throw new Error('Invalid recipes structure');
     }
 
     // Add generated flag and timestamps to each recipe

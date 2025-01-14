@@ -15,9 +15,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         messages: [
           {
             role: 'system',
-            content: `Tu es un chef cuisinier français créatif qui génère des recettes adaptées aux enfants.
-            IMPORTANT: Réponds UNIQUEMENT avec un tableau JSON de 3 recettes, sans AUCUN texte supplémentaire.
-            Format attendu: [{"name": "Nom de la recette", "ingredients": [{"item": "ingrédient", "quantity": "quantité", "unit": "unité"}], "instructions": ["étape 1", "étape 2"], "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}, "meal_type": "breakfast|lunch|dinner|snack", "preparation_time": 30, "difficulty": "easy|medium|hard", "servings": 4}]`
+            content: 'You are a recipe generator. Respond ONLY with a valid JSON array of exactly 3 recipes. Each recipe must have: name (string), ingredients (array of {item, quantity, unit}), instructions (array of strings), nutritional_info (object with calories, protein, carbs, fat as numbers), meal_type (string), preparation_time (number), difficulty (string), servings (number).'
           },
           { role: 'user', content: prompt }
         ],
@@ -31,18 +29,19 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
     if (!response.ok) {
       const error = await response.json();
       console.error('OpenAI API error:', error);
-      throw new Error(`Erreur API OpenAI : ${error.error?.message || response.statusText}`);
+      throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
     }
 
     const data: OpenAIResponse = await response.json();
     console.log('Raw OpenAI response:', data);
     
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Structure de réponse OpenAI invalide');
+      console.error('Invalid OpenAI response structure:', data);
+      throw new Error('Invalid OpenAI response structure');
     }
 
     let content = data.choices[0].message.content.trim();
-    console.log('Trimmed content:', content);
+    console.log('Processing content:', content);
 
     // Remove any markdown code block syntax if present
     content = content.replace(/```json\n?/, '').replace(/```\n?$/, '');
@@ -54,7 +53,13 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
       console.log('Successfully parsed JSON:', parsed);
       
       if (!Array.isArray(parsed)) {
-        throw new Error('La réponse doit être un tableau de recettes');
+        console.error('Response is not an array:', parsed);
+        throw new Error('Response must be an array of recipes');
+      }
+
+      if (parsed.length !== 3) {
+        console.error('Wrong number of recipes:', parsed.length);
+        throw new Error('Must generate exactly 3 recipes');
       }
       
       // Validate each recipe has the required fields
@@ -72,17 +77,20 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         
         const missingFields = requiredFields.filter(field => !recipe[field]);
         if (missingFields.length > 0) {
-          throw new Error(`La recette ${index + 1} manque les champs requis: ${missingFields.join(', ')}`);
+          console.error(`Recipe ${index + 1} missing fields:`, missingFields);
+          throw new Error(`Recipe ${index + 1} missing required fields: ${missingFields.join(', ')}`);
         }
 
         // Validate ingredients structure
         if (!Array.isArray(recipe.ingredients)) {
-          throw new Error(`La recette ${index + 1} doit avoir un tableau d'ingrédients`);
+          console.error(`Recipe ${index + 1} invalid ingredients:`, recipe.ingredients);
+          throw new Error(`Recipe ${index + 1} must have an array of ingredients`);
         }
 
         recipe.ingredients.forEach((ingredient: any, i: number) => {
           if (!ingredient.item || !ingredient.quantity || !ingredient.unit) {
-            throw new Error(`Ingrédient ${i + 1} de la recette ${index + 1} invalide`);
+            console.error(`Recipe ${index + 1} ingredient ${i + 1} invalid:`, ingredient);
+            throw new Error(`Recipe ${index + 1}, ingredient ${i + 1} must have item, quantity, and unit`);
           }
         });
 
@@ -92,12 +100,14 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
           field => typeof recipe.nutritional_info[field] !== 'number'
         );
         if (missingNutritionalFields.length > 0) {
-          throw new Error(`La recette ${index + 1} a des informations nutritionnelles invalides`);
+          console.error(`Recipe ${index + 1} invalid nutritional info:`, recipe.nutritional_info);
+          throw new Error(`Recipe ${index + 1} has invalid nutritional information`);
         }
 
         // Validate instructions array
         if (!Array.isArray(recipe.instructions) || recipe.instructions.length === 0) {
-          throw new Error(`La recette ${index + 1} doit avoir des instructions valides`);
+          console.error(`Recipe ${index + 1} invalid instructions:`, recipe.instructions);
+          throw new Error(`Recipe ${index + 1} must have valid instructions`);
         }
       });
       
@@ -105,7 +115,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
     } catch (error) {
       console.error('Error parsing or validating OpenAI response:', error);
       console.error('Raw content that failed to parse:', content);
-      throw new Error(`Erreur de validation: ${error.message}`);
+      throw new Error(`Validation error: ${error.message}`);
     }
   } catch (error) {
     console.error('Error in generateRecipesWithOpenAI:', error);
