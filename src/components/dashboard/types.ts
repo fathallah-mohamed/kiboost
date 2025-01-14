@@ -9,6 +9,11 @@ export interface ChildProfile {
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
+export interface HealthBenefit {
+  icon: string;
+  description: string;
+}
+
 export interface Recipe {
   id: string;
   name: string;
@@ -33,6 +38,7 @@ export interface Recipe {
   created_at: string;
   updated_at: string;
   profile_id: string;
+  health_benefits?: HealthBenefit[];
 }
 
 export interface RecipeRating {

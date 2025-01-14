@@ -304,6 +304,7 @@ export type Database = {
         Row: {
           created_at: string
           difficulty: string
+          health_benefits: Json | null
           id: string
           image_url: string | null
           ingredients: Json
@@ -320,6 +321,7 @@ export type Database = {
         Insert: {
           created_at?: string
           difficulty?: string
+          health_benefits?: Json | null
           id?: string
           image_url?: string | null
           ingredients: Json
@@ -336,6 +338,7 @@ export type Database = {
         Update: {
           created_at?: string
           difficulty?: string
+          health_benefits?: Json | null
           id?: string
           image_url?: string | null
           ingredients?: Json
