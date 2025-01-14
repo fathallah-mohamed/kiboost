@@ -61,7 +61,10 @@ serve(async (req) => {
     }));
 
     return new Response(JSON.stringify(processedRecipes), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json' 
+      },
     });
   } catch (error) {
     console.error('Error in generate-recipe function:', error);

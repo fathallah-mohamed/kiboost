@@ -15,11 +15,14 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier français créatif, passionné et reconnu pour tes compétences en pédiatrie nutritionnelle et en alimentation multi-âges. Tu es particulièrement attentif aux allergies alimentaires et aux besoins nutritionnels spécifiques des enfants. Réponds UNIQUEMENT avec un tableau JSON de recettes, sans aucun texte supplémentaire. Chaque recette doit avoir tous les champs requis. Format attendu: [{"name": "...", "ingredients": [...], "instructions": [...], ...}]'
+            content: `Tu es un chef cuisinier français créatif qui génère des recettes adaptées aux enfants. 
+            Réponds UNIQUEMENT avec un tableau JSON de 3 recettes, sans texte supplémentaire.
+            Format attendu: [{"name": "Nom de la recette", "ingredients": [{"item": "ingrédient", "quantity": "quantité", "unit": "unité"}], "instructions": ["étape 1", "étape 2"], "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}, "meal_type": "breakfast|lunch|dinner|snack", "preparation_time": 30, "difficulty": "easy|medium|hard", "servings": 4, "health_benefits": ["bénéfice 1", "bénéfice 2"]}]`
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.9,
+        temperature: 0.7,
+        max_tokens: 2000,
       }),
     });
 
@@ -38,12 +41,10 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
 
     let content = data.choices[0].message.content.trim();
     console.log('Trimmed content:', content);
-    
+
     // Remove any markdown code block syntax if present
-    if (content.startsWith('```')) {
-      content = content.replace(/```json\n?/, '').replace(/```\n?$/, '');
-      console.log('Content after markdown removal:', content);
-    }
+    content = content.replace(/```json\n?/, '').replace(/```\n?$/, '');
+    console.log('Content after markdown removal:', content);
 
     // Validate JSON structure
     try {
@@ -64,8 +65,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
           'meal_type',
           'preparation_time',
           'difficulty',
-          'servings',
-          'health_benefits'
+          'servings'
         ];
         
         const missingFields = requiredFields.filter(field => !recipe[field]);
