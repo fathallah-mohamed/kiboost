@@ -1,29 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Recipe, ChildProfile, RecipeFilters } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+const STORAGE_KEY = 'generated_recipes';
+
 export const useRecipeGeneration = () => {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const generateRecipes = async (child: ChildProfile, filters?: RecipeFilters, offset: number = 0) => {
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+  }, [recipes]);
+
+  const clearRecipes = () => {
+    console.log('Clearing recipes and localStorage');
+    localStorage.removeItem(STORAGE_KEY);
+    setRecipes([]);
+    setLoading(false);
+    setError(null);
+  };
+
+  const generateRecipes = async (child: ChildProfile, filters?: RecipeFilters) => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Generating recipes for children:', child, 'with filters:', filters, 'offset:', offset);
+      console.log('Generating recipes for children:', child, 'with filters:', filters);
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-recipe', {
         body: {
           childProfiles: [child],
           filters,
-          offset,
-        },
-        headers: {
-          'Content-Type': 'application/json',
         },
       });
 
@@ -38,13 +51,7 @@ export const useRecipeGeneration = () => {
         throw new Error('Format de réponse invalide');
       }
 
-      // Si c'est la première génération (offset = 0), on remplace les recettes
-      // Sinon on ajoute les nouvelles recettes à la liste existante
-      if (offset === 0) {
-        setRecipes(data);
-      } else {
-        setRecipes(prevRecipes => [...prevRecipes, ...data]);
-      }
+      setRecipes(data);
     } catch (err) {
       console.error('Error generating recipes:', err);
       setError('Une erreur est survenue lors de la génération des recettes.');
@@ -56,12 +63,6 @@ export const useRecipeGeneration = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const clearRecipes = () => {
-    setRecipes([]);
-    setLoading(false);
-    setError(null);
   };
 
   return {
