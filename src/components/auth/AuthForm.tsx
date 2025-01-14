@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase/client';
+import { AuthError } from '@supabase/supabase-js';
 
 export const AuthForm = () => {
   const [email, setEmail] = useState('');
@@ -21,6 +22,9 @@ export const AuthForm = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: window.location.origin,
+          },
         });
         if (error) throw error;
         toast({
@@ -38,12 +42,27 @@ export const AuthForm = () => {
           description: "Bienvenue sur Kiboost !",
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error('Auth error:', error);
+      const authError = error as AuthError;
+      let errorMessage = "Une erreur est survenue.";
+      
+      if (authError.message === 'Invalid login credentials') {
+        errorMessage = "Email ou mot de passe incorrect.";
+      } else if (authError.message.includes('Email not confirmed')) {
+        errorMessage = "Veuillez confirmer votre email avant de vous connecter.";
+      }
+
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: error.message,
+        description: errorMessage,
       });
+
+      // Si l'erreur est liée au refresh token, déconnectez l'utilisateur
+      if (authError.message.includes('refresh_token')) {
+        await supabase.auth.signOut();
+      }
     } finally {
       setLoading(false);
     }

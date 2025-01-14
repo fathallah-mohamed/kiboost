@@ -17,27 +17,43 @@ const Index = () => {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
-      if (error) {
-        console.error('Error fetching session:', error);
-        toast({
-          variant: "destructive",
-          title: "Erreur d'authentification",
-          description: "Une erreur est survenue lors de la récupération de votre session.",
-        });
+    const initializeSession = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error fetching session:', error);
+          toast({
+            variant: "destructive",
+            title: "Erreur d'authentification",
+            description: "Une erreur est survenue lors de la récupération de votre session.",
+          });
+          // Clear any invalid session data
+          await supabase.auth.signOut();
+          setSession(null);
+        } else {
+          setSession(currentSession);
+        }
+      } catch (error) {
+        console.error('Error in session initialization:', error);
+        setSession(null);
+      } finally {
+        setLoading(false);
       }
-      setSession(currentSession);
-      setLoading(false);
-    });
+    };
+
+    initializeSession();
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+      console.log('Auth state changed:', _event);
       if (_event === 'SIGNED_OUT') {
         setSession(null);
         navigate('/');
-      } else if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') {
+      } else if (_event === 'SIGNED_IN') {
+        setSession(currentSession);
+      } else if (_event === 'TOKEN_REFRESHED') {
         setSession(currentSession);
       } else if (_event === 'USER_UPDATED') {
         setSession(currentSession);
