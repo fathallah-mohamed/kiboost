@@ -15,7 +15,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         messages: [
           {
             role: 'system',
-            content: 'You are a recipe generator. Respond ONLY with a valid JSON array of exactly 3 recipes. Each recipe must have: name (string), ingredients (array of {item, quantity, unit}), instructions (array of strings), nutritional_info (object with calories, protein, carbs, fat as numbers), meal_type (string), preparation_time (number), difficulty (string), servings (number).'
+            content: 'You are a recipe generator. Generate exactly 3 recipes in a valid JSON array format. Each recipe must include: name (string), ingredients (array of {item, quantity, unit}), instructions (array of strings), nutritional_info (object with calories, protein, carbs, fat as numbers), meal_type (string), preparation_time (number), difficulty (string), servings (number), health_benefits (array of {category, description, icon}).'
           },
           { role: 'user', content: prompt }
         ],
@@ -48,7 +48,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
     console.log('Content after markdown removal:', content);
 
     try {
-      // First, validate that the content is valid JSON
+      // Validate JSON structure
       const parsed = JSON.parse(content);
       console.log('Successfully parsed JSON:', parsed);
       
@@ -62,7 +62,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         throw new Error('Must generate exactly 3 recipes');
       }
       
-      // Validate each recipe has the required fields
+      // Validate each recipe
       parsed.forEach((recipe, index) => {
         const requiredFields = [
           'name',
@@ -72,7 +72,8 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
           'meal_type',
           'preparation_time',
           'difficulty',
-          'servings'
+          'servings',
+          'health_benefits'
         ];
         
         const missingFields = requiredFields.filter(field => !recipe[field]);
@@ -109,6 +110,19 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
           console.error(`Recipe ${index + 1} invalid instructions:`, recipe.instructions);
           throw new Error(`Recipe ${index + 1} must have valid instructions`);
         }
+
+        // Validate health_benefits array
+        if (!Array.isArray(recipe.health_benefits)) {
+          console.error(`Recipe ${index + 1} invalid health_benefits:`, recipe.health_benefits);
+          throw new Error(`Recipe ${index + 1} must have an array of health benefits`);
+        }
+
+        recipe.health_benefits.forEach((benefit: any, i: number) => {
+          if (!benefit.category || !benefit.description || !benefit.icon) {
+            console.error(`Recipe ${index + 1} health benefit ${i + 1} invalid:`, benefit);
+            throw new Error(`Recipe ${index + 1}, health benefit ${i + 1} must have category, description, and icon`);
+          }
+        });
       });
       
       return content;
