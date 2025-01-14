@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ChildProfile, Recipe, MealType, Difficulty } from "./types";
 import { Card } from "@/components/ui/card";
@@ -21,14 +21,9 @@ export const RecipeGenerator = () => {
   const [displayCount, setDisplayCount] = useState(3);
   
   const { toast } = useToast();
-  const { loading, recipes, error, generateRecipes, clearRecipes } = useRecipeGeneration();
+  const { loading, recipes, error, generateRecipes } = useRecipeGeneration();
   const { saveRecipe, saving } = useRecipeSaving();
   const { plannedRecipes } = usePlannedRecipesFetching(selectedChildren);
-
-  useEffect(() => {
-    console.log('Clearing recipes on mount or selectedChildren change');
-    clearRecipes();
-  }, [selectedChildren]);
 
   const handleGenerateRecipes = async () => {
     if (selectedChildren.length === 0) {

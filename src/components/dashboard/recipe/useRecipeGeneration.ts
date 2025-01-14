@@ -10,7 +10,7 @@ export const useRecipeGeneration = () => {
   const { toast } = useToast();
 
   const clearRecipes = () => {
-    console.log('Clearing recipes');
+    console.log('Clearing recipes only when explicitly requested');
     setRecipes([]);
     setLoading(false);
     setError(null);
@@ -20,7 +20,6 @@ export const useRecipeGeneration = () => {
     try {
       setLoading(true);
       setError(null);
-      setRecipes([]); // Clear recipes before generating new ones
       
       console.log('Generating recipes for child:', child, 'with filters:', filters);
       
