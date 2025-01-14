@@ -18,6 +18,17 @@ export const ChildSelector = ({ onSelectChild, selectedChild }: ChildSelectorPro
     fetchChildren();
   }, []);
 
+  const calculateAge = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const fetchChildren = async () => {
     try {
       const { data: session } = await supabase.auth.getSession();
@@ -66,7 +77,7 @@ export const ChildSelector = ({ onSelectChild, selectedChild }: ChildSelectorPro
         <SelectContent>
           {children.map((child) => (
             <SelectItem key={child.id} value={child.id}>
-              {child.name} ({child.age} ans)
+              {child.name} ({calculateAge(child.birth_date)} ans)
             </SelectItem>
           ))}
         </SelectContent>
