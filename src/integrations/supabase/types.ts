@@ -11,8 +11,8 @@ export type Database = {
     Tables: {
       children_profiles: {
         Row: {
-          age: number
           allergies: string[] | null
+          birth_date: string
           created_at: string
           id: string
           name: string
@@ -21,8 +21,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          age: number
           allergies?: string[] | null
+          birth_date: string
           created_at?: string
           id?: string
           name: string
@@ -31,8 +31,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          age?: number
           allergies?: string[] | null
+          birth_date?: string
           created_at?: string
           id?: string
           name?: string
