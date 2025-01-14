@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Recipe, MealType, Difficulty, ChildProfile } from '../../types';
+import { Recipe, MealType, Difficulty, ChildProfile, HealthBenefit } from '../../types';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth } from 'date-fns';
 
 export const usePlannedRecipes = (
@@ -69,7 +69,12 @@ export const usePlannedRecipes = (
               ? recipe.instructions
               : [recipe.instructions].filter(Boolean),
             meal_type: recipe.meal_type as MealType,
-            difficulty: recipe.difficulty as Difficulty
+            difficulty: recipe.difficulty as Difficulty,
+            health_benefits: recipe.health_benefits ? 
+              (typeof recipe.health_benefits === 'string' 
+                ? JSON.parse(recipe.health_benefits) 
+                : recipe.health_benefits) as HealthBenefit[]
+              : undefined
           };
         }
       });

@@ -62,3 +62,10 @@ export interface RecipeFilters {
   maxPrepTime?: number;
   difficulty?: Difficulty;
 }
+
+export interface RecipeCardProps {
+  recipe: Recipe;
+  isPlanned?: boolean;
+  onAdd?: (recipe: Recipe) => void;
+  compact?: boolean;
+}
