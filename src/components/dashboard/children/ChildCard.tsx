@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { X, Edit2, Save } from 'lucide-react';
+import { X, Edit2 } from 'lucide-react';
 import { ChildProfile } from '../types';
 import {
   AlertDialog,
@@ -17,6 +16,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { AgeDisplay } from './child-card/AgeDisplay';
+import { ChildInfo } from './child-card/ChildInfo';
+import { EditForm } from './child-card/EditForm';
 
 interface ChildCardProps {
   child: ChildProfile;
@@ -64,70 +66,24 @@ export const ChildCard = ({ child, isSelected, onSelect, onDelete, onUpdate }: C
     }
   };
 
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    
-    let years = today.getFullYear() - birth.getFullYear();
-    let months = today.getMonth() - birth.getMonth();
-    let days = today.getDate() - birth.getDate();
-    
-    // Ajuster les mois si les jours sont négatifs
-    if (days < 0) {
-      months -= 1;
-      // Ajouter les jours du mois précédent
-      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, birth.getDate());
-      days += Math.floor((today.getTime() - lastMonth.getTime()) / (1000 * 60 * 60 * 24));
-    }
-    
-    // Ajuster les années si les mois sont négatifs
-    if (months < 0) {
-      years -= 1;
-      months += 12;
-    }
-    
-    return { years, months, days };
-  };
-
   if (isEditing) {
     return (
       <Card className="p-4 space-y-4">
-        <div className="space-y-2">
-          <Input
-            value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            placeholder="Nom"
-          />
-          <Input
-            type="date"
-            value={editedBirthDate}
-            onChange={(e) => setEditedBirthDate(e.target.value)}
-          />
-          <Input
-            value={editedAllergies}
-            onChange={(e) => setEditedAllergies(e.target.value)}
-            placeholder="Allergies (séparées par des virgules)"
-          />
-          <Input
-            value={editedPreferences}
-            onChange={(e) => setEditedPreferences(e.target.value)}
-            placeholder="Préférences (séparées par des virgules)"
-          />
-        </div>
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" onClick={() => setIsEditing(false)}>
-            Annuler
-          </Button>
-          <Button onClick={handleUpdate}>
-            <Save className="w-4 h-4 mr-2" />
-            Enregistrer
-          </Button>
-        </div>
+        <EditForm
+          name={editedName}
+          birthDate={editedBirthDate}
+          allergies={editedAllergies}
+          preferences={editedPreferences}
+          onNameChange={setEditedName}
+          onBirthDateChange={setEditedBirthDate}
+          onAllergiesChange={setEditedAllergies}
+          onPreferencesChange={setEditedPreferences}
+          onCancel={() => setIsEditing(false)}
+          onSave={handleUpdate}
+        />
       </Card>
     );
   }
-
-  const age = calculateAge(child.birth_date);
 
   return (
     <Card 
@@ -174,15 +130,17 @@ export const ChildCard = ({ child, isSelected, onSelect, onDelete, onUpdate }: C
         </AlertDialog>
       </div>
       <h3 className="font-semibold text-lg mb-2">{child.name}</h3>
-      <p className="text-gray-600">
-        Âge: {age.years} ans{age.months > 0 && `, ${age.months} mois`}{age.days > 0 && `, ${age.days} jours`}
-      </p>
-      <p className="text-gray-600">
-        Allergies: {child.allergies.length > 0 ? child.allergies.join(', ') : 'Aucune allergie connue'}
-      </p>
-      <p className="text-gray-600">
-        Préférences: {child.preferences.length > 0 ? child.preferences.join(', ') : 'Aucune préférence renseignée'}
-      </p>
+      <AgeDisplay birthDate={child.birth_date} />
+      <ChildInfo
+        label="Allergies"
+        items={child.allergies}
+        emptyMessage="Aucune allergie connue"
+      />
+      <ChildInfo
+        label="Préférences"
+        items={child.preferences}
+        emptyMessage="Aucune préférence renseignée"
+      />
     </Card>
   );
 };
