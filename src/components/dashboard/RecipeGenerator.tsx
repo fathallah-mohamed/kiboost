@@ -12,6 +12,7 @@ import { usePlannedRecipesFetching } from "./recipe/hooks/usePlannedRecipesFetch
 import { LoadingOverlay } from "./recipe/LoadingOverlay";
 import { RecipeGeneratorTitle } from "./recipe/RecipeGeneratorTitle";
 import { LoadMoreButton } from "./recipe/LoadMoreButton";
+import { Button } from "@/components/ui/button";
 
 export const RecipeGenerator = () => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
@@ -35,6 +36,7 @@ export const RecipeGenerator = () => {
       return;
     }
 
+    setDisplayCount(3); // Reset display count when generating new recipes
     await generateRecipes(selectedChildren[0], {
       mealType: mealType === "all" ? undefined : mealType,
       maxPrepTime,
@@ -44,6 +46,10 @@ export const RecipeGenerator = () => {
 
   const handleSaveRecipe = async (recipe: Recipe) => {
     await saveRecipe(recipe, selectedChildren);
+  };
+
+  const handleLoadMore = () => {
+    setDisplayCount(prev => Math.min(prev + 3, recipes.length));
   };
 
   return (
@@ -85,10 +91,17 @@ export const RecipeGenerator = () => {
         onSaveRecipe={handleSaveRecipe}
       />
 
-      <LoadMoreButton 
-        visible={recipes.length > displayCount}
-        onClick={() => setDisplayCount(prev => prev + 3)}
-      />
+      {recipes.length > displayCount && (
+        <div className="flex justify-center mt-6">
+          <Button 
+            variant="outline"
+            onClick={handleLoadMore}
+            className="px-6"
+          >
+            Voir plus de recettes ({displayCount}/{recipes.length})
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

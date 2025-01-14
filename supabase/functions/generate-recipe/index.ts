@@ -31,7 +31,7 @@ serve(async (req) => {
     const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
     const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
 
-    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français, crée 3 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
+    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français, crée 9 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
 
     ${childProfile.allergies?.length > 0 ? `⚠️ IMPORTANT : Évite absolument ces allergènes : ${childProfile.allergies.join(', ')}` : ''}
     ${childProfile.preferences?.length > 0 ? `✨ Préférences alimentaires à inclure : ${childProfile.preferences.join(', ')}` : ''}
@@ -65,7 +65,7 @@ serve(async (req) => {
     - description: une description courte et ludique du bienfait
     - icon: une icône parmi : brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles
     
-    Réponds UNIQUEMENT avec un tableau JSON de 3 recettes, chacune ayant cette structure :
+    Réponds UNIQUEMENT avec un tableau JSON de 9 recettes, chacune ayant cette structure :
     {
       "name": "Nom créatif de la recette",
       "ingredients": [
