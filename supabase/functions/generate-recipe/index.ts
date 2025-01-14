@@ -45,6 +45,25 @@ serve(async (req) => {
     6. 💡 Avoir un nom créatif et amusant
     7. 📋 Fournir des instructions claires
     8. 🌍 Incorporer des options écoresponsables
+
+    TRÈS IMPORTANT : Pour chaque recette, tu dois ABSOLUMENT fournir une liste de 3 à 5 bienfaits santé spécifiques parmi ces catégories :
+    - cognitive: bienfaits pour le cerveau et la concentration
+    - energy: apport en énergie et vitalité
+    - satiety: satiété et contrôle de l'appétit
+    - digestive: santé digestive
+    - immunity: renforcement du système immunitaire
+    - growth: croissance et développement
+    - mental: bien-être mental et émotionnel
+    - organs: santé des organes
+    - beauty: santé de la peau et des cheveux
+    - physical: force et endurance physique
+    - prevention: prévention des maladies
+    - global: santé globale
+
+    Pour chaque bienfait, fournis :
+    - category: la catégorie (parmi la liste ci-dessus)
+    - description: une description courte et ludique du bienfait
+    - icon: une icône parmi : brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles
     
     Réponds UNIQUEMENT avec un tableau JSON de 3 recettes, chacune ayant cette structure :
     {
@@ -59,6 +78,13 @@ serve(async (req) => {
         "carbs": nombre,
         "fat": nombre
       },
+      "health_benefits": [
+        {
+          "category": "catégorie",
+          "description": "description du bienfait",
+          "icon": "nom de l'icône"
+        }
+      ],
       "meal_type": "${filters?.mealType || 'dinner'}",
       "preparation_time": nombre,
       "difficulty": "${filters?.difficulty || 'medium'}",
@@ -125,7 +151,6 @@ serve(async (req) => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       profile_id: childProfile.profile_id,
-      image_url: `https://source.unsplash.com/featured/?${encodeURIComponent(recipe.name)},food&${Date.now()}`
     }));
 
     return new Response(JSON.stringify(processedRecipes), {

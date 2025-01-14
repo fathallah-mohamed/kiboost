@@ -4,29 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Recipe } from "../../types";
 import { 
   Utensils, Clock, Heart, Beef, Wheat, 
-  Flame, Cookie, Star, Share2, ChevronDown,
-  List, ScrollText
+  Flame, Cookie, Star, ChevronDown
 } from "lucide-react";
-import { RecipeRating } from "./RecipeRating";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { RecipeHeader } from "./RecipeHeader";
 import { RecipeHealthBenefits } from "./RecipeHealthBenefits";
-import { RecipeMetadata } from "./RecipeMetadata";
-import { RecipeNutritionalInfo } from "./RecipeNutritionalInfo";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
   onAdd?: (recipe: Recipe) => void;
-  compact?: boolean;
 }
 
-export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [showRating, setShowRating] = useState(false);
   const { toast } = useToast();
 
   const toggleFavorite = async () => {
@@ -96,10 +89,7 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
         </div>
 
         {recipe.health_benefits && recipe.health_benefits.length > 0 && (
-          <RecipeHealthBenefits 
-            benefits={recipe.health_benefits}
-            compact={compact}
-          />
+          <RecipeHealthBenefits benefits={recipe.health_benefits} />
         )}
 
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -107,20 +97,17 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h4 className="font-semibold flex items-center gap-2">
-                  <List className="w-5 h-5 text-primary" />
+                  <Utensils className="w-4 h-4 text-primary" />
                   Ingrédients magiques
                 </h4>
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {recipe.ingredients.map((ingredient, index) => (
-                    <li key={index} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
-                      <span className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
+                    <li key={index} className="flex items-center gap-2 text-sm">
+                      <span className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs">
                         {index + 1}
                       </span>
-                      <span className="flex-1">
-                        <span className="font-medium">{ingredient.item}</span>
-                        <span className="text-sm text-muted-foreground ml-2">
-                          {ingredient.quantity} {ingredient.unit}
-                        </span>
+                      <span>
+                        {ingredient.quantity} {ingredient.unit} {ingredient.item}
                       </span>
                     </li>
                   ))}
@@ -128,14 +115,11 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <ScrollText className="w-5 h-5 text-accent" />
-                  Étapes magiques
-                </h4>
-                <ol className="space-y-3">
+                <h4 className="font-semibold">Instructions magiques</h4>
+                <ol className="space-y-2">
                   {recipe.instructions.map((step, index) => (
-                    <li key={index} className="flex gap-3 p-3 rounded-lg bg-accent/10 hover:bg-accent/20 transition-colors">
-                      <span className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-sm font-medium text-accent shrink-0">
+                    <li key={index} className="flex gap-2 text-sm">
+                      <span className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs shrink-0">
                         {index + 1}
                       </span>
                       <span>{step}</span>
@@ -145,7 +129,44 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
               </div>
             </div>
 
-            <RecipeNutritionalInfo recipe={recipe} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50">
+                <Flame className="w-5 h-5 text-red-500" />
+                <div>
+                  <div className="text-sm font-medium">Calories</div>
+                  <div className="text-lg font-bold text-red-600">
+                    {recipe.nutritional_info.calories}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50">
+                <Beef className="w-5 h-5 text-blue-500" />
+                <div>
+                  <div className="text-sm font-medium">Protéines</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {recipe.nutritional_info.protein}g
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-50">
+                <Wheat className="w-5 h-5 text-yellow-500" />
+                <div>
+                  <div className="text-sm font-medium">Glucides</div>
+                  <div className="text-lg font-bold text-yellow-600">
+                    {recipe.nutritional_info.carbs}g
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50">
+                <Cookie className="w-5 h-5 text-purple-500" />
+                <div>
+                  <div className="text-sm font-medium">Lipides</div>
+                  <div className="text-lg font-bold text-purple-600">
+                    {recipe.nutritional_info.fat}g
+                  </div>
+                </div>
+              </div>
+            </div>
           </CollapsibleContent>
         </Collapsible>
 
@@ -156,7 +177,7 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
             className="w-full md:w-auto"
           >
             <ChevronDown className={`w-4 h-4 mr-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-            {isOpen ? 'Masquer la recette' : 'Découvrir la recette'}
+            {isOpen ? 'Masquer la recette' : 'Afficher la recette'}
           </Button>
         </div>
       </div>
