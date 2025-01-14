@@ -9,21 +9,21 @@ const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 204, 
+      headers: corsHeaders 
+    });
   }
 
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('Pas d\'en-tête d\'autorisation');
-    }
-
     if (!openAIApiKey) {
-      throw new Error('Clé API OpenAI non configurée');
+      throw new Error('OpenAI API key not configured');
     }
 
     const { childProfiles, filters, offset = 0 } = await req.json();

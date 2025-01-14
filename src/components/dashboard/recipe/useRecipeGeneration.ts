@@ -22,6 +22,9 @@ export const useRecipeGeneration = () => {
           filters,
           offset,
         },
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (functionError) {
