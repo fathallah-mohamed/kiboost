@@ -32,14 +32,15 @@ serve(async (req) => {
     console.log('Offset:', offset);
 
     const prompt = buildPrompt(childProfiles, filters, offset);
-    console.log('Sending request to OpenAI with prompt:', prompt);
+    console.log('Built prompt:', prompt);
     
     const content = await generateRecipesWithOpenAI(prompt, openAIApiKey);
-    console.log('Parsing JSON response:', content);
+    console.log('Received valid JSON response from OpenAI');
 
     let recipes;
     try {
       recipes = JSON.parse(content);
+      console.log('Successfully parsed recipes:', recipes);
     } catch (error) {
       console.error('JSON parse error:', error);
       throw new Error(`Échec du parsing JSON : ${error.message}`);

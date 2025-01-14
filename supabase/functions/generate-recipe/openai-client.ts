@@ -1,6 +1,8 @@
 import { OpenAIResponse } from './types.ts';
 
 export async function generateRecipesWithOpenAI(prompt: string, apiKey: string): Promise<string> {
+  console.log('Sending request to OpenAI with prompt:', prompt);
+  
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -12,7 +14,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
       messages: [
         {
           role: 'system',
-          content: 'Tu es un chef cuisinier français créatif, passionné et reconnu pour tes compétences en pédiatrie nutritionnelle et en alimentation multi-âges. Tu es particulièrement attentif aux allergies alimentaires et aux besoins nutritionnels spécifiques des enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire.'
+          content: 'Tu es un chef cuisinier français créatif, passionné et reconnu pour tes compétences en pédiatrie nutritionnelle et en alimentation multi-âges. Tu es particulièrement attentif aux allergies alimentaires et aux besoins nutritionnels spécifiques des enfants. Réponds UNIQUEMENT avec un tableau JSON de recettes, sans aucun texte supplémentaire. Chaque recette doit avoir tous les champs requis.'
         },
         { role: 'user', content: prompt }
       ],
@@ -34,9 +36,42 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
   }
 
   let content = data.choices[0].message.content.trim();
+  
+  // Remove any markdown code block syntax if present
   if (content.startsWith('```')) {
     content = content.replace(/```json\n?/, '').replace(/```\n?$/, '');
   }
 
-  return content;
+  // Validate that the content is a valid JSON array
+  try {
+    const parsed = JSON.parse(content);
+    if (!Array.isArray(parsed)) {
+      throw new Error('La réponse doit être un tableau de recettes');
+    }
+    
+    // Validate each recipe has the required fields
+    parsed.forEach((recipe, index) => {
+      const requiredFields = [
+        'name',
+        'ingredients',
+        'instructions',
+        'nutritional_info',
+        'meal_type',
+        'preparation_time',
+        'difficulty',
+        'servings',
+        'health_benefits'
+      ];
+      
+      const missingFields = requiredFields.filter(field => !recipe[field]);
+      if (missingFields.length > 0) {
+        throw new Error(`La recette ${index + 1} manque les champs requis: ${missingFields.join(', ')}`);
+      }
+    });
+    
+    return content;
+  } catch (error) {
+    console.error('Error parsing or validating OpenAI response:', error);
+    throw new Error(`Erreur de validation: ${error.message}`);
+  }
 }
