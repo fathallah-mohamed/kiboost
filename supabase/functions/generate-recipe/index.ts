@@ -28,10 +28,10 @@ serve(async (req) => {
     console.log('Filters:', filters);
 
     // Combiner les allergies et préférences
-    const allAllergies = [...new Set(childProfiles.flatMap(child => child.allergies))];
+    const allAllergies = [...new Set(childProfiles.flatMap(child => child.allergies || []))];
     const commonPreferences = childProfiles.reduce((common, child) => {
-      if (common.length === 0) return child.preferences;
-      return common.filter(pref => child.preferences.includes(pref));
+      if (common.length === 0) return child.preferences || [];
+      return common.filter(pref => (child.preferences || []).includes(pref));
     }, []);
 
     const ageRange = {
@@ -43,23 +43,48 @@ serve(async (req) => {
     const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
     const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
 
-    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français, crée 9 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour ${childProfiles.length} enfant(s) âgés de ${ageRange.min} à ${ageRange.max} ans.
+    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français spécialisé dans l'alimentation multi-âges, crée 9 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour ${childProfiles.length} enfant(s) âgés de ${ageRange.min} à ${ageRange.max} ans.
 
-    ${allAllergies.length > 0 ? `⚠️ TRÈS IMPORTANT - ALLERGIES : Évite absolument ces allergènes pour TOUS les enfants : ${allAllergies.join(', ')}` : ''}
-    ${commonPreferences.length > 0 ? `✨ PRÉFÉRENCES COMMUNES : Privilégie ces ingrédients appréciés par TOUS les enfants : ${commonPreferences.join(', ')}` : ''}
+    ${allAllergies.length > 0 ? `⚠️ SÉCURITÉ ALIMENTAIRE CRITIQUE - ALLERGIES :
+    - Exclus ABSOLUMENT et STRICTEMENT ces allergènes pour TOUS les enfants : ${allAllergies.join(', ')}
+    - Vérifie TOUS les ingrédients pour éviter les contaminations croisées
+    - Propose des alternatives sûres pour les ingrédients allergènes` : ''}
+
+    ${commonPreferences.length > 0 ? `✨ PRÉFÉRENCES PARTAGÉES :
+    - Privilégie ces ingrédients appréciés par TOUS les enfants : ${commonPreferences.join(', ')}
+    - Adapte les recettes pour maximiser l'utilisation de ces ingrédients favoris communs` : ''}
     
-    Chaque recette doit :
-    1. 🧒 Être nutritionnellement adaptée à la tranche d'âge (${ageRange.min}-${ageRange.max} ans)
-    2. 🍎 Promouvoir des ingrédients frais et sains
-    3. 👩‍🍳 Être simple à préparer
-    4. 🎨 Avoir une présentation ludique
-    5. 🧠 Favoriser le développement avec des superaliments adaptés
-    6. 💡 Avoir un nom créatif et amusant
-    7. 📋 Fournir des instructions claires
-    8. 🌍 Incorporer des options écoresponsables
-    9. 👥 Être adaptée pour TOUS les enfants sélectionnés
+    CRITÈRES ESSENTIELS pour chaque recette :
+    1. 🧒 ADAPTATION MULTI-ÂGES (${ageRange.min}-${ageRange.max} ans)
+       - Portions et textures adaptables selon l'âge
+       - Instructions spécifiques pour adapter aux différents âges si nécessaire
+    
+    2. 🍎 SÉCURITÉ ET NUTRITION
+       - Ingrédients frais et sains
+       - Portions adaptées aux besoins nutritionnels de chaque âge
+       - Équilibre nutritionnel optimal pour la tranche d'âge
+    
+    3. 👩‍🍳 PRATICITÉ ET PARTICIPATION
+       - Instructions simples et claires
+       - Étapes adaptées pour faire participer les enfants selon leur âge
+       - Temps de préparation réaliste pour une famille
+    
+    4. 🎨 ASPECT LUDIQUE ET ATTRACTIF
+       - Présentation attrayante pour tous les âges
+       - Couleurs et formes amusantes
+       - Noms créatifs et amusants
+    
+    5. 🧠 DÉVELOPPEMENT ET SANTÉ
+       - Ingrédients favorisant le développement cognitif
+       - Superaliments adaptés à chaque âge
+       - Combinaisons d'aliments optimisant l'absorption des nutriments
+    
+    6. 👥 PERSONNALISATION MULTI-ENFANTS
+       - Possibilité d'adapter les portions/textures selon l'âge
+       - Options de personnalisation respectant les préférences communes
+       - Suggestions de variations pour satisfaire les différents goûts
 
-    TRÈS IMPORTANT : Pour chaque recette, tu dois ABSOLUMENT fournir une liste de 3 à 5 bienfaits santé spécifiques parmi ces catégories :
+    TRÈS IMPORTANT : Pour chaque recette, fournis une liste de 3 à 5 bienfaits santé spécifiques parmi ces catégories :
     - cognitive: bienfaits pour le cerveau et la concentration
     - energy: apport en énergie et vitalité
     - satiety: satiété et contrôle de l'appétit
@@ -117,7 +142,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier français créatif, passionné et reconnu pour tes compétences en pédiatrie nutritionnelle. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire.'
+            content: 'Tu es un chef cuisinier français créatif, passionné et reconnu pour tes compétences en pédiatrie nutritionnelle et en alimentation multi-âges. Tu es particulièrement attentif aux allergies alimentaires et aux besoins nutritionnels spécifiques des enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire.'
           },
           { role: 'user', content: prompt }
         ],
