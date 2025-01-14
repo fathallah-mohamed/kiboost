@@ -26,7 +26,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('OpenAI API error:', error);
+      console.error('OpenAI API error response:', error);
       throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
     }
 
@@ -81,7 +81,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         }
       });
       
-      return content;
+      return JSON.stringify(parsed);
     } catch (parseError) {
       console.error('Error parsing or validating JSON:', parseError);
       console.error('Content that failed to parse:', content);
