@@ -7,7 +7,6 @@ const STORAGE_KEY = 'generated_recipes';
 
 export const useRecipeGeneration = () => {
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
-    // Initialize from localStorage if available
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? JSON.parse(stored) : [];
   });
@@ -15,7 +14,6 @@ export const useRecipeGeneration = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Persist recipes to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
   }, [recipes]);
@@ -33,11 +31,11 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Generating recipes for child:', child, 'with filters:', filters);
+      console.log('Generating recipes for children:', child, 'with filters:', filters);
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-recipe', {
         body: {
-          childProfile: child,
+          childProfiles: [child],
           filters,
         },
       });

@@ -23,21 +23,33 @@ serve(async (req) => {
       throw new Error('Clé API OpenAI non configurée');
     }
 
-    const { childProfile, filters } = await req.json();
-    console.log('Received request with child profile:', childProfile);
+    const { childProfiles, filters } = await req.json();
+    console.log('Received request with child profiles:', childProfiles);
     console.log('Filters:', filters);
+
+    // Combiner les allergies et préférences
+    const allAllergies = [...new Set(childProfiles.flatMap(child => child.allergies))];
+    const commonPreferences = childProfiles.reduce((common, child) => {
+      if (common.length === 0) return child.preferences;
+      return common.filter(pref => child.preferences.includes(pref));
+    }, []);
+
+    const ageRange = {
+      min: Math.min(...childProfiles.map(child => child.age)),
+      max: Math.max(...childProfiles.map(child => child.age))
+    };
 
     const mealTypePrompt = filters?.mealType ? `pour le ${filters.mealType}` : 'pour n\'importe quel repas';
     const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
     const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
 
-    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français, crée 9 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
+    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français, crée 9 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour ${childProfiles.length} enfant(s) âgés de ${ageRange.min} à ${ageRange.max} ans.
 
-    ${childProfile.allergies?.length > 0 ? `⚠️ IMPORTANT : Évite absolument ces allergènes : ${childProfile.allergies.join(', ')}` : ''}
-    ${childProfile.preferences?.length > 0 ? `✨ Préférences alimentaires à inclure : ${childProfile.preferences.join(', ')}` : ''}
+    ${allAllergies.length > 0 ? `⚠️ TRÈS IMPORTANT - ALLERGIES : Évite absolument ces allergènes pour TOUS les enfants : ${allAllergies.join(', ')}` : ''}
+    ${commonPreferences.length > 0 ? `✨ PRÉFÉRENCES COMMUNES : Privilégie ces ingrédients appréciés par TOUS les enfants : ${commonPreferences.join(', ')}` : ''}
     
     Chaque recette doit :
-    1. 🧒 Être nutritionnellement adaptée à l'âge (${childProfile.age} ans)
+    1. 🧒 Être nutritionnellement adaptée à la tranche d'âge (${ageRange.min}-${ageRange.max} ans)
     2. 🍎 Promouvoir des ingrédients frais et sains
     3. 👩‍🍳 Être simple à préparer
     4. 🎨 Avoir une présentation ludique
@@ -45,6 +57,7 @@ serve(async (req) => {
     6. 💡 Avoir un nom créatif et amusant
     7. 📋 Fournir des instructions claires
     8. 🌍 Incorporer des options écoresponsables
+    9. 👥 Être adaptée pour TOUS les enfants sélectionnés
 
     TRÈS IMPORTANT : Pour chaque recette, tu dois ABSOLUMENT fournir une liste de 3 à 5 bienfaits santé spécifiques parmi ces catégories :
     - cognitive: bienfaits pour le cerveau et la concentration
@@ -150,7 +163,7 @@ serve(async (req) => {
       is_generated: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      profile_id: childProfile.profile_id,
+      profile_id: childProfiles[0].profile_id,
     }));
 
     return new Response(JSON.stringify(processedRecipes), {
