@@ -9,9 +9,24 @@ export interface ChildProfile {
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
+export type HealthBenefitCategory = 
+  | 'cognitive'
+  | 'energy'
+  | 'satiety'
+  | 'digestive'
+  | 'immunity'
+  | 'growth'
+  | 'mental'
+  | 'organs'
+  | 'beauty'
+  | 'physical'
+  | 'prevention'
+  | 'global';
+
 export interface HealthBenefit {
   icon: string;
   description: string;
+  category: HealthBenefitCategory;
 }
 
 export interface Recipe {

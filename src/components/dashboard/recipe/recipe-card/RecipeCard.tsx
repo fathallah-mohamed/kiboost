@@ -42,7 +42,10 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
           <RecipeHeader recipe={recipe} />
           
           {recipe.health_benefits && recipe.health_benefits.length > 0 && (
-            <RecipeHealthBenefits benefits={recipe.health_benefits} />
+            <RecipeHealthBenefits 
+              benefits={recipe.health_benefits}
+              compact={compact}
+            />
           )}
 
           <RecipeMetadata recipe={recipe} />
