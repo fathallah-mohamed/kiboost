@@ -31,18 +31,12 @@ serve(async (req) => {
     const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
     const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
 
-    const nutritionProfile = {
-      protein: childProfile.age <= 3 ? '15-18%' : '15-20%',
-      carbs: childProfile.age <= 3 ? '45-55%' : '50-60%',
-      fat: childProfile.age <= 3 ? '30-35%' : '20-30%'
-    };
-
-    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français, crée une recette exceptionnelle, gourmande et équilibrée ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
+    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français, crée 3 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour un enfant de ${childProfile.age} ans.
 
     ${childProfile.allergies?.length > 0 ? `⚠️ IMPORTANT : Évite absolument ces allergènes : ${childProfile.allergies.join(', ')}` : ''}
     ${childProfile.preferences?.length > 0 ? `✨ Préférences alimentaires à inclure : ${childProfile.preferences.join(', ')}` : ''}
     
-    La recette doit :
+    Chaque recette doit :
     1. 🧒 Être nutritionnellement adaptée à l'âge (${childProfile.age} ans)
     2. 🍎 Promouvoir des ingrédients frais et sains
     3. 👩‍🍳 Être simple à préparer
@@ -52,12 +46,7 @@ serve(async (req) => {
     7. 📋 Fournir des instructions claires
     8. 🌍 Incorporer des options écoresponsables
     
-    ⚖️ Proportions nutritionnelles :
-    - Protéines : ${nutritionProfile.protein}
-    - Glucides : ${nutritionProfile.carbs}
-    - Lipides : ${nutritionProfile.fat}
-    
-    Réponds UNIQUEMENT avec un objet JSON valide de cette structure :
+    Réponds UNIQUEMENT avec un tableau JSON de 3 recettes, chacune ayant cette structure :
     {
       "name": "Nom créatif de la recette",
       "ingredients": [
@@ -116,40 +105,30 @@ serve(async (req) => {
     }
 
     console.log('Parsing JSON response:', content);
-    let recipeContent;
+    let recipes;
     try {
-      recipeContent = JSON.parse(content);
+      recipes = JSON.parse(content);
     } catch (error) {
       console.error('JSON parse error:', error);
       throw new Error(`Échec du parsing JSON : ${error.message}`);
     }
 
-    if (!recipeContent.name || 
-        !Array.isArray(recipeContent.ingredients) || 
-        !Array.isArray(recipeContent.instructions) || 
-        !recipeContent.nutritional_info) {
-      console.error('Invalid recipe structure:', recipeContent);
-      throw new Error('Structure de la recette invalide');
+    if (!Array.isArray(recipes)) {
+      console.error('Invalid recipes structure:', recipes);
+      throw new Error('Structure des recettes invalide');
     }
 
-    const themes = [
-      'superhero themed food art',
-      'disney character food plating',
-      'pokemon inspired food decoration',
-      'marvel heroes food art',
-      'princess themed food presentation',
-      'ninja turtle food design',
-      'space explorer food art',
-      'pirate treasure food plating',
-      'magical wizard food decoration',
-      'dinosaur shaped food art'
-    ];
-    
-    const randomTheme = themes[Math.floor(Math.random() * themes.length)];
-    const searchQuery = `${encodeURIComponent(randomTheme)},${encodeURIComponent(recipeContent.name)}`;
-    recipeContent.image_url = `https://source.unsplash.com/featured/?${searchQuery}&${Date.now()}`;
+    // Add generated flag and timestamps to each recipe
+    const processedRecipes = recipes.map(recipe => ({
+      ...recipe,
+      is_generated: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      profile_id: childProfile.profile_id,
+      image_url: `https://source.unsplash.com/featured/?${encodeURIComponent(recipe.name)},food&${Date.now()}`
+    }));
 
-    return new Response(JSON.stringify(recipeContent), {
+    return new Response(JSON.stringify(processedRecipes), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
@@ -157,7 +136,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: "Une erreur est survenue lors de la génération de la recette. Veuillez réessayer."
+        details: "Une erreur est survenue lors de la génération des recettes. Veuillez réessayer."
       }),
       { 
         status: 500,

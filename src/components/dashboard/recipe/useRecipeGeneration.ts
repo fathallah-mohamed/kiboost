@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Recipe, ChildProfile, RecipeFilters } from '../types';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useRecipeGeneration = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -21,23 +22,26 @@ export const useRecipeGeneration = () => {
       setError(null);
       setRecipes([]); // Clear recipes before generating new ones
       
-      const response = await fetch('/api/generate-recipe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          child,
+      console.log('Generating recipes for child:', child, 'with filters:', filters);
+      
+      const { data, error: functionError } = await supabase.functions.invoke('generate-recipe', {
+        body: {
+          childProfile: child,
           filters,
-        }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate recipes');
+      if (functionError) {
+        console.error('Error from Edge Function:', functionError);
+        throw new Error(functionError.message);
       }
 
-      const data = await response.json();
       console.log('Generated recipes:', data);
+      
+      if (!data || !Array.isArray(data)) {
+        throw new Error('Format de réponse invalide');
+      }
+
       setRecipes(data);
     } catch (err) {
       console.error('Error generating recipes:', err);
