@@ -23,34 +23,36 @@ export function buildPrompt(
   return `Génère exactement 3 recettes ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour ${childProfiles.length} enfant(s) âgés de ${ageRange.min} à ${ageRange.max} ans.
 
 Format JSON REQUIS pour chaque recette:
-{
-  "name": "Nom de la recette",
-  "ingredients": [
-    {
-      "item": "Ingrédient",
-      "quantity": "Quantité",
-      "unit": "Unité"
-    }
-  ],
-  "instructions": ["Étape 1", "Étape 2", "..."],
-  "nutritional_info": {
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0
-  },
-  "meal_type": "breakfast|lunch|dinner|snack",
-  "preparation_time": 30,
-  "difficulty": "easy|medium|hard",
-  "servings": 4,
-  "health_benefits": [
-    {
-      "category": "cognitive|energy|satiety|digestive|immunity|growth|mental|organs|beauty|physical|prevention|global",
-      "description": "Description du bienfait",
-      "icon": "brain|zap|cookie|shield|leaf|lightbulb|battery|apple|heart|sun|dumbbell|sparkles"
-    }
-  ]
-}
+[
+  {
+    "name": "Nom de la recette",
+    "ingredients": [
+      {
+        "item": "Ingrédient",
+        "quantity": "Quantité",
+        "unit": "Unité"
+      }
+    ],
+    "instructions": ["Étape 1", "Étape 2"],
+    "nutritional_info": {
+      "calories": 300,
+      "protein": 10,
+      "carbs": 40,
+      "fat": 12
+    },
+    "meal_type": "breakfast|lunch|dinner|snack",
+    "preparation_time": 30,
+    "difficulty": "easy|medium|hard",
+    "servings": 4,
+    "health_benefits": [
+      {
+        "category": "cognitive|energy|satiety|digestive|immunity|growth|mental|organs|beauty|physical|prevention|global",
+        "description": "Description du bienfait",
+        "icon": "brain|zap|cookie|shield|leaf|lightbulb|battery|apple|heart|sun|dumbbell|sparkles"
+      }
+    ]
+  }
+]
 
 ${allAllergies.length > 0 ? `ALLERGIES À EXCLURE: ${allAllergies.join(', ')}` : ''}
 ${commonPreferences.length > 0 ? `PRÉFÉRENCES: ${commonPreferences.join(', ')}` : ''}
