@@ -23,13 +23,14 @@ serve(async (req) => {
       throw new Error('Clé API OpenAI non configurée');
     }
 
-    const { childProfile, filters, excludeRecipes } = await req.json();
+    const { childProfile, filters } = await req.json();
+    console.log('Received request with child profile:', childProfile);
+    console.log('Filters:', filters);
 
     const mealTypePrompt = filters?.mealType ? `pour le ${filters.mealType}` : 'pour n\'importe quel repas';
     const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
     const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
 
-    // Profil nutritionnel par défaut basé sur l'âge
     const nutritionProfile = {
       protein: childProfile.age <= 3 ? '15-18%' : '15-20%',
       carbs: childProfile.age <= 3 ? '45-55%' : '50-60%',
@@ -42,27 +43,27 @@ serve(async (req) => {
     ${childProfile.preferences?.length > 0 ? `✨ Préférences alimentaires à inclure : ${childProfile.preferences.join(', ')}` : ''}
     
     La recette doit :
-    1. 🧒 Être nutritionnellement adaptée à l'âge (${childProfile.age} ans) et ses besoins de croissance (calcium, fer, vitamines, etc.).
-    2. 🍎 Promouvoir des ingrédients frais, variés, de saison et sains.
-    3. 👩‍🍳 Être simple à préparer, sécurisée pour un enfant et amusante à réaliser avec un adulte.
-    4. 🎨 Inclure des couleurs vibrantes et une présentation ludique pour capter l'attention de l'enfant.
-    5. 🧠 Favoriser le développement cérébral et physique avec des superaliments adaptés (ex. : noix, graines, légumes verts, etc.).
-    6. 💡 Avoir un nom créatif et amusant qui s'inspire des héros, des animaux, des personnages de dessins animés ou des peluches préférés des enfants (ex: "Le Sandwich du Super-Héros", "Les Nuggets du Petit Dragon", "La Soupe Magique de la Licorne", "Le Bol du Petit Tigre").
-    7. 📋 Fournir des instructions claires et détaillées, avec des quantités exactes.
-    8. 🌍 Incorporer des options écoresponsables (ex. : éviter le gaspillage alimentaire, utiliser des produits locaux).
+    1. 🧒 Être nutritionnellement adaptée à l'âge (${childProfile.age} ans)
+    2. 🍎 Promouvoir des ingrédients frais et sains
+    3. 👩‍🍳 Être simple à préparer
+    4. 🎨 Avoir une présentation ludique
+    5. 🧠 Favoriser le développement avec des superaliments adaptés
+    6. 💡 Avoir un nom créatif et amusant
+    7. 📋 Fournir des instructions claires
+    8. 🌍 Incorporer des options écoresponsables
     
-    ⚖️ Assure-toi que la recette respecte les proportions idéales pour un repas enfantin sain :
+    ⚖️ Proportions nutritionnelles :
     - Protéines : ${nutritionProfile.protein}
     - Glucides : ${nutritionProfile.carbs}
     - Lipides : ${nutritionProfile.fat}
     
-    Réponds UNIQUEMENT avec un objet JSON valide et respecte EXACTEMENT cette structure :
+    Réponds UNIQUEMENT avec un objet JSON valide de cette structure :
     {
-      "name": "Nom créatif et amusant de la recette",
+      "name": "Nom créatif de la recette",
       "ingredients": [
-        {"item": "nom ingrédient", "quantity": "quantité précise", "unit": "unité de mesure"}
+        {"item": "ingrédient", "quantity": "quantité", "unit": "unité"}
       ],
-      "instructions": ["étape 1 détaillée", "étape 2 détaillée", "etc"],
+      "instructions": ["étape 1", "étape 2", "etc"],
       "nutritional_info": {
         "calories": nombre,
         "protein": nombre,
@@ -70,12 +71,13 @@ serve(async (req) => {
         "fat": nombre
       },
       "meal_type": "${filters?.mealType || 'dinner'}",
-      "preparation_time": nombre (en minutes),
+      "preparation_time": nombre,
       "difficulty": "${filters?.difficulty || 'medium'}",
       "servings": 4
     }`;
 
     console.log('Sending request to OpenAI with prompt:', prompt);
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -83,11 +85,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier français créatif, passionné et reconnu pour tes compétences en pédiatrie nutritionnelle et diététique. Tu excelles dans la création de recettes amusantes, délicieuses, saines et adaptées aux besoins spécifiques des enfants. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire ni formatage.'
+            content: 'Tu es un chef cuisinier français créatif, passionné et reconnu pour tes compétences en pédiatrie nutritionnelle. Réponds UNIQUEMENT avec le JSON demandé, sans aucun texte supplémentaire.'
           },
           { role: 'user', content: prompt }
         ],
@@ -130,7 +132,6 @@ serve(async (req) => {
       throw new Error('Structure de la recette invalide');
     }
 
-    // Génération d'une image thématique adaptée aux enfants
     const themes = [
       'superhero themed food art',
       'disney character food plating',
@@ -154,7 +155,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-recipe function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: "Une erreur est survenue lors de la génération de la recette. Veuillez réessayer."
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
