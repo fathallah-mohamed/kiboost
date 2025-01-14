@@ -15,7 +15,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         messages: [
           {
             role: 'system',
-            content: 'You are a recipe generator. Generate exactly 3 recipes in a valid JSON array format. Each recipe must include: name (string), ingredients (array of {item, quantity, unit}), instructions (array of strings), nutritional_info (object with calories, protein, carbs, fat as numbers), meal_type (string), preparation_time (number), difficulty (string), servings (number), health_benefits (array of {category, description, icon}).'
+            content: 'Tu es un chef cuisinier spécialisé dans la nutrition infantile. Génère UNIQUEMENT des tableaux JSON de recettes selon le format demandé.'
           },
           { role: 'user', content: prompt }
         ],
