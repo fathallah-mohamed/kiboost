@@ -28,15 +28,13 @@ serve(async (req) => {
     }
 
     const { childProfiles, filters, offset = 0 } = await req.json();
-    console.log('Received request with child profiles:', childProfiles);
-    console.log('Filters:', filters);
-    console.log('Offset:', offset);
+    console.log('Received request with:', { childProfiles, filters, offset });
 
     const prompt = buildPrompt(childProfiles, filters, offset);
     console.log('Built prompt:', prompt);
     
     const content = await generateRecipesWithOpenAI(prompt, openAIApiKey);
-    console.log('Received valid JSON response from OpenAI');
+    console.log('Received response from OpenAI:', content);
 
     let recipes;
     try {
@@ -45,12 +43,12 @@ serve(async (req) => {
     } catch (error) {
       console.error('JSON parse error:', error);
       console.error('Content that failed to parse:', content);
-      throw new Error(`Failed to parse JSON: ${error.message}`);
+      throw new Error(`Failed to parse OpenAI response as JSON: ${error.message}`);
     }
 
     if (!Array.isArray(recipes)) {
       console.error('Invalid recipes structure:', recipes);
-      throw new Error('Invalid recipes structure');
+      throw new Error('OpenAI response is not an array of recipes');
     }
 
     // Add generated flag and timestamps to each recipe

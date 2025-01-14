@@ -15,7 +15,7 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier expert qui génère UNIQUEMENT des tableaux JSON de recettes selon le format demandé. Réponds UNIQUEMENT avec un tableau JSON valide, sans texte additionnel ni formatage markdown. Assure-toi que chaque recette a tous les champs requis et que le JSON est valide.'
+            content: 'You are a chef expert that ONLY generates valid JSON arrays of recipes. You must ALWAYS return a valid JSON array containing exactly 3 recipes, following the exact format provided in the user prompt. Each recipe must include all required fields with proper types. Never include any text outside the JSON array.'
           },
           { role: 'user', content: prompt }
         ],
@@ -45,8 +45,8 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
     content = content.replace(/```json\n?/, '').replace(/```\n?$/, '');
     console.log('Content after markdown removal:', content);
 
+    // Validate JSON structure
     try {
-      // Validate JSON structure
       const parsed = JSON.parse(content);
       console.log('Successfully parsed JSON:', parsed);
       
@@ -79,48 +79,6 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
           console.error(`Recipe ${index + 1} missing fields:`, missingFields);
           throw new Error(`Recipe ${index + 1} missing required fields: ${missingFields.join(', ')}`);
         }
-
-        // Validate ingredients structure
-        if (!Array.isArray(recipe.ingredients)) {
-          console.error(`Recipe ${index + 1} invalid ingredients:`, recipe.ingredients);
-          throw new Error(`Recipe ${index + 1} must have an array of ingredients`);
-        }
-
-        recipe.ingredients.forEach((ingredient: any, i: number) => {
-          if (!ingredient.item || !ingredient.quantity || !ingredient.unit) {
-            console.error(`Recipe ${index + 1} ingredient ${i + 1} invalid:`, ingredient);
-            throw new Error(`Recipe ${index + 1}, ingredient ${i + 1} must have item, quantity, and unit`);
-          }
-        });
-
-        // Validate nutritional_info structure
-        const requiredNutritionalFields = ['calories', 'protein', 'carbs', 'fat'];
-        const missingNutritionalFields = requiredNutritionalFields.filter(
-          field => typeof recipe.nutritional_info[field] !== 'number'
-        );
-        if (missingNutritionalFields.length > 0) {
-          console.error(`Recipe ${index + 1} invalid nutritional info:`, recipe.nutritional_info);
-          throw new Error(`Recipe ${index + 1} has invalid nutritional information`);
-        }
-
-        // Validate instructions array
-        if (!Array.isArray(recipe.instructions)) {
-          console.error(`Recipe ${index + 1} invalid instructions:`, recipe.instructions);
-          throw new Error(`Recipe ${index + 1} must have an array of instructions`);
-        }
-
-        // Validate health_benefits array
-        if (!Array.isArray(recipe.health_benefits)) {
-          console.error(`Recipe ${index + 1} invalid health_benefits:`, recipe.health_benefits);
-          throw new Error(`Recipe ${index + 1} must have an array of health benefits`);
-        }
-
-        recipe.health_benefits.forEach((benefit: any, i: number) => {
-          if (!benefit.category || !benefit.description || !benefit.icon) {
-            console.error(`Recipe ${index + 1} health benefit ${i + 1} invalid:`, benefit);
-            throw new Error(`Recipe ${index + 1}, health benefit ${i + 1} must have category, description, and icon`);
-          }
-        });
       });
       
       return content;
