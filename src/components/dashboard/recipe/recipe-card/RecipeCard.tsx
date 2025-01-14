@@ -8,16 +8,17 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { RecipeHealthBenefits } from "./RecipeHealthBenefits";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
   onAdd?: (recipe: Recipe) => void;
+  compact?: boolean;
 }
 
-export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const { toast } = useToast();
@@ -55,6 +56,18 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
       });
     }
   };
+
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        <h4 className="font-medium text-sm">{recipe.name}</h4>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="w-3 h-3" />
+          <span>{recipe.preparation_time} min</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card className="p-6 space-y-6">
