@@ -23,11 +23,11 @@ serve(async (req) => {
       throw new Error('Clé API OpenAI non configurée');
     }
 
-    const { childProfiles, filters } = await req.json();
+    const { childProfiles, filters, offset = 0 } = await req.json();
     console.log('Received request with child profiles:', childProfiles);
     console.log('Filters:', filters);
+    console.log('Offset:', offset);
 
-    // Combiner les allergies et préférences
     const allAllergies = [...new Set(childProfiles.flatMap(child => child.allergies || []))];
     const commonPreferences = childProfiles.reduce((common, child) => {
       if (common.length === 0) return child.preferences || [];
@@ -43,7 +43,10 @@ serve(async (req) => {
     const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
     const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
 
-    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français spécialisé dans l'alimentation multi-âges, crée 9 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour ${childProfiles.length} enfant(s) âgés de ${ageRange.min} à ${ageRange.max} ans.
+    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français spécialisé dans l'alimentation multi-âges, crée 3 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour ${childProfiles.length} enfant(s) âgés de ${ageRange.min} à ${ageRange.max} ans.
+    
+    IMPORTANT: Génère des recettes DIFFÉRENTES à chaque fois, ne répète pas les mêmes recettes.
+    Utilise ton imagination pour créer des recettes uniques et variées.
 
     ${allAllergies.length > 0 ? `⚠️ SÉCURITÉ ALIMENTAIRE CRITIQUE - ALLERGIES :
     - Exclus ABSOLUMENT et STRICTEMENT ces allergènes pour TOUS les enfants : ${allAllergies.join(', ')}
@@ -101,33 +104,7 @@ serve(async (req) => {
     Pour chaque bienfait, fournis :
     - category: la catégorie (parmi la liste ci-dessus)
     - description: une description courte et ludique du bienfait
-    - icon: une icône parmi : brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles
-    
-    Réponds UNIQUEMENT avec un tableau JSON de 9 recettes, chacune ayant cette structure :
-    {
-      "name": "Nom créatif de la recette",
-      "ingredients": [
-        {"item": "ingrédient", "quantity": "quantité", "unit": "unité"}
-      ],
-      "instructions": ["étape 1", "étape 2", "etc"],
-      "nutritional_info": {
-        "calories": nombre,
-        "protein": nombre,
-        "carbs": nombre,
-        "fat": nombre
-      },
-      "health_benefits": [
-        {
-          "category": "catégorie",
-          "description": "description du bienfait",
-          "icon": "nom de l'icône"
-        }
-      ],
-      "meal_type": "${filters?.mealType || 'dinner'}",
-      "preparation_time": nombre,
-      "difficulty": "${filters?.difficulty || 'medium'}",
-      "servings": 4
-    }`;
+    - icon: une icône parmi : brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles`;
 
     console.log('Sending request to OpenAI with prompt:', prompt);
     

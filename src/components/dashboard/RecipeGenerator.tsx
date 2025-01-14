@@ -11,7 +11,6 @@ import { useRecipeSaving } from "./recipe/hooks/useRecipeSaving";
 import { usePlannedRecipesFetching } from "./recipe/hooks/usePlannedRecipesFetching";
 import { LoadingOverlay } from "./recipe/LoadingOverlay";
 import { RecipeGeneratorTitle } from "./recipe/RecipeGeneratorTitle";
-import { LoadMoreButton } from "./recipe/LoadMoreButton";
 import { Button } from "@/components/ui/button";
 
 export const RecipeGenerator = () => {
@@ -41,15 +40,24 @@ export const RecipeGenerator = () => {
       mealType: mealType === "all" ? undefined : mealType,
       maxPrepTime,
       difficulty: difficulty === "all" ? undefined : difficulty,
-    });
+    }, 0); // Offset 0 pour la première génération
   };
 
   const handleSaveRecipe = async (recipe: Recipe) => {
     await saveRecipe(recipe, selectedChildren);
   };
 
-  const handleLoadMore = () => {
-    setDisplayCount(prev => Math.min(prev + 3, recipes.length));
+  const handleLoadMore = async () => {
+    // Calculer l'offset basé sur le nombre de recettes déjà affichées
+    const offset = displayCount;
+    setDisplayCount(prev => prev + 3);
+    
+    // Générer 3 nouvelles recettes avec l'offset actuel
+    await generateRecipes(selectedChildren[0], {
+      mealType: mealType === "all" ? undefined : mealType,
+      maxPrepTime,
+      difficulty: difficulty === "all" ? undefined : difficulty,
+    }, offset);
   };
 
   return (
@@ -91,11 +99,12 @@ export const RecipeGenerator = () => {
         onSaveRecipe={handleSaveRecipe}
       />
 
-      {recipes.length > displayCount && (
+      {recipes.length > 0 && (
         <div className="flex justify-center mt-6">
           <Button 
             variant="outline"
             onClick={handleLoadMore}
+            disabled={loading}
             className="px-6"
           >
             Voir plus de recettes ({displayCount}/{recipes.length})
