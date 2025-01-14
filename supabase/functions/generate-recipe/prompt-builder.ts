@@ -22,33 +22,41 @@ export function buildPrompt(
 
   return `Génère exactement 3 recettes ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour ${childProfiles.length} enfant(s) âgés de ${ageRange.min} à ${ageRange.max} ans.
 
-Format JSON REQUIS pour chaque recette:
+Exemple de format JSON REQUIS pour chaque recette:
 [
   {
-    "name": "Nom de la recette",
+    "name": "Pancakes aux bananes",
     "ingredients": [
       {
-        "item": "Ingrédient",
-        "quantity": "Quantité",
-        "unit": "Unité"
+        "item": "Banane mûre",
+        "quantity": "2",
+        "unit": "pièces"
+      },
+      {
+        "item": "Farine",
+        "quantity": "150",
+        "unit": "g"
       }
     ],
-    "instructions": ["Étape 1", "Étape 2"],
+    "instructions": [
+      "Écraser les bananes",
+      "Mélanger avec la farine"
+    ],
     "nutritional_info": {
-      "calories": 300,
-      "protein": 10,
-      "carbs": 40,
-      "fat": 12
+      "calories": 250,
+      "protein": 5,
+      "carbs": 45,
+      "fat": 6
     },
-    "meal_type": "breakfast|lunch|dinner|snack",
-    "preparation_time": 30,
-    "difficulty": "easy|medium|hard",
+    "meal_type": "breakfast",
+    "preparation_time": 15,
+    "difficulty": "easy",
     "servings": 4,
     "health_benefits": [
       {
-        "category": "cognitive|energy|satiety|digestive|immunity|growth|mental|organs|beauty|physical|prevention|global",
-        "description": "Description du bienfait",
-        "icon": "brain|zap|cookie|shield|leaf|lightbulb|battery|apple|heart|sun|dumbbell|sparkles"
+        "category": "energy",
+        "description": "Riche en glucides pour l'énergie",
+        "icon": "zap"
       }
     ]
   }
@@ -60,7 +68,7 @@ ${commonPreferences.length > 0 ? `PRÉFÉRENCES: ${commonPreferences.join(', ')}
 IMPORTANT:
 - Réponds UNIQUEMENT avec un tableau JSON de 3 recettes
 - Assure-toi que chaque recette a TOUS les champs requis
-- Utilise UNIQUEMENT les valeurs autorisées pour meal_type, difficulty et les icônes
+- Utilise UNIQUEMENT les valeurs autorisées pour meal_type (breakfast, lunch, dinner, snack), difficulty (easy, medium, hard) et les icônes (brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles)
 - Génère des recettes DIFFÉRENTES à chaque fois (offset: ${offset})
 - Adapte les portions et textures selon l'âge des enfants
 - Privilégie des ingrédients sains et adaptés aux enfants`;
