@@ -1,13 +1,20 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Recipe, RecipeCardProps } from "../../types";
+import { Recipe } from "../../types";
 import { Clock, ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RecipeHeader } from "./RecipeHeader";
 import { RecipeHealthBenefits } from "./RecipeHealthBenefits";
 import { RecipeMetadata } from "./RecipeMetadata";
 import { RecipeNutritionalInfo } from "./RecipeNutritionalInfo";
+
+interface RecipeCardProps {
+  recipe: Recipe;
+  isPlanned?: boolean;
+  onAdd?: (recipe: Recipe) => void;
+  compact?: boolean;
+}
 
 export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
