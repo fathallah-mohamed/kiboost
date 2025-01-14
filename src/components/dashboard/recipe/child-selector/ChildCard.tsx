@@ -49,16 +49,12 @@ export const ChildCard = ({ child, isSelected, onToggle }: ChildCardProps) => {
           <p className="text-sm text-gray-600">
             {age.years} ans{age.months > 0 && `, ${age.months} mois`}{age.days > 0 && `, ${age.days} jours`}
           </p>
-          {child.allergies?.length > 0 && (
-            <p className="text-sm text-gray-600">
-              Allergies: {child.allergies.join(', ')}
-            </p>
-          )}
-          {child.preferences?.length > 0 && (
-            <p className="text-sm text-gray-600">
-              Préférences: {child.preferences.join(', ')}
-            </p>
-          )}
+          <p className="text-sm text-gray-600">
+            Allergies: {child.allergies?.length > 0 ? child.allergies.join(', ') : 'Aucune allergie connue'}
+          </p>
+          <p className="text-sm text-gray-600">
+            Préférences: {child.preferences?.length > 0 ? child.preferences.join(', ') : 'Aucune préférence renseignée'}
+          </p>
         </div>
         <Checkbox
           checked={isSelected}
