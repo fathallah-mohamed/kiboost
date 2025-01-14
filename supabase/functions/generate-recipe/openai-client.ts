@@ -15,14 +15,16 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         messages: [
           {
             role: 'system',
-            content: `Tu es un chef cuisinier français créatif qui génère des recettes adaptées aux enfants. 
-            Réponds UNIQUEMENT avec un tableau JSON de 3 recettes, sans texte supplémentaire.
-            Format attendu: [{"name": "Nom de la recette", "ingredients": [{"item": "ingrédient", "quantity": "quantité", "unit": "unité"}], "instructions": ["étape 1", "étape 2"], "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}, "meal_type": "breakfast|lunch|dinner|snack", "preparation_time": 30, "difficulty": "easy|medium|hard", "servings": 4, "health_benefits": ["bénéfice 1", "bénéfice 2"]}]`
+            content: `Tu es un chef cuisinier français créatif qui génère des recettes adaptées aux enfants.
+            IMPORTANT: Réponds UNIQUEMENT avec un tableau JSON de 3 recettes, sans AUCUN texte supplémentaire.
+            Format attendu: [{"name": "Nom de la recette", "ingredients": [{"item": "ingrédient", "quantity": "quantité", "unit": "unité"}], "instructions": ["étape 1", "étape 2"], "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}, "meal_type": "breakfast|lunch|dinner|snack", "preparation_time": 30, "difficulty": "easy|medium|hard", "servings": 4}]`
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 3000,
+        presence_penalty: 0.1,
+        frequency_penalty: 0.1,
       }),
     });
 
@@ -46,8 +48,8 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
     content = content.replace(/```json\n?/, '').replace(/```\n?$/, '');
     console.log('Content after markdown removal:', content);
 
-    // Validate JSON structure
     try {
+      // First, validate that the content is valid JSON
       const parsed = JSON.parse(content);
       console.log('Successfully parsed JSON:', parsed);
       
@@ -72,6 +74,17 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
         if (missingFields.length > 0) {
           throw new Error(`La recette ${index + 1} manque les champs requis: ${missingFields.join(', ')}`);
         }
+
+        // Validate ingredients structure
+        if (!Array.isArray(recipe.ingredients)) {
+          throw new Error(`La recette ${index + 1} doit avoir un tableau d'ingrédients`);
+        }
+
+        recipe.ingredients.forEach((ingredient: any, i: number) => {
+          if (!ingredient.item || !ingredient.quantity || !ingredient.unit) {
+            throw new Error(`Ingrédient ${i + 1} de la recette ${index + 1} invalide`);
+          }
+        });
       });
       
       return content;
