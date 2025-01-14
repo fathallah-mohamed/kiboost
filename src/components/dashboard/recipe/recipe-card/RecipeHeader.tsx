@@ -7,9 +7,11 @@ import { useState } from "react";
 
 interface RecipeHeaderProps {
   recipe: Recipe;
+  onAdd?: (recipe: Recipe) => void;
+  isPlanned?: boolean;
 }
 
-export const RecipeHeader = ({ recipe }: RecipeHeaderProps) => {
+export const RecipeHeader = ({ recipe, onAdd, isPlanned }: RecipeHeaderProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const { toast } = useToast();
 
@@ -69,6 +71,11 @@ export const RecipeHeader = ({ recipe }: RecipeHeaderProps) => {
         <Button variant="ghost" size="icon" onClick={toggleFavorite}>
           <Heart className="w-4 h-4" fill={isFavorite ? "currentColor" : "none"} />
         </Button>
+        {onAdd && (
+          <Button onClick={() => onAdd(recipe)} disabled={isPlanned}>
+            {isPlanned ? 'Déjà planifiée' : 'Planifier'}
+          </Button>
+        )}
       </div>
     </div>
   );

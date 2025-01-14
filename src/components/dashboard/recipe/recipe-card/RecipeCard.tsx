@@ -5,6 +5,7 @@ import { RecipeHeader } from "./RecipeHeader";
 import { RecipeMetadata } from "./RecipeMetadata";
 import { RecipeContent } from "./RecipeContent";
 import { CompactRecipe } from "./CompactRecipe";
+import { RecipeHealthBenefits } from "./RecipeHealthBenefits";
 
 interface RecipeCardProps {
   recipe: Recipe;
