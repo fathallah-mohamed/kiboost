@@ -30,6 +30,7 @@ export const RecipeList = ({
             recipe={recipe}
             isPlanned={plannedRecipes.includes(recipe.id)}
             onAdd={() => onSaveRecipe(recipe)}
+            index={index}
           />
         ))}
       </div>
