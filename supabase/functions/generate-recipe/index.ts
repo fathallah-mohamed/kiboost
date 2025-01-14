@@ -27,8 +27,14 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const { childProfiles, filters, offset = 0 } = await req.json();
-    console.log('Received request with:', { childProfiles, filters, offset });
+    const requestData = await req.json();
+    console.log('Received request data:', requestData);
+
+    const { childProfiles, filters, offset = 0 } = requestData;
+    
+    if (!childProfiles || !Array.isArray(childProfiles) || childProfiles.length === 0) {
+      throw new Error('Invalid or missing childProfiles in request');
+    }
 
     const prompt = buildPrompt(childProfiles, filters, offset);
     console.log('Built prompt:', prompt);
