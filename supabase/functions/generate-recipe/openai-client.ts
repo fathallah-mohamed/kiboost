@@ -85,11 +85,26 @@ export async function generateRecipesWithOpenAI(prompt: string, apiKey: string):
             throw new Error(`Ingrédient ${i + 1} de la recette ${index + 1} invalide`);
           }
         });
+
+        // Validate nutritional_info structure
+        const requiredNutritionalFields = ['calories', 'protein', 'carbs', 'fat'];
+        const missingNutritionalFields = requiredNutritionalFields.filter(
+          field => typeof recipe.nutritional_info[field] !== 'number'
+        );
+        if (missingNutritionalFields.length > 0) {
+          throw new Error(`La recette ${index + 1} a des informations nutritionnelles invalides`);
+        }
+
+        // Validate instructions array
+        if (!Array.isArray(recipe.instructions) || recipe.instructions.length === 0) {
+          throw new Error(`La recette ${index + 1} doit avoir des instructions valides`);
+        }
       });
       
       return content;
     } catch (error) {
       console.error('Error parsing or validating OpenAI response:', error);
+      console.error('Raw content that failed to parse:', content);
       throw new Error(`Erreur de validation: ${error.message}`);
     }
   } catch (error) {
