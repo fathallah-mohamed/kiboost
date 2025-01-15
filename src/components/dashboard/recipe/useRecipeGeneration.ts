@@ -19,7 +19,6 @@ export const useRecipeGeneration = () => {
   }, [recipes]);
 
   const clearRecipes = () => {
-    console.log('Clearing recipes and localStorage');
     localStorage.removeItem(STORAGE_KEY);
     setRecipes([]);
     setLoading(false);
@@ -31,12 +30,15 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Generating recipes for children:', child, 'with filters:', filters);
+      console.log('Generating recipes for child:', child, 'with filters:', filters);
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-recipe', {
         body: {
           childProfiles: [child],
           filters,
+        },
+        headers: {
+          'Content-Type': 'application/json',
         },
       });
 
@@ -45,20 +47,25 @@ export const useRecipeGeneration = () => {
         throw new Error(functionError.message);
       }
 
-      console.log('Generated recipes:', data);
-      
       if (!data || !Array.isArray(data)) {
         throw new Error('Format de réponse invalide');
       }
 
+      console.log('Generated recipes:', data);
       setRecipes(data);
-    } catch (err) {
+      
+      toast({
+        title: "Recettes générées",
+        description: `${data.length} recettes ont été générées avec succès.`,
+      });
+
+    } catch (err: any) {
       console.error('Error generating recipes:', err);
       setError('Une erreur est survenue lors de la génération des recettes.');
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de générer les recettes.",
+        description: "Impossible de générer les recettes. Veuillez réessayer.",
       });
     } finally {
       setLoading(false);
