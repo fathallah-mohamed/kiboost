@@ -11,7 +11,7 @@ import {
 } from "recharts";
 
 interface MealStatistic {
-  frequency: number;
+  frequency: number | null;
   recipes: {
     name: string;
   } | null;
@@ -36,7 +36,7 @@ export const MealFrequency = () => {
 
       if (error) throw error;
 
-      return (statistics as MealStatistic[]).map((stat) => ({
+      return (statistics as unknown as MealStatistic[]).map((stat) => ({
         name: stat.recipes?.name || "Unknown Recipe",
         value: stat.frequency || 0,
       }));
