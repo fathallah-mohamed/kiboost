@@ -10,6 +10,13 @@ import {
   Legend,
 } from "recharts";
 
+interface MealStatistic {
+  frequency: number;
+  recipes: {
+    name: string;
+  } | null;
+}
+
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
 export const MealFrequency = () => {
@@ -29,9 +36,9 @@ export const MealFrequency = () => {
 
       if (error) throw error;
 
-      return statistics.map((stat) => ({
-        name: stat.recipes?.name,
-        value: stat.frequency,
+      return (statistics as MealStatistic[]).map((stat) => ({
+        name: stat.recipes?.name || "Unknown Recipe",
+        value: stat.frequency || 0,
       }));
     },
   });
