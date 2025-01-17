@@ -18,24 +18,30 @@ export const AuthForm = () => {
     setLoading(true);
 
     try {
+      console.log('Attempting authentication:', { isSignUp, email }); // Debug log
+
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
+        console.log('SignUp response:', { data, error }); // Debug log
+        
         if (error) throw error;
         toast({
           title: "Vérifiez votre email",
           description: "Un lien de confirmation vous a été envoyé.",
         });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        console.log('SignIn response:', { data, error }); // Debug log
+        
         if (error) throw error;
         toast({
           title: "Connexion réussie",
@@ -68,6 +74,7 @@ export const AuthForm = () => {
           if (authError.message.includes('weak-password')) {
             errorMessage = "Le mot de passe est trop faible.";
           }
+          console.error('Detailed error:', authError); // Debug log
           break;
       }
 
