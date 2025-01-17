@@ -5,17 +5,20 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import { AuthError } from '@supabase/supabase-js';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export const AuthForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       if (isSignUp) {
@@ -32,6 +35,7 @@ export const AuthForm = () => {
           description: "Un lien de confirmation vous a été envoyé.",
         });
       } else {
+        console.log('Tentative de connexion avec:', email);
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -53,13 +57,13 @@ export const AuthForm = () => {
         errorMessage = "Veuillez confirmer votre email avant de vous connecter.";
       }
 
+      setError(errorMessage);
       toast({
         variant: "destructive",
         title: "Erreur",
         description: errorMessage,
       });
 
-      // Si l'erreur est liée au refresh token, déconnectez l'utilisateur
       if (authError.message.includes('refresh_token')) {
         await supabase.auth.signOut();
       }
@@ -74,6 +78,11 @@ export const AuthForm = () => {
         <h2 className="text-2xl font-bold text-center mb-6">
           {isSignUp ? 'Créer un compte' : 'Se connecter'}
         </h2>
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         <div className="space-y-2">
           <Input
             type="email"
