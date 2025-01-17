@@ -23,7 +23,7 @@ export const AuthForm = () => {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
         if (error) throw error;
@@ -47,10 +47,28 @@ export const AuthForm = () => {
       const authError = error as AuthError;
       let errorMessage = "Une erreur est survenue.";
       
-      if (authError.message === 'Invalid login credentials') {
-        errorMessage = "Email ou mot de passe incorrect.";
-      } else if (authError.message.includes('Email not confirmed')) {
-        errorMessage = "Veuillez confirmer votre email avant de vous connecter.";
+      // Handle specific error cases
+      switch (authError.message) {
+        case 'Invalid login credentials':
+          errorMessage = "Email ou mot de passe incorrect.";
+          break;
+        case 'Email not confirmed':
+          errorMessage = "Veuillez confirmer votre email avant de vous connecter.";
+          break;
+        case 'User not found':
+          errorMessage = "Aucun compte trouvé avec cet email.";
+          break;
+        case 'Invalid email':
+          errorMessage = "Format d'email invalide.";
+          break;
+        case 'Password should be at least 6 characters':
+          errorMessage = "Le mot de passe doit contenir au moins 6 caractères.";
+          break;
+        default:
+          if (authError.message.includes('weak-password')) {
+            errorMessage = "Le mot de passe est trop faible.";
+          }
+          break;
       }
 
       toast({
@@ -58,11 +76,6 @@ export const AuthForm = () => {
         title: "Erreur",
         description: errorMessage,
       });
-
-      // Si l'erreur est liée au refresh token, déconnectez l'utilisateur
-      if (authError.message.includes('refresh_token')) {
-        await supabase.auth.signOut();
-      }
     } finally {
       setLoading(false);
     }
@@ -81,6 +94,7 @@ export const AuthForm = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="w-full"
           />
           <Input
             type="password"
@@ -88,6 +102,8 @@ export const AuthForm = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={6}
+            className="w-full"
           />
         </div>
         <Button type="submit" className="w-full" disabled={loading}>
