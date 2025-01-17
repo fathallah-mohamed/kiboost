@@ -24,7 +24,12 @@ interface NutritionalInfo {
 interface MealPlanResponse {
   date: string;
   recipes: {
-    nutritional_info: NutritionalInfo;
+    nutritional_info: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+    };
   } | null;
 }
 
@@ -48,7 +53,7 @@ export const NutritionalStats = () => {
 
       if (error) throw error;
 
-      const dailyNutrition = (mealPlans as unknown as MealPlanResponse[]).reduce((acc: Record<string, any>, plan) => {
+      const dailyNutrition = (mealPlans as MealPlanResponse[]).reduce((acc: Record<string, any>, plan) => {
         const date = format(new Date(plan.date), "EEEE", { locale: fr });
         const defaultNutrition: NutritionalInfo = {
           calories: 0,
