@@ -3,6 +3,8 @@ import { RecipeGeneratorContent } from './recipe/RecipeGeneratorContent';
 import { useRecipeGeneration } from './recipe/useRecipeGeneration';
 import { useState } from 'react';
 import { Recipe, ChildProfile } from './types';
+import { useRecipeSaving } from './recipe/hooks/useRecipeSaving';
+import { toast } from 'sonner';
 
 interface RecipeGeneratorProps {
   onSectionChange: (section: string) => void;
@@ -13,17 +15,28 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const [displayCount, setDisplayCount] = useState(3);
   const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
   const { recipes, loading, error, generateRecipes } = useRecipeGeneration();
-  const [saving, setSaving] = useState(false);
+  const { saveRecipe, saving } = useRecipeSaving();
 
   const handleGenerateRecipes = async () => {
-    if (selectedChildren.length === 0) return;
+    if (selectedChildren.length === 0) {
+      toast.error("Veuillez sélectionner au moins un enfant");
+      return;
+    }
     await generateRecipes(selectedChildren[0]);
   };
 
   const handleSaveRecipe = async (recipe: Recipe) => {
-    setSaving(true);
-    // Implement save logic here
-    setSaving(false);
+    if (selectedChildren.length === 0) {
+      toast.error("Veuillez sélectionner au moins un enfant");
+      return;
+    }
+    const savedRecipe = await saveRecipe(recipe, selectedChildren);
+    if (savedRecipe) {
+      setPlannedRecipes(prev => ({
+        ...prev,
+        [savedRecipe.id]: savedRecipe
+      }));
+    }
   };
 
   const handleLoadMore = () => {

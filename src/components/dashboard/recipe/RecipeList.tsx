@@ -28,8 +28,10 @@ export const RecipeList = ({
           <RecipeCard
             key={recipe.id}
             recipe={recipe}
-            isPlanned={Object.keys(plannedRecipes).some(date => plannedRecipes[date]?.id === recipe.id)}
-            onAdd={() => onSaveRecipe(recipe)}
+            isPlanned={Object.values(plannedRecipes).some(
+              (plannedRecipe) => plannedRecipe?.id === recipe.id
+            )}
+            onAdd={onSaveRecipe}
           />
         ))}
       </div>
