@@ -14,7 +14,7 @@ import { RecipeGenerator } from './RecipeGenerator';
 import { StatsAndLeftovers } from './statistics/StatsAndLeftovers';
 import { WeeklyPlanViewer } from './WeeklyPlanViewer';
 import { ChildProfile } from './types';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { HomeIcon } from 'lucide-react';
 
 interface DashboardProps {
@@ -23,6 +23,7 @@ interface DashboardProps {
 
 export const Dashboard = ({ session }: DashboardProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
   const [activeSection, setActiveSection] = useState<string>('overview');
@@ -72,6 +73,7 @@ export const Dashboard = ({ session }: DashboardProps) => {
         title: "Déconnexion réussie",
         description: "À bientôt sur Kiboost !",
       });
+      navigate('/');
     } catch (error) {
       toast({
         variant: "destructive",
