@@ -9,10 +9,9 @@ import { MealPlanner } from './MealPlanner';
 import { ShoppingList } from './ShoppingList';
 import { RecipeGenerator } from './RecipeGenerator';
 import { StatsAndLeftovers } from './statistics/StatsAndLeftovers';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChildProfile } from './types';
 import { LeftoversManager } from './leftovers/LeftoversManager';
-import { StepProgress } from '../navigation/StepProgress';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 
 interface DashboardProps {
   session: Session;
@@ -22,8 +21,6 @@ export const Dashboard = ({ session }: DashboardProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [completedSteps, setCompletedSteps] = useLocalStorage<number[]>("completed_steps", []);
 
   const handleSignOut = async () => {
     try {
@@ -44,102 +41,64 @@ export const Dashboard = ({ session }: DashboardProps) => {
     }
   };
 
-  const handleStepClick = (step: number) => {
-    // Vérifier si l'étape précédente est complétée
-    if (step > 1 && !completedSteps.includes(step - 1)) {
-      toast({
-        variant: "destructive",
-        title: "Étape verrouillée",
-        description: "Veuillez d'abord compléter l'étape précédente.",
-      });
-      return;
-    }
-    setCurrentStep(step);
-  };
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Tableau de bord</h1>
+        <Button onClick={handleSignOut} variant="outline" disabled={loading}>
+          {loading ? 'Déconnexion...' : 'Se déconnecter'}
+        </Button>
+      </div>
 
-  const completeStep = (step: number) => {
-    if (!completedSteps.includes(step)) {
-      setCompletedSteps([...completedSteps, step]);
-    }
-  };
+      <Tabs defaultValue="profiles" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="profiles">Profils enfants</TabsTrigger>
+          <TabsTrigger value="recipes">Recettes</TabsTrigger>
+          <TabsTrigger value="planner">Planificateur</TabsTrigger>
+          <TabsTrigger value="shopping">Liste de courses</TabsTrigger>
+          <TabsTrigger value="leftovers">Restes</TabsTrigger>
+          <TabsTrigger value="stats">Statistiques</TabsTrigger>
+        </TabsList>
 
-  const renderContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <Card className="p-6 animate-fade-in">
+        <TabsContent value="profiles">
+          <Card className="p-6">
             <ChildrenProfiles 
               userId={session.user.id} 
-              onSelectChild={(child) => {
-                setSelectedChild(child);
-                if (child) {
-                  completeStep(1);
-                  toast({
-                    title: "Profil sélectionné",
-                    description: "Passons à la planification des repas !",
-                  });
-                }
-              }}
+              onSelectChild={setSelectedChild}
             />
           </Card>
-        );
-      case 2:
-        return (
-          <Card className="p-6 animate-fade-in">
-            <MealPlanner userId={session.user.id} />
-          </Card>
-        );
-      case 3:
-        return (
-          <Card className="p-6 animate-fade-in">
+        </TabsContent>
+
+        <TabsContent value="recipes">
+          <Card className="p-6">
             <RecipeGenerator />
           </Card>
-        );
-      case 4:
-        return (
-          <Card className="p-6 animate-fade-in">
+        </TabsContent>
+
+        <TabsContent value="planner">
+          <Card className="p-6">
+            <MealPlanner userId={session.user.id} />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="shopping">
+          <Card className="p-6">
             <ShoppingList userId={session.user.id} />
           </Card>
-        );
-      case 5:
-        return (
-          <Card className="p-6 animate-fade-in">
+        </TabsContent>
+
+        <TabsContent value="leftovers">
+          <Card className="p-6">
             <LeftoversManager userId={session.user.id} />
           </Card>
-        );
-      case 6:
-        return (
-          <Card className="p-6 animate-fade-in">
+        </TabsContent>
+
+        <TabsContent value="stats">
+          <Card className="p-6">
             <StatsAndLeftovers />
           </Card>
-        );
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Tableau de bord</h1>
-          <Button onClick={handleSignOut} variant="outline" disabled={loading}>
-            {loading ? 'Déconnexion...' : 'Se déconnecter'}
-          </Button>
-        </div>
-
-        <Card className="mb-8">
-          <StepProgress
-            currentStep={currentStep}
-            onStepClick={handleStepClick}
-            completedSteps={completedSteps}
-          />
-        </Card>
-
-        <div className="space-y-6">
-          {renderContent()}
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
