@@ -8,16 +8,18 @@ interface RecipeHeaderProps {
   recipe: Recipe;
   onAdd?: (recipe: Recipe) => void;
   isPlanned?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }
 
 export const RecipeHeader = ({ 
   recipe, 
   onAdd, 
   isPlanned,
+  isFavorite = false,
+  onToggleFavorite
 }: RecipeHeaderProps) => {
   const { toast } = useToast();
-  const { favoriteRecipes, toggleFavorite } = useFavorites();
-  const isFavorite = favoriteRecipes.includes(recipe.id);
 
   const handleShare = async () => {
     try {
@@ -41,7 +43,7 @@ export const RecipeHeader = ({
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => toggleFavorite(recipe)}
+          onClick={onToggleFavorite}
           className={isFavorite ? 'text-primary' : ''}
         >
           <Heart className="w-4 h-4" fill={isFavorite ? "currentColor" : "none"} />
