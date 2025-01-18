@@ -1,25 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Recipe, ChildProfile, RecipeFilters } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+const STORAGE_KEY = 'generated_recipes';
+
 export const useRecipeGeneration = () => {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+  }, [recipes]);
+
   const clearRecipes = () => {
+    console.log('Clearing recipes and localStorage');
+    localStorage.removeItem(STORAGE_KEY);
     setRecipes([]);
+    setLoading(false);
     setError(null);
   };
 
   const generateRecipes = async (child: ChildProfile, filters?: RecipeFilters) => {
     try {
-      console.log('Début de la génération de recettes avec:', { child, filters });
       setLoading(true);
       setError(null);
-
+      
+      console.log('Generating recipes for children:', child, 'with filters:', filters);
+      
       const { data, error: functionError } = await supabase.functions.invoke('generate-recipe', {
         body: {
           childProfiles: [child],
@@ -28,43 +41,24 @@ export const useRecipeGeneration = () => {
       });
 
       if (functionError) {
-        console.error('Erreur de la fonction Edge:', functionError);
-        throw functionError;
+        console.error('Error from Edge Function:', functionError);
+        throw new Error(functionError.message);
       }
 
+      console.log('Generated recipes:', data);
+      
       if (!data || !Array.isArray(data)) {
         throw new Error('Format de réponse invalide');
       }
 
-      console.log('Recettes reçues:', data);
-
-      // Validate and transform recipes
-      const validatedRecipes = data.map(recipe => ({
-        ...recipe,
-        id: crypto.randomUUID(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        profile_id: child.profile_id,
-        is_generated: true,
-        image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
-      }));
-
-      setRecipes(validatedRecipes);
-      
-      toast({
-        title: "Succès",
-        description: `${validatedRecipes.length} recettes ont été générées.`,
-      });
-
+      setRecipes(data);
     } catch (err) {
-      console.error('Erreur lors de la génération des recettes:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
-      setError(errorMessage);
-      
+      console.error('Error generating recipes:', err);
+      setError('Une erreur est survenue lors de la génération des recettes.');
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de générer les recettes. Veuillez réessayer.",
+        description: "Impossible de générer les recettes.",
       });
     } finally {
       setLoading(false);
@@ -76,6 +70,6 @@ export const useRecipeGeneration = () => {
     loading,
     error,
     generateRecipes,
-    clearRecipes,
+    clearRecipes
   };
 };

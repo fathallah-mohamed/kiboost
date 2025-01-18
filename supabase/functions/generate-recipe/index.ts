@@ -1,151 +1,118 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Configuration, OpenAIApi } from "https://esm.sh/openai@4.24.1";
+import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.1.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    console.log('Début de la génération de recette');
-    
-    // Request validation
-    if (!req.body) {
-      throw new Error("Corps de la requête manquant");
-    }
-
     const { childProfiles, filters } = await req.json();
-    console.log('Données reçues:', { childProfiles, filters });
-
-    if (!childProfiles || !Array.isArray(childProfiles) || childProfiles.length === 0) {
-      throw new Error("Profil enfant invalide ou manquant");
+    
+    // Add validation for required data
+    if (!childProfiles || !childProfiles[0]) {
+      throw new Error("No child profile provided");
     }
-
+    
     const child = childProfiles[0];
-    if (!child.birth_date) {
-      throw new Error("Date de naissance manquante");
-    }
+    console.log("Received child profile:", child);
+    console.log("Received filters:", filters);
 
-    // Process preferences and allergies
+    // Safely access and filter arrays with null checks
     const preferences = Array.isArray(child.preferences) 
-      ? child.preferences.filter(p => p && typeof p === 'string' && p.length > 0)
+      ? child.preferences.filter(p => p && typeof p === 'string' && p.trim() !== '')
       : [];
     
     const allergies = Array.isArray(child.allergies)
-      ? child.allergies.filter(a => a && typeof a === 'string' && a.length > 0)
+      ? child.allergies.filter(a => a && typeof a === 'string' && a.trim() !== '')
       : [];
 
-    // Calculate age
-    const birthDate = new Date(child.birth_date);
-    const today = new Date();
-    const age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    console.log("Processed preferences:", preferences);
+    console.log("Processed allergies:", allergies);
 
-    console.log('Informations de l\'enfant:', {
-      age,
-      preferences,
-      allergies,
-      filters
-    });
-
-    // OpenAI configuration
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
-      throw new Error("Clé API OpenAI non configurée");
-    }
-
+    // Initialize OpenAI
     const configuration = new Configuration({
-      apiKey: openaiApiKey,
+      apiKey: Deno.env.get("OPENAI_API_KEY"),
     });
     const openai = new OpenAIApi(configuration);
 
-    // Build prompt
-    const prompt = `Génère 3 recettes uniques et saines adaptées à un enfant de ${age} ans.
-    ${preferences.length > 0 ? `Prends en compte ces préférences: ${preferences.join(", ")}` : ""}
-    ${allergies.length > 0 ? `Évite ces allergènes: ${allergies.join(", ")}` : ""}
-    ${filters?.mealType ? `Type de repas: ${filters.mealType}` : ""}
-    ${filters?.maxPrepTime ? `Temps de préparation maximum: ${filters.maxPrepTime} minutes` : ""}
-    ${filters?.difficulty ? `Niveau de difficulté: ${filters.difficulty}` : ""}
+    // Build the preferences and allergies strings safely
+    const preferencesStr = preferences.length > 0 
+      ? `Consider these preferences: ${preferences.join(", ")}`
+      : "";
     
-    Formate chaque recette en objet JSON avec:
+    const allergiesStr = allergies.length > 0
+      ? `Avoid these allergens: ${allergies.join(", ")}`
+      : "";
+
+    // Calculate age with validation
+    let age = 0;
+    try {
+      const birthDate = new Date(child.birth_date);
+      const today = new Date();
+      age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    } catch (error) {
+      console.error("Error calculating age:", error);
+      age = 5; // Default age if calculation fails
+    }
+
+    // Build the prompt with filters
+    const prompt = `Generate 3 unique, healthy recipes suitable for a ${age}-year-old child.
+    ${preferencesStr}
+    ${allergiesStr}
+    ${filters?.mealType ? `Meal type: ${filters.mealType}` : ""}
+    ${filters?.maxPrepTime ? `Maximum preparation time: ${filters.maxPrepTime} minutes` : ""}
+    ${filters?.difficulty ? `Difficulty level: ${filters.difficulty}` : ""}
+    
+    Format each recipe as a JSON object with:
     - name (string)
-    - ingredients (array de {item, quantity, unit})
-    - instructions (array d'étapes)
-    - nutritional_info (objet avec calories, protein, carbs, fat)
-    - preparation_time (nombre en minutes)
+    - ingredients (array of {item, quantity, unit})
+    - instructions (array of steps)
+    - nutritional_info (object with calories, protein, carbs, fat)
+    - preparation_time (number in minutes)
     - difficulty (easy/medium/hard)
     - meal_type (breakfast/lunch/dinner/snack)
     
-    Retourne un tableau de 3 objets recette.`;
+    Return an array of 3 recipe objects.`;
 
-    console.log('Prompt généré:', prompt);
+    console.log("Generated prompt:", prompt);
 
-    // Call OpenAI API with timeout
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, 30000);
-
-    try {
-      const completion = await openai.createChatCompletion({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "Tu es un assistant culinaire spécialisé dans la génération de recettes pour enfants en format JSON."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }, { signal: controller.signal });
-
-      clearTimeout(timeout);
-      
-      if (!completion.data.choices[0].message?.content) {
-        throw new Error("Pas de réponse de OpenAI");
-      }
-
-      const recipes = JSON.parse(completion.data.choices[0].message.content);
-      console.log('Recettes générées:', recipes);
-
-      return new Response(JSON.stringify(recipes), {
-        headers: { 
-          ...corsHeaders,
-          "Content-Type": "application/json"
+    const completion = await openai.createChatCompletion({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that generates recipes in JSON format."
         },
-      });
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        throw new Error("La requête a dépassé le délai d'attente");
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeout);
-    }
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
 
+    const recipes = JSON.parse(completion.data.choices[0].message.content);
+    console.log("Generated recipes:", recipes);
+
+    return new Response(JSON.stringify(recipes), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error("Erreur lors de la génération des recettes:", error);
-    
+    console.error("Error generating recipes:", error);
     return new Response(
-      JSON.stringify({
-        error: error.message || "Erreur inconnue",
-        details: error.stack || "Pas de détails disponibles"
+      JSON.stringify({ 
+        error: error.message,
+        stack: error.stack 
       }), {
         status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   }
