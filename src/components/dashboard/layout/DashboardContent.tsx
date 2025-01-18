@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Session } from '@supabase/auth-helpers-react';
 import { WelcomeSection } from '../sections/WelcomeSection';
 import { QuickActions } from '../sections/QuickActions';
 import { WeeklyProgress } from '../sections/WeeklyProgress';
@@ -12,36 +13,45 @@ import { DashboardNavigation } from './DashboardNavigation';
 import { FavoriteRecipes } from '../favorites/FavoriteRecipes';
 
 interface DashboardContentProps {
+  session: Session;
   activeSection: string;
   setActiveSection: (section: string) => void;
 }
 
-export const DashboardContent = ({ activeSection, setActiveSection }: DashboardContentProps) => {
+export const DashboardContent = ({ session, activeSection, setActiveSection }: DashboardContentProps) => {
+  const [plannedMeals, setPlannedMeals] = useState(0);
+  const [totalMeals, setTotalMeals] = useState(21); // 3 meals per day for 7 days
+  const [newRecipes, setNewRecipes] = useState(0);
+
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
         return (
           <div className="space-y-6">
-            <WelcomeSection />
+            <WelcomeSection userId={session.user.id} />
             <DashboardNavigation 
               activeSection={activeSection} 
               setActiveSection={setActiveSection}
             />
             <QuickActions onSectionChange={setActiveSection} />
-            <WeeklyProgress />
+            <WeeklyProgress 
+              plannedMeals={plannedMeals}
+              totalMeals={totalMeals}
+              newRecipes={newRecipes}
+            />
             <StatsAndLeftovers />
           </div>
         );
       case 'recipes':
         return <RecipeGenerator onSectionChange={setActiveSection} />;
       case 'planner':
-        return <MealPlanner onSectionChange={setActiveSection} />;
+        return <MealPlanner userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'view-planner':
-        return <WeeklyPlanViewer onSectionChange={setActiveSection} />;
+        return <WeeklyPlanViewer userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'children':
-        return <ChildrenProfiles onSectionChange={setActiveSection} />;
+        return <ChildrenProfiles userId={session.user.id} onSelectChild={() => {}} />;
       case 'shopping':
-        return <ShoppingList onSectionChange={setActiveSection} />;
+        return <ShoppingList userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'favorites':
         return <FavoriteRecipes onSectionChange={setActiveSection} />;
       default:

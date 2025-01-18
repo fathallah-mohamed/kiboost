@@ -50,8 +50,6 @@ export const Dashboard = ({ session }: DashboardProps) => {
         session={session}
         activeSection={activeSection}
         setActiveSection={setActiveSection}
-        selectedChild={selectedChild}
-        setSelectedChild={setSelectedChild}
       />
     </div>
   );
