@@ -46,10 +46,9 @@ export interface RecipeFilters {
   mealType?: MealType;
   maxPrepTime?: number;
   difficulty?: Difficulty;
-  minAge?: number;
-  maxAge?: number;
   dietaryPreferences?: string[];
   excludedAllergens?: string[];
   maxCost?: number;
   season?: number;
+  healthBenefits?: string[];
 }
