@@ -1,40 +1,50 @@
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { HealthBenefit } from "../../types";
 import { 
-  Brain, Zap, Cookie, Shield, Leaf, 
-  Lightbulb, Battery, Apple, Heart, 
-  Sun, Dumbbell, Sparkles 
-} from 'lucide-react';
-import { cn } from "@/lib/utils";
+  Brain, 
+  Heart, 
+  Sun, 
+  Shield, 
+  Leaf, 
+  Lightbulb, 
+  Battery, 
+  Apple, 
+  Dumbbell, 
+  Sparkles,
+  Cookie,
+  Zap
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const iconMap: { [key: string]: React.ComponentType<any> } = {
-  brain: Brain,      // cognitive
-  zap: Zap,         // energy
-  cookie: Cookie,    // satiety
-  shield: Shield,    // immunity
-  leaf: Leaf,       // digestive
-  lightbulb: Lightbulb, // creativity
-  battery: Battery,  // fatigue
-  apple: Apple,     // nutrition
-  heart: Heart,     // cardiovascular
-  sun: Sun,         // vitality
-  dumbbell: Dumbbell, // physical
-  sparkles: Sparkles  // beauty
+  brain: Brain,
+  heart: Heart,
+  sun: Sun,
+  shield: Shield,
+  leaf: Leaf,
+  lightbulb: Lightbulb,
+  battery: Battery,
+  apple: Apple,
+  dumbbell: Dumbbell,
+  sparkles: Sparkles,
+  cookie: Cookie,
+  zap: Zap
 };
 
 const categoryColors: { [key: string]: string } = {
-  cognitive: "bg-purple-50 text-purple-600",
-  energy: "bg-yellow-50 text-yellow-600",
-  satiety: "bg-orange-50 text-orange-600",
-  digestive: "bg-green-50 text-green-600",
-  immunity: "bg-blue-50 text-blue-600",
-  growth: "bg-pink-50 text-pink-600",
-  mental: "bg-indigo-50 text-indigo-600",
-  organs: "bg-red-50 text-red-600",
-  beauty: "bg-rose-50 text-rose-600",
-  physical: "bg-cyan-50 text-cyan-600",
-  prevention: "bg-emerald-50 text-emerald-600",
-  global: "bg-violet-50 text-violet-600"
+  cognitive: "bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200",
+  energy: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200",
+  satiety: "bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200",
+  digestive: "bg-green-100 text-green-700 hover:bg-green-200 border-green-200",
+  immunity: "bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200",
+  growth: "bg-pink-100 text-pink-700 hover:bg-pink-200 border-pink-200",
+  mental: "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-indigo-200",
+  organs: "bg-red-100 text-red-700 hover:bg-red-200 border-red-200",
+  beauty: "bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-200",
+  physical: "bg-cyan-100 text-cyan-700 hover:bg-cyan-200 border-cyan-200",
+  prevention: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200",
+  global: "bg-violet-100 text-violet-700 hover:bg-violet-200 border-violet-200"
 };
 
 interface RecipeHealthBenefitsProps {
@@ -43,40 +53,46 @@ interface RecipeHealthBenefitsProps {
 }
 
 export const RecipeHealthBenefits = ({ benefits, compact }: RecipeHealthBenefitsProps) => {
-  console.log("RecipeHealthBenefits - benefits:", benefits);
-  
   if (!benefits || benefits.length === 0) {
     console.log("No benefits to display");
     return null;
   }
 
   return (
-    <div className={cn(
-      "flex flex-wrap gap-2",
-      compact ? "justify-start" : "justify-center"
-    )}>
-      {benefits.map((benefit, index) => {
-        console.log("Rendering benefit:", benefit);
-        const Icon = iconMap[benefit.icon] || Leaf;
-        return (
-          <Badge 
-            key={index}
-            variant="secondary" 
-            className={cn(
-              "flex items-center gap-1 px-2 py-1",
-              categoryColors[benefit.category]
-            )}
-          >
-            <Icon className="w-4 h-4" />
-            <span className={cn(
-              "text-sm",
-              compact ? "hidden sm:inline" : "inline"
-            )}>
-              {benefit.description}
-            </span>
-          </Badge>
-        );
-      })}
-    </div>
+    <TooltipProvider>
+      <div className={cn(
+        "flex flex-wrap gap-2",
+        compact ? "justify-start" : "justify-center"
+      )}>
+        {benefits.map((benefit, index) => {
+          const Icon = iconMap[benefit.icon] || Sparkles;
+          return (
+            <Tooltip key={index}>
+              <TooltipTrigger>
+                <Badge 
+                  variant="secondary" 
+                  className={cn(
+                    "flex items-center gap-1 px-3 py-1.5 transition-all duration-200 transform hover:scale-105 animate-fade-in",
+                    categoryColors[benefit.category],
+                    "cursor-help shadow-sm hover:shadow-md"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className={cn(
+                    "text-sm font-medium",
+                    compact ? "hidden sm:inline" : "inline"
+                  )}>
+                    {benefit.description}
+                  </span>
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-sm">{benefit.description}</p>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </TooltipProvider>
   );
 };
