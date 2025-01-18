@@ -26,54 +26,54 @@ serve(async (req) => {
 
   try {
     if (!openAIApiKey) {
-      throw new Error('Clé API OpenAI non configurée');
+      throw new Error('OpenAI API key not configured');
     }
 
     const { childProfiles, filters } = await req.json();
     const child = childProfiles[0];
     
-    console.log("Génération de recettes pour l'enfant:", child, "avec les filtres:", filters);
+    console.log("Generating recipes for child:", child, "with filters:", filters);
 
-    const prompt = `Génère exactement 3 recettes uniques et saines adaptées à un enfant de ${calculateAge(child.birth_date)} ans.
-    Prends en compte ces préférences : ${child.preferences?.join(", ") || "aucune préférence spécifique"}
-    Évite ces allergènes : ${child.allergies?.join(", ") || "aucune allergie"}
+    const prompt = `Generate exactly 3 unique, healthy recipes suitable for a child aged ${calculateAge(child.birth_date)} years.
+    Consider these preferences: ${child.preferences?.join(", ") || "no specific preferences"}
+    Avoid these allergens: ${child.allergies?.join(", ") || "no allergies"}
     
-    Filtres supplémentaires :
-    - Type de repas : ${filters?.mealType || "tous"}
-    - Temps de préparation maximum : ${filters?.maxPrepTime || "non spécifié"} minutes
-    - Niveau de difficulté : ${filters?.difficulty || "tous"}
+    Additional filters:
+    - Meal type: ${filters?.mealType || "any"}
+    - Maximum preparation time: ${filters?.maxPrepTime || "any"} minutes
+    - Difficulty level: ${filters?.difficulty || "any"}
     
-    Pour chaque recette, inclus 3-5 bienfaits spécifiques pour la santé des enfants, en choisissant parmi ces catégories :
-    1. Cognitive : amélioration de la mémoire, stimulation de la créativité, concentration accrue
-    2. Énergie : boost d'énergie, réduction de la fatigue, énergie rapide
-    3. Satiété : satiété prolongée, régulation de l'appétit
-    4. Digestive : amélioration de la digestion, santé intestinale, réduction des ballonnements
-    5. Immunité : renforcement du système immunitaire, protection contre les maladies
-    6. Croissance : renforcement des os, développement musculaire
-    7. Mental : amélioration de l'humeur, réduction du stress, meilleur sommeil
-    8. Organes : santé des yeux, protection cardiaque, santé respiratoire
-    9. Beauté : santé de la peau et des cheveux, hydratation
-    10. Physique : préparation à l'exercice, récupération, endurance
-    11. Prévention : anti-âge, détox, équilibre nutritionnel
-    12. Global : vitalité générale, nutrition durable
+    For each recipe, include 3-5 specific health benefits that are appropriate for children, choosing from these categories:
+    1. Cognitive: memory improvement, creativity boost, concentration enhancement
+    2. Energy: energy boost, fatigue reduction, quick energy
+    3. Satiety: prolonged satiety, appetite regulation
+    4. Digestive: improved digestion, gut health, reduced bloating
+    5. Immunity: immune system boost, disease protection
+    6. Growth: bone strength, muscle development
+    7. Mental: mood improvement, stress reduction, better sleep
+    8. Organs: eye health, heart protection, respiratory health
+    9. Beauty: skin and hair health, hydration
+    10. Physical: exercise preparation, recovery, endurance
+    11. Prevention: anti-aging, detox, nutritional balance
+    12. Global: general vitality, sustainable nutrition
 
-    Utilise ces icônes pour les bienfaits : brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles
+    Use these icons for benefits: brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles
     
-    Retourne UNIQUEMENT un tableau JSON valide contenant exactement 3 objets de recette. Chaque objet de recette doit suivre exactement cette structure :
+    Return ONLY a valid JSON array containing exactly 3 recipe objects. Each recipe object must follow this exact structure:
     {
       "name": "string",
       "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
       "instructions": ["string"],
       "nutritional_info": {"calories": number, "protein": number, "carbs": number, "fat": number},
       "preparation_time": number,
-      "difficulty": "facile/moyen/difficile",
-      "meal_type": "petit-déjeuner/déjeuner/dîner/collation",
+      "difficulty": "easy/medium/hard",
+      "meal_type": "breakfast/lunch/dinner/snack",
       "health_benefits": [{"icon": "string", "category": "string", "description": "string"}],
       "min_age": number,
       "max_age": number
     }`;
 
-    console.log("Envoi du prompt à OpenAI:", prompt);
+    console.log("Sending prompt to OpenAI:", prompt);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -86,7 +86,7 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'Tu es un assistant culinaire français qui génère des recettes adaptées aux enfants. Réponds toujours en français et retourne uniquement du JSON valide contenant exactement 3 objets de recette. N\'inclus jamais de formatage markdown ou de texte supplémentaire.' 
+            content: 'You are a recipe generation assistant. Always return valid JSON arrays containing exactly 3 recipe objects. Never include markdown formatting or additional text.' 
           },
           { role: 'user', content: prompt }
         ],
@@ -97,51 +97,34 @@ serve(async (req) => {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error("Erreur API OpenAI:", error);
-      throw new Error('Échec de la génération des recettes depuis OpenAI');
+      console.error("OpenAI API error:", error);
+      throw new Error('Failed to generate recipes from OpenAI');
     }
 
     const data = await response.json();
     const recipesText = data.choices[0].message.content;
-    console.log("Réponse brute d'OpenAI:", recipesText);
+    console.log("Raw OpenAI response:", recipesText);
 
     const cleanedText = recipesText.replace(/```json\n|\n```/g, '').trim();
-    console.log("Réponse nettoyée:", cleanedText);
+    console.log("Cleaned response:", cleanedText);
 
     let recipes;
     try {
       recipes = JSON.parse(cleanedText);
       
       if (!Array.isArray(recipes) || recipes.length !== 3) {
-        throw new Error("Format de réponse invalide : tableau de 3 recettes attendu");
+        throw new Error("Invalid response format: expected array of 3 recipes");
       }
-
-      // Conversion des niveaux de difficulté en anglais pour la base de données
-      const difficultyMap: { [key: string]: string } = {
-        'facile': 'easy',
-        'moyen': 'medium',
-        'difficile': 'hard'
-      };
-
-      // Conversion des types de repas en anglais pour la base de données
-      const mealTypeMap: { [key: string]: string } = {
-        'petit-déjeuner': 'breakfast',
-        'déjeuner': 'lunch',
-        'dîner': 'dinner',
-        'collation': 'snack'
-      };
 
       recipes = recipes.map(recipe => ({
         ...recipe,
-        difficulty: difficultyMap[recipe.difficulty.toLowerCase()] || recipe.difficulty,
-        meal_type: mealTypeMap[recipe.meal_type.toLowerCase()] || recipe.meal_type,
         is_generated: true,
         image_url: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9",
       }));
 
     } catch (parseError) {
-      console.error("Erreur d'analyse JSON:", parseError);
-      throw new Error(`Erreur d'analyse JSON: ${parseError.message}`);
+      console.error("JSON parsing error:", parseError);
+      throw new Error(`JSON parsing error: ${parseError.message}`);
     }
 
     return new Response(JSON.stringify(recipes), {
@@ -149,7 +132,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Erreur dans la fonction generate-recipe:", error);
+    console.error("Error in generate-recipe function:", error);
     return new Response(
       JSON.stringify({
         error: error.message,
