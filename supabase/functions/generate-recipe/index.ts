@@ -16,7 +16,7 @@ serve(async (req) => {
   try {
     console.log('Début de la génération de recette');
     
-    // Validation de la requête
+    // Request validation
     if (!req.body) {
       throw new Error("Corps de la requête manquant");
     }
@@ -33,7 +33,7 @@ serve(async (req) => {
       throw new Error("Date de naissance manquante");
     }
 
-    // Traitement des préférences et allergies
+    // Process preferences and allergies
     const preferences = Array.isArray(child.preferences) 
       ? child.preferences.filter(p => p && typeof p === 'string' && p.length > 0)
       : [];
@@ -42,7 +42,7 @@ serve(async (req) => {
       ? child.allergies.filter(a => a && typeof a === 'string' && a.length > 0)
       : [];
 
-    // Calcul de l'âge
+    // Calculate age
     const birthDate = new Date(child.birth_date);
     const today = new Date();
     const age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
@@ -54,7 +54,7 @@ serve(async (req) => {
       filters
     });
 
-    // Configuration OpenAI
+    // OpenAI configuration
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiApiKey) {
       throw new Error("Clé API OpenAI non configurée");
@@ -65,7 +65,7 @@ serve(async (req) => {
     });
     const openai = new OpenAIApi(configuration);
 
-    // Construction du prompt
+    // Build prompt
     const prompt = `Génère 3 recettes uniques et saines adaptées à un enfant de ${age} ans.
     ${preferences.length > 0 ? `Prends en compte ces préférences: ${preferences.join(", ")}` : ""}
     ${allergies.length > 0 ? `Évite ces allergènes: ${allergies.join(", ")}` : ""}
@@ -86,13 +86,13 @@ serve(async (req) => {
 
     console.log('Prompt généré:', prompt);
 
-    // Appel à l'API OpenAI avec gestion du timeout
+    // Call OpenAI API with timeout handling
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error("Timeout de la requête OpenAI")), 30000);
     });
 
     const completionPromise = openai.createChatCompletion({
-      model: "gpt-4o-mini",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
@@ -126,7 +126,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Erreur lors de la génération des recettes:", error);
     
-    // Formatage de l'erreur pour le client
+    // Format error for client
     const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     
     return new Response(
