@@ -17,12 +17,9 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route 
-        path="/" 
-        element={session ? <Navigate to="/dashboard" /> : <Index />} 
-      />
-      <Route path="/login" element={<Auth />} />
-      <Route path="/signup" element={<Auth />} />
+      <Route path="/" element={<Index />} />
+      <Route path="/login" element={session ? <Navigate to="/dashboard" /> : <Auth />} />
+      <Route path="/signup" element={session ? <Navigate to="/dashboard" /> : <Auth />} />
       <Route 
         path="/dashboard" 
         element={session ? <Dashboard session={session} /> : <Navigate to="/login" />} 
