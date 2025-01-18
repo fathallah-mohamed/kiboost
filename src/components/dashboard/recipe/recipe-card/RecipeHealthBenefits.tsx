@@ -43,7 +43,12 @@ interface RecipeHealthBenefitsProps {
 }
 
 export const RecipeHealthBenefits = ({ benefits, compact }: RecipeHealthBenefitsProps) => {
-  if (!benefits || benefits.length === 0) return null;
+  console.log("RecipeHealthBenefits - benefits:", benefits);
+  
+  if (!benefits || benefits.length === 0) {
+    console.log("No benefits to display");
+    return null;
+  }
 
   return (
     <div className={cn(
@@ -51,6 +56,7 @@ export const RecipeHealthBenefits = ({ benefits, compact }: RecipeHealthBenefits
       compact ? "justify-start" : "justify-center"
     )}>
       {benefits.map((benefit, index) => {
+        console.log("Rendering benefit:", benefit);
         const Icon = iconMap[benefit.icon] || Leaf;
         return (
           <Badge 
