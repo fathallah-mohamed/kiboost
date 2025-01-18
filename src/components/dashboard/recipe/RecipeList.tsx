@@ -24,13 +24,12 @@ export const RecipeList = ({
       )}
 
       <div className="space-y-4">
-        {recipes.map((recipe, index) => (
+        {recipes.map((recipe) => (
           <RecipeCard
-            key={index}
+            key={recipe.id}
             recipe={recipe}
             isPlanned={plannedRecipes.includes(recipe.id)}
             onAdd={() => onSaveRecipe(recipe)}
-            index={index}
           />
         ))}
       </div>
