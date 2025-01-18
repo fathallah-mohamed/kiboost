@@ -5,7 +5,7 @@ import { RecipeCard } from "./recipe-card/RecipeCard";
 interface RecipeListProps {
   recipes: Recipe[];
   error: string | null;
-  plannedRecipes: string[];
+  plannedRecipes: { [key: string]: Recipe | null };
   onSaveRecipe: (recipe: Recipe) => void;
 }
 
@@ -28,7 +28,7 @@ export const RecipeList = ({
           <RecipeCard
             key={recipe.id}
             recipe={recipe}
-            isPlanned={plannedRecipes.includes(recipe.id)}
+            isPlanned={Object.keys(plannedRecipes).some(date => plannedRecipes[date]?.id === recipe.id)}
             onAdd={() => onSaveRecipe(recipe)}
           />
         ))}
