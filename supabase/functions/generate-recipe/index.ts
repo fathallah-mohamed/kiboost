@@ -14,17 +14,26 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Received request to generate recipe');
-    const { childProfiles, filters } = await req.json();
-    console.log('Request data:', { childProfiles, filters });
+    console.log('Début de la génération de recette');
     
-    if (!childProfiles || !childProfiles[0]) {
-      throw new Error("No child profile provided");
+    // Validation de la requête
+    if (!req.body) {
+      throw new Error("Corps de la requête manquant");
     }
-    
+
+    const { childProfiles, filters } = await req.json();
+    console.log('Données reçues:', { childProfiles, filters });
+
+    if (!childProfiles || !Array.isArray(childProfiles) || childProfiles.length === 0) {
+      throw new Error("Profil enfant invalide ou manquant");
+    }
+
     const child = childProfiles[0];
-    
-    // Filter out empty strings from preferences and allergies
+    if (!child.birth_date) {
+      throw new Error("Date de naissance manquante");
+    }
+
+    // Traitement des préférences et allergies
     const preferences = Array.isArray(child.preferences) 
       ? child.preferences.filter(p => p && typeof p === 'string' && p.length > 0)
       : [];
@@ -33,22 +42,22 @@ serve(async (req) => {
       ? child.allergies.filter(a => a && typeof a === 'string' && a.length > 0)
       : [];
 
-    // Calculate age
+    // Calcul de l'âge
     const birthDate = new Date(child.birth_date);
     const today = new Date();
     const age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 
-    console.log('Processing request for child:', {
+    console.log('Informations de l\'enfant:', {
       age,
       preferences,
       allergies,
       filters
     });
 
-    // Initialize OpenAI
+    // Configuration OpenAI
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiApiKey) {
-      throw new Error("OpenAI API key not configured");
+      throw new Error("Clé API OpenAI non configurée");
     }
 
     const configuration = new Configuration({
@@ -56,33 +65,38 @@ serve(async (req) => {
     });
     const openai = new OpenAIApi(configuration);
 
-    // Build prompt
-    const prompt = `Generate 3 unique, healthy recipes suitable for a ${age}-year-old child.
-    ${preferences.length > 0 ? `Consider these preferences: ${preferences.join(", ")}` : ""}
-    ${allergies.length > 0 ? `Avoid these allergens: ${allergies.join(", ")}` : ""}
-    ${filters?.mealType ? `Meal type: ${filters.mealType}` : ""}
-    ${filters?.maxPrepTime ? `Maximum preparation time: ${filters.maxPrepTime} minutes` : ""}
-    ${filters?.difficulty ? `Difficulty level: ${filters.difficulty}` : ""}
+    // Construction du prompt
+    const prompt = `Génère 3 recettes uniques et saines adaptées à un enfant de ${age} ans.
+    ${preferences.length > 0 ? `Prends en compte ces préférences: ${preferences.join(", ")}` : ""}
+    ${allergies.length > 0 ? `Évite ces allergènes: ${allergies.join(", ")}` : ""}
+    ${filters?.mealType ? `Type de repas: ${filters.mealType}` : ""}
+    ${filters?.maxPrepTime ? `Temps de préparation maximum: ${filters.maxPrepTime} minutes` : ""}
+    ${filters?.difficulty ? `Niveau de difficulté: ${filters.difficulty}` : ""}
     
-    Format each recipe as a JSON object with:
+    Formate chaque recette en objet JSON avec:
     - name (string)
-    - ingredients (array of {item, quantity, unit})
-    - instructions (array of steps)
-    - nutritional_info (object with calories, protein, carbs, fat)
-    - preparation_time (number in minutes)
+    - ingredients (array de {item, quantity, unit})
+    - instructions (array d'étapes)
+    - nutritional_info (objet avec calories, protein, carbs, fat)
+    - preparation_time (nombre en minutes)
     - difficulty (easy/medium/hard)
     - meal_type (breakfast/lunch/dinner/snack)
     
-    Return an array of 3 recipe objects.`;
+    Retourne un tableau de 3 objets recette.`;
 
-    console.log('Generated prompt:', prompt);
+    console.log('Prompt généré:', prompt);
 
-    const completion = await openai.createChatCompletion({
+    // Appel à l'API OpenAI avec gestion du timeout
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Timeout de la requête OpenAI")), 30000);
+    });
+
+    const completionPromise = openai.createChatCompletion({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that generates recipes in JSON format."
+          content: "Tu es un assistant culinaire spécialisé dans la génération de recettes pour enfants en format JSON."
         },
         {
           role: "user",
@@ -93,12 +107,14 @@ serve(async (req) => {
       max_tokens: 2000,
     });
 
+    const completion = await Promise.race([completionPromise, timeoutPromise]);
+    
     if (!completion.data.choices[0].message?.content) {
-      throw new Error("No response from OpenAI");
+      throw new Error("Pas de réponse de OpenAI");
     }
 
     const recipes = JSON.parse(completion.data.choices[0].message.content);
-    console.log('Generated recipes:', recipes);
+    console.log('Recettes générées:', recipes);
 
     return new Response(JSON.stringify(recipes), {
       headers: { 
@@ -108,12 +124,15 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error generating recipes:", error);
+    console.error("Erreur lors de la génération des recettes:", error);
+    
+    // Formatage de l'erreur pour le client
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     
     return new Response(
       JSON.stringify({
-        error: error.message,
-        details: error.stack
+        error: errorMessage,
+        details: error.stack || "Pas de détails disponibles"
       }), {
         status: 500,
         headers: {
