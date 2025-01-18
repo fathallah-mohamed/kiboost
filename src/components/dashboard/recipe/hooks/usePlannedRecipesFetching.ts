@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Recipe } from '../../types';
+import { Recipe, ChildProfile, MealType, Difficulty, HealthBenefit } from '../../types';
 
-export const usePlannedRecipesFetching = (selectedChildren: any[]) => {
+export const usePlannedRecipesFetching = (selectedChildren: ChildProfile[]) => {
   const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
 
   const fetchPlannedRecipes = async () => {
@@ -26,7 +26,36 @@ export const usePlannedRecipesFetching = (selectedChildren: any[]) => {
       const plannedRecipeMap: { [key: string]: Recipe | null } = {};
       data.forEach(plan => {
         if (plan.recipes) {
-          plannedRecipeMap[plan.date] = plan.recipes as Recipe;
+          const recipe = plan.recipes;
+          plannedRecipeMap[plan.date] = {
+            ...recipe,
+            ingredients: typeof recipe.ingredients === 'string' 
+              ? JSON.parse(recipe.ingredients) 
+              : recipe.ingredients,
+            nutritional_info: typeof recipe.nutritional_info === 'string'
+              ? JSON.parse(recipe.nutritional_info)
+              : recipe.nutritional_info,
+            instructions: Array.isArray(recipe.instructions)
+              ? recipe.instructions
+              : [recipe.instructions].filter(Boolean),
+            meal_type: recipe.meal_type as MealType,
+            difficulty: recipe.difficulty as Difficulty,
+            health_benefits: recipe.health_benefits ? 
+              (typeof recipe.health_benefits === 'string' 
+                ? JSON.parse(recipe.health_benefits) 
+                : recipe.health_benefits) as HealthBenefit[]
+              : undefined,
+            cooking_steps: recipe.cooking_steps ? 
+              (typeof recipe.cooking_steps === 'string'
+                ? JSON.parse(recipe.cooking_steps)
+                : recipe.cooking_steps) as { 
+                  step: number; 
+                  description: string; 
+                  duration?: number; 
+                  tips?: string; 
+                }[]
+              : []
+          };
         }
       });
 
