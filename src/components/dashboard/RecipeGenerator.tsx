@@ -77,13 +77,13 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
       <div className="flex justify-between items-center gap-4">
         <BackToDashboard onBack={() => onSectionChange?.('overview')} />
         <div className="flex gap-4">
-          <Button onClick={goToShoppingList} variant="outline">
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Liste de courses
-          </Button>
           <Button onClick={goToPlanner} variant="outline">
             <Calendar className="w-4 h-4 mr-2" />
             Aller au planificateur
+          </Button>
+          <Button onClick={goToShoppingList} variant="outline">
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Liste de courses
           </Button>
         </div>
       </div>

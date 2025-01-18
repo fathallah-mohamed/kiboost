@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ShoppingCart, Download, Store, ChefHat } from 'lucide-react';
+import { Download, Store, ChefHat, Calendar } from 'lucide-react';
 import { BackToDashboard } from './BackToDashboard';
 
 interface ShoppingListProps {
@@ -24,7 +23,6 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
     { name: "Lait", quantity: 1, unit: "L" },
     { name: "Œufs", quantity: 6, unit: "pièces" },
     { name: "Pain", quantity: 1, unit: "pièce" },
-    // Exemple d'items, à remplacer par les vrais données de la BD
   ]);
 
   const handleDownload = () => {
@@ -59,14 +57,24 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
     onSectionChange?.('recipes');
   };
 
+  const goToPlanner = () => {
+    onSectionChange?.('planner');
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-4">
         <BackToDashboard onBack={() => onSectionChange?.('overview')} />
-        <Button onClick={goToRecipes} variant="outline">
-          <ChefHat className="w-4 h-4 mr-2" />
-          Voir les recettes
-        </Button>
+        <div className="flex gap-4">
+          <Button onClick={goToRecipes} variant="outline">
+            <ChefHat className="w-4 h-4 mr-2" />
+            Générer des recettes
+          </Button>
+          <Button onClick={goToPlanner} variant="outline">
+            <Calendar className="w-4 h-4 mr-2" />
+            Planificateur
+          </Button>
+        </div>
       </div>
 
       <h2 className="text-2xl font-bold">Liste de courses</h2>
