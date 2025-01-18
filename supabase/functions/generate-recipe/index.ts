@@ -86,36 +86,52 @@ serve(async (req) => {
 
     console.log('Prompt généré:', prompt);
 
-    // Call OpenAI API
-    const completion = await openai.createChatCompletion({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "Tu es un assistant culinaire spécialisé dans la génération de recettes pour enfants en format JSON."
+    // Call OpenAI API with timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 30000);
+
+    try {
+      const completion = await openai.createChatCompletion({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "Tu es un assistant culinaire spécialisé dans la génération de recettes pour enfants en format JSON."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }, { signal: controller.signal });
+
+      clearTimeout(timeout);
+      
+      if (!completion.data.choices[0].message?.content) {
+        throw new Error("Pas de réponse de OpenAI");
+      }
+
+      const recipes = JSON.parse(completion.data.choices[0].message.content);
+      console.log('Recettes générées:', recipes);
+
+      return new Response(JSON.stringify(recipes), {
+        headers: { 
+          ...corsHeaders,
+          "Content-Type": "application/json"
         },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 2000,
-    });
-    
-    if (!completion.data.choices[0].message?.content) {
-      throw new Error("Pas de réponse de OpenAI");
+      });
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error("La requête a dépassé le délai d'attente");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const recipes = JSON.parse(completion.data.choices[0].message.content);
-    console.log('Recettes générées:', recipes);
-
-    return new Response(JSON.stringify(recipes), {
-      headers: { 
-        ...corsHeaders,
-        "Content-Type": "application/json"
-      },
-    });
 
   } catch (error) {
     console.error("Erreur lors de la génération des recettes:", error);
