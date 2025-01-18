@@ -25,11 +25,11 @@ serve(async (req) => {
     
     // Safely access and filter arrays
     const preferences = Array.isArray(child.preferences) 
-      ? child.preferences.filter(p => p && typeof p === 'string')
+      ? child.preferences.filter(p => p && typeof p === 'string' && p.length > 0)
       : [];
     
     const allergies = Array.isArray(child.allergies)
-      ? child.allergies.filter(a => a && typeof a === 'string')
+      ? child.allergies.filter(a => a && typeof a === 'string' && a.length > 0)
       : [];
 
     // Calculate age
@@ -109,7 +109,6 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error generating recipes:", error);
     
-    // Ensure we return a proper error response with CORS headers
     return new Response(
       JSON.stringify({
         error: error.message,
