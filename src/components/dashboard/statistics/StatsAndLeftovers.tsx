@@ -1,37 +1,22 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { NutritionalStats } from "./NutritionalStats";
-import { MealFrequency } from "./MealFrequency";
-import { LeftoversManager } from "../leftovers/LeftoversManager";
-import { useSession } from "@supabase/auth-helpers-react";
+import { Card } from '@/components/ui/card';
+import { BackToDashboard } from '../BackToDashboard';
 
-export const StatsAndLeftovers = () => {
-  const session = useSession();
+interface StatsAndLeftoversProps {
+  onSectionChange?: (section: string) => void;
+}
 
-  if (!session) return null;
-
+export const StatsAndLeftovers = ({ onSectionChange }: StatsAndLeftoversProps) => {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Statistiques et Gestion des Restes</h2>
+      <BackToDashboard onBack={() => onSectionChange?.('overview')} />
       
-      <Tabs defaultValue="nutrition" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
-          <TabsTrigger value="frequency">Fréquence</TabsTrigger>
-          <TabsTrigger value="leftovers">Restes</TabsTrigger>
-        </TabsList>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 className="text-2xl font-bold">Statistiques et restes</h2>
+      </div>
 
-        <TabsContent value="nutrition">
-          <NutritionalStats />
-        </TabsContent>
-
-        <TabsContent value="frequency">
-          <MealFrequency />
-        </TabsContent>
-
-        <TabsContent value="leftovers">
-          <LeftoversManager userId={session.user.id} />
-        </TabsContent>
-      </Tabs>
+      <Card className="p-4">
+        <p>Fonctionnalité en cours de développement...</p>
+      </Card>
     </div>
   );
 };

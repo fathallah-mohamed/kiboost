@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { WeeklyCalendar } from './meal-planner/WeeklyCalendar';
 import { useMealPlanner } from './meal-planner/useMealPlanner';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
