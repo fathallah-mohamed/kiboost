@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Calendar, ChefHat, User, ShoppingCart, Heart } from 'lucide-react';
+import { Calendar, ChefHat, User, ShoppingCart, Heart, CalendarRange } from 'lucide-react';
 
 interface QuickActionsProps {
   onSectionChange: (section: string) => void;
@@ -14,9 +14,14 @@ export const QuickActions = ({ onSectionChange }: QuickActionsProps) => {
       onClick: () => onSectionChange('recipes')
     },
     {
-      label: 'Planifier un repas',
+      label: 'Ajouter au planificateur',
       icon: Calendar,
       onClick: () => onSectionChange('planner')
+    },
+    {
+      label: 'Voir le planning',
+      icon: CalendarRange,
+      onClick: () => onSectionChange('view-planner')
     },
     {
       label: 'Profils enfants',
@@ -38,7 +43,7 @@ export const QuickActions = ({ onSectionChange }: QuickActionsProps) => {
   return (
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">Actions rapides</h3>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {actions.map((action, index) => (
           <Button
             key={index}

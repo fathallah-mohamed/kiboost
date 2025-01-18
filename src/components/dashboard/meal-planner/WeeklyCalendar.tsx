@@ -10,6 +10,7 @@ interface WeeklyCalendarProps {
   plannedRecipes: { [key: string]: Recipe | null };
   viewMode: 'week' | 'month';
   selectedChildren: ChildProfile[];
+  readOnly?: boolean;
 }
 
 export const WeeklyCalendar = ({ 
@@ -17,7 +18,8 @@ export const WeeklyCalendar = ({
   onSelectDate, 
   plannedRecipes, 
   viewMode,
-  selectedChildren 
+  selectedChildren,
+  readOnly = false
 }: WeeklyCalendarProps) => {
   const getDaysToDisplay = () => {
     if (viewMode === 'week') {
@@ -52,14 +54,14 @@ export const WeeklyCalendar = ({
         return (
           <Card 
             key={day.toString()}
-            className={`p-4 cursor-pointer transition-colors hover:bg-secondary/50 ${
+            className={`p-4 ${!readOnly ? 'cursor-pointer hover:bg-secondary/50' : ''} ${
               format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
                 ? 'border-primary border-2'
                 : ''
             } ${
               !isCurrentMonth && viewMode === 'month' ? 'opacity-50' : ''
             }`}
-            onClick={() => onSelectDate(day)}
+            onClick={() => !readOnly && onSelectDate(day)}
           >
             <div className="text-center mb-2">
               <div className="font-semibold">

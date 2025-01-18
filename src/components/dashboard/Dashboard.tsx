@@ -12,6 +12,7 @@ import { MealPlanner } from './MealPlanner';
 import { ShoppingList } from './ShoppingList';
 import { RecipeGenerator } from './RecipeGenerator';
 import { StatsAndLeftovers } from './statistics/StatsAndLeftovers';
+import { WeeklyPlanViewer } from './WeeklyPlanViewer';
 import { ChildProfile } from './types';
 
 interface DashboardProps {
@@ -83,17 +84,13 @@ export const Dashboard = ({ session }: DashboardProps) => {
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'profiles':
-        return (
-          <ChildrenProfiles 
-            userId={session.user.id} 
-            onSelectChild={setSelectedChild}
-            onSectionChange={setActiveSection}
-          />
-        );
+        return <ChildrenProfiles userId={session.user.id} onSelectChild={setSelectedChild} />;
       case 'recipes':
         return <RecipeGenerator onSectionChange={setActiveSection} />;
       case 'planner':
         return <MealPlanner userId={session.user.id} onSectionChange={setActiveSection} />;
+      case 'view-planner':
+        return <WeeklyPlanViewer userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'shopping':
         return <ShoppingList userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'stats':
