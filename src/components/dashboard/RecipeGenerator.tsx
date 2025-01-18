@@ -15,7 +15,7 @@ import { LoadMoreButton } from "./recipe/LoadMoreButton";
 import { Button } from "@/components/ui/button";
 import { AdvancedFilters } from "./recipe/AdvancedFilters";
 import { BackToDashboard } from "./BackToDashboard";
-import { Calendar } from "lucide-react";
+import { Calendar, ShoppingCart } from "lucide-react";
 
 interface RecipeGeneratorProps {
   onSectionChange?: (section: string) => void;
@@ -66,16 +66,26 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
     onSectionChange?.('planner');
   };
 
+  const goToShoppingList = () => {
+    onSectionChange?.('shopping');
+  };
+
   return (
     <div className="space-y-6 relative">
       {loading && <LoadingOverlay />}
 
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-4">
         <BackToDashboard onBack={() => onSectionChange?.('overview')} />
-        <Button onClick={goToPlanner} variant="outline">
-          <Calendar className="w-4 h-4 mr-2" />
-          Aller au planificateur
-        </Button>
+        <div className="flex gap-4">
+          <Button onClick={goToShoppingList} variant="outline">
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Liste de courses
+          </Button>
+          <Button onClick={goToPlanner} variant="outline">
+            <Calendar className="w-4 h-4 mr-2" />
+            Aller au planificateur
+          </Button>
+        </div>
       </div>
 
       <RecipeGeneratorTitle />
