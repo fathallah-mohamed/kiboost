@@ -7,12 +7,14 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CalendarDays, CalendarRange } from "lucide-react";
 import { MultiChildSelector } from './recipe/MultiChildSelector';
 import { ChildProfile } from './types';
+import { BackToDashboard } from './BackToDashboard';
 
 interface MealPlannerProps {
   userId: string;
+  onSectionChange?: (section: string) => void;
 }
 
-export const MealPlanner = ({ userId }: MealPlannerProps) => {
+export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   
   const {
@@ -29,6 +31,8 @@ export const MealPlanner = ({ userId }: MealPlannerProps) => {
 
   return (
     <div className="space-y-6">
+      <BackToDashboard onBack={() => onSectionChange?.('overview')} />
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold">Planificateur de repas</h2>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">

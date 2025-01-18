@@ -14,8 +14,14 @@ import { RecipeGeneratorTitle } from "./recipe/RecipeGeneratorTitle";
 import { LoadMoreButton } from "./recipe/LoadMoreButton";
 import { Button } from "@/components/ui/button";
 import { AdvancedFilters } from "./recipe/AdvancedFilters";
+import { BackToDashboard } from "./BackToDashboard";
+import { Calendar } from "lucide-react";
 
-export const RecipeGenerator = () => {
+interface RecipeGeneratorProps {
+  onSectionChange?: (section: string) => void;
+}
+
+export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const [mealType, setMealType] = useState<MealType | "all">("breakfast");
   const [maxPrepTime, setMaxPrepTime] = useState(10);
@@ -56,9 +62,21 @@ export const RecipeGenerator = () => {
     setDisplayCount(prev => Math.min(prev + 3, recipes.length));
   };
 
+  const goToPlanner = () => {
+    onSectionChange?.('planner');
+  };
+
   return (
     <div className="space-y-6 relative">
       {loading && <LoadingOverlay />}
+
+      <div className="flex justify-between items-center">
+        <BackToDashboard onBack={() => onSectionChange?.('overview')} />
+        <Button onClick={goToPlanner} variant="outline">
+          <Calendar className="w-4 h-4 mr-2" />
+          Aller au planificateur
+        </Button>
+      </div>
 
       <RecipeGeneratorTitle />
 

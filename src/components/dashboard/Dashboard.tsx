@@ -87,16 +87,17 @@ export const Dashboard = ({ session }: DashboardProps) => {
           <ChildrenProfiles 
             userId={session.user.id} 
             onSelectChild={setSelectedChild}
+            onSectionChange={setActiveSection}
           />
         );
       case 'recipes':
-        return <RecipeGenerator />;
+        return <RecipeGenerator onSectionChange={setActiveSection} />;
       case 'planner':
-        return <MealPlanner userId={session.user.id} />;
+        return <MealPlanner userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'shopping':
-        return <ShoppingList userId={session.user.id} />;
+        return <ShoppingList userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'stats':
-        return <StatsAndLeftovers />;
+        return <StatsAndLeftovers onSectionChange={setActiveSection} />;
       default:
         return (
           <div className="space-y-6">

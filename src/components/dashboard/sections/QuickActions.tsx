@@ -9,17 +9,17 @@ interface QuickActionsProps {
 export const QuickActions = ({ onSectionChange }: QuickActionsProps) => {
   const actions = [
     {
-      label: 'Planifier un repas',
-      icon: Calendar,
-      onClick: () => onSectionChange('planner')
-    },
-    {
       label: 'Générer des recettes',
       icon: ChefHat,
       onClick: () => onSectionChange('recipes')
     },
     {
-      label: 'Ajouter un profil enfant',
+      label: 'Planifier un repas',
+      icon: Calendar,
+      onClick: () => onSectionChange('planner')
+    },
+    {
+      label: 'Profils enfants',
       icon: User,
       onClick: () => onSectionChange('profiles')
     },
