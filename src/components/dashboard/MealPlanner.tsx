@@ -4,11 +4,10 @@ import { AvailableRecipes } from './meal-planner/AvailableRecipes';
 import { WeeklyCalendar } from './meal-planner/WeeklyCalendar';
 import { useMealPlanner } from './meal-planner/useMealPlanner';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CalendarDays, CalendarRange, ChefHat, ShoppingCart } from "lucide-react";
+import { CalendarDays, CalendarRange } from "lucide-react";
 import { MultiChildSelector } from './recipe/MultiChildSelector';
 import { ChildProfile } from './types';
 import { BackToDashboard } from './BackToDashboard';
-import { Button } from '@/components/ui/button';
 
 interface MealPlannerProps {
   userId: string;
@@ -30,29 +29,9 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     setViewMode
   } = useMealPlanner(userId, selectedChildren);
 
-  const goToRecipes = () => {
-    onSectionChange?.('recipes');
-  };
-
-  const goToShoppingList = () => {
-    onSectionChange?.('shopping');
-  };
-
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center gap-4">
-        <BackToDashboard onBack={() => onSectionChange?.('overview')} />
-        <div className="flex gap-4">
-          <Button onClick={goToRecipes} variant="outline">
-            <ChefHat className="w-4 h-4 mr-2" />
-            Générer des recettes
-          </Button>
-          <Button onClick={goToShoppingList} variant="outline">
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Liste de courses
-          </Button>
-        </div>
-      </div>
+      <BackToDashboard onBack={() => onSectionChange?.('overview')} />
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold">Planificateur de repas</h2>

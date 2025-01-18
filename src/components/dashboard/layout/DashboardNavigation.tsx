@@ -21,7 +21,7 @@ export const DashboardNavigation = ({ activeSection, setActiveSection }: Dashboa
       action: () => setActiveSection('recipes')
     },
     {
-      label: 'Ajouter au planificateur',
+      label: 'Planificateur de repas',
       icon: Calendar,
       action: () => setActiveSection('planner')
     },
