@@ -12,11 +12,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-[#FFF5E4]">
       <nav className="p-4 flex justify-end">
-        {session ? (
-          <Button asChild>
-            <Link to="/dashboard">Mon tableau de bord</Link>
-          </Button>
-        ) : (
+        {!session && (
           <Link 
             to="/login"
             className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"

@@ -14,6 +14,8 @@ import { RecipeGenerator } from './RecipeGenerator';
 import { StatsAndLeftovers } from './statistics/StatsAndLeftovers';
 import { WeeklyPlanViewer } from './WeeklyPlanViewer';
 import { ChildProfile } from './types';
+import { Link } from 'react-router-dom';
+import { HomeIcon } from 'lucide-react';
 
 interface DashboardProps {
   session: Session;
@@ -110,7 +112,12 @@ export const Dashboard = ({ session }: DashboardProps) => {
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Tableau de bord</h1>
+        <div className="flex items-center gap-4">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/"><HomeIcon className="mr-2" />Retour à l'accueil</Link>
+          </Button>
+          <h1 className="text-3xl font-bold">Tableau de bord</h1>
+        </div>
         <Button onClick={handleSignOut} variant="outline" disabled={loading}>
           {loading ? 'Déconnexion...' : 'Se déconnecter'}
         </Button>
