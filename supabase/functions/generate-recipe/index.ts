@@ -38,21 +38,6 @@ serve(async (req) => {
     console.log("Processed preferences:", preferences);
     console.log("Processed allergies:", allergies);
 
-    // Initialize OpenAI
-    const configuration = new Configuration({
-      apiKey: Deno.env.get("OPENAI_API_KEY"),
-    });
-    const openai = new OpenAIApi(configuration);
-
-    // Build the preferences and allergies strings safely
-    const preferencesStr = preferences.length > 0 
-      ? `Consider these preferences: ${preferences.join(", ")}`
-      : "";
-    
-    const allergiesStr = allergies.length > 0
-      ? `Avoid these allergens: ${allergies.join(", ")}`
-      : "";
-
     // Calculate age with validation
     let age = 0;
     try {
@@ -64,10 +49,16 @@ serve(async (req) => {
       age = 5; // Default age if calculation fails
     }
 
+    // Initialize OpenAI
+    const configuration = new Configuration({
+      apiKey: Deno.env.get("OPENAI_API_KEY"),
+    });
+    const openai = new OpenAIApi(configuration);
+
     // Build the prompt with filters
     const prompt = `Generate 3 unique, healthy recipes suitable for a ${age}-year-old child.
-    ${preferencesStr}
-    ${allergiesStr}
+    ${preferences.length > 0 ? `Consider these preferences: ${preferences.join(", ")}` : ""}
+    ${allergies.length > 0 ? `Avoid these allergens: ${allergies.join(", ")}` : ""}
     ${filters?.mealType ? `Meal type: ${filters.mealType}` : ""}
     ${filters?.maxPrepTime ? `Maximum preparation time: ${filters.maxPrepTime} minutes` : ""}
     ${filters?.difficulty ? `Difficulty level: ${filters.difficulty}` : ""}
@@ -86,7 +77,7 @@ serve(async (req) => {
     console.log("Generated prompt:", prompt);
 
     const response = await openai.createChatCompletion({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
