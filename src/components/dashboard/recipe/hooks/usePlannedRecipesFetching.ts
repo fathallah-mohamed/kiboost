@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ChildProfile } from '../../types';
+import { Recipe } from '../../types';
 
-export const usePlannedRecipesFetching = (selectedChildren: ChildProfile[]) => {
-  const [plannedRecipes, setPlannedRecipes] = useState<string[]>([]);
+export const usePlannedRecipesFetching = (selectedChildren: any[]) => {
+  const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
 
   const fetchPlannedRecipes = async () => {
     try {
@@ -12,7 +12,7 @@ export const usePlannedRecipesFetching = (selectedChildren: ChildProfile[]) => {
 
       const query = supabase
         .from('meal_plans')
-        .select('recipe_id')
+        .select('*, recipes(*)')
         .eq('profile_id', session.user.id);
 
       if (selectedChildren.length > 0) {
@@ -22,7 +22,15 @@ export const usePlannedRecipesFetching = (selectedChildren: ChildProfile[]) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setPlannedRecipes(data.map(plan => plan.recipe_id));
+
+      const plannedRecipeMap: { [key: string]: Recipe | null } = {};
+      data.forEach(plan => {
+        if (plan.recipes) {
+          plannedRecipeMap[plan.date] = plan.recipes as Recipe;
+        }
+      });
+
+      setPlannedRecipes(plannedRecipeMap);
     } catch (error) {
       console.error('Error fetching planned recipes:', error);
     }
