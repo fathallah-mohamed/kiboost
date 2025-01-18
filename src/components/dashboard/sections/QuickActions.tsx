@@ -1,108 +1,59 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  ChefHat, 
-  Calendar, 
-  User, 
-  ShoppingCart, 
-  Heart, 
-  CalendarRange,
-  Menu
-} from 'lucide-react';
+import { Calendar, ChefHat, User, ShoppingCart, Heart, CalendarRange } from 'lucide-react';
 
 interface QuickActionsProps {
   onSectionChange: (section: string) => void;
 }
 
 export const QuickActions = ({ onSectionChange }: QuickActionsProps) => {
-  const menuGroups = [
+  const actions = [
     {
-      label: 'Recettes',
+      label: 'Générer des recettes',
       icon: ChefHat,
-      items: [
-        {
-          label: 'Générer des recettes',
-          onClick: () => onSectionChange('recipes'),
-          icon: ChefHat
-        },
-        {
-          label: 'Mes favoris',
-          onClick: () => onSectionChange('recipes'),
-          icon: Heart
-        }
-      ]
+      onClick: () => onSectionChange('recipes')
     },
     {
-      label: 'Planning',
+      label: 'Ajouter au planificateur',
       icon: Calendar,
-      items: [
-        {
-          label: 'Ajouter au planificateur',
-          onClick: () => onSectionChange('planner'),
-          icon: Calendar
-        },
-        {
-          label: 'Voir le planning',
-          onClick: () => onSectionChange('view-planner'),
-          icon: CalendarRange
-        }
-      ]
+      onClick: () => onSectionChange('planner')
     },
     {
-      label: 'Gestion',
+      label: 'Voir le planning',
+      icon: CalendarRange,
+      onClick: () => onSectionChange('view-planner')
+    },
+    {
+      label: 'Profils enfants',
       icon: User,
-      items: [
-        {
-          label: 'Profils enfants',
-          onClick: () => onSectionChange('profiles'),
-          icon: User
-        },
-        {
-          label: 'Liste de courses',
-          onClick: () => onSectionChange('shopping'),
-          icon: ShoppingCart
-        }
-      ]
+      onClick: () => onSectionChange('profiles')
+    },
+    {
+      label: 'Liste de courses',
+      icon: ShoppingCart,
+      onClick: () => onSectionChange('shopping')
+    },
+    {
+      label: 'Mes favoris',
+      icon: Heart,
+      onClick: () => onSectionChange('recipes')
     }
   ];
 
   return (
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">Actions rapides</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {menuGroups.map((group, index) => (
-          <DropdownMenu key={index}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <group.icon className="w-5 h-5" />
-                  <span>{group.label}</span>
-                </div>
-                <Menu className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {group.items.map((item, itemIndex) => (
-                <DropdownMenuItem
-                  key={itemIndex}
-                  onClick={item.onClick}
-                  className="cursor-pointer"
-                >
-                  <item.icon className="w-4 h-4 mr-2" />
-                  {item.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {actions.map((action, index) => (
+          <Button
+            key={index}
+            variant="outline"
+            className="flex flex-col gap-2 h-auto py-4"
+            onClick={action.onClick}
+          >
+            <action.icon className="w-5 h-5" />
+            <span className="text-sm text-center">{action.label}</span>
+          </Button>
         ))}
       </div>
     </Card>
