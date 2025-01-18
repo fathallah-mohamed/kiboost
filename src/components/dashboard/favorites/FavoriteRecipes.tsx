@@ -51,12 +51,16 @@ export const FavoriteRecipes = ({ onSectionChange }: FavoriteRecipesProps) => {
             ? JSON.parse(recipe.health_benefits)
             : recipe.health_benefits)
           : undefined,
+        cooking_steps: recipe.cooking_steps 
+          ? (typeof recipe.cooking_steps === 'string'
+            ? JSON.parse(recipe.cooking_steps)
+            : recipe.cooking_steps)
+          : [],
         meal_type: recipe.meal_type as MealType,
         difficulty: recipe.difficulty as Difficulty,
         dietary_preferences: recipe.dietary_preferences || [],
         allergens: recipe.allergens || [],
         seasonal_months: recipe.seasonal_months || [],
-        cooking_steps: recipe.cooking_steps || [],
         cost_estimate: recipe.cost_estimate || 0,
         min_age: recipe.min_age || 0,
         max_age: recipe.max_age || 18,
