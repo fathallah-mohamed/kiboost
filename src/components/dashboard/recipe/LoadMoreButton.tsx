@@ -1,18 +1,19 @@
 import { Button } from "@/components/ui/button";
 
 interface LoadMoreButtonProps {
-  visible: boolean;
-  onClick: () => void;
+  displayCount: number;
+  totalCount: number;
+  onLoadMore: () => void;
 }
 
-export const LoadMoreButton = ({ visible, onClick }: LoadMoreButtonProps) => {
-  if (!visible) return null;
+export const LoadMoreButton = ({ displayCount, totalCount, onLoadMore }: LoadMoreButtonProps) => {
+  if (displayCount >= totalCount) return null;
 
   return (
     <div className="flex justify-center">
       <Button 
         variant="outline" 
-        onClick={onClick}
+        onClick={onLoadMore}
         className="mt-4"
       >
         Voir plus de recettes

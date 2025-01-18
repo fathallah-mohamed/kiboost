@@ -61,15 +61,11 @@ export const RecipeGeneratorContent = ({
         onSaveRecipe={handleSaveRecipe}
       />
 
-      {recipes.length > displayCount && (
-        <div className="flex justify-center mt-6">
-          <LoadMoreButton 
-            displayCount={displayCount}
-            totalCount={recipes.length}
-            onLoadMore={handleLoadMore}
-          />
-        </div>
-      )}
+      <LoadMoreButton 
+        displayCount={displayCount}
+        totalCount={recipes.length}
+        onLoadMore={handleLoadMore}
+      />
     </>
   );
 };
