@@ -1,15 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.1.0";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -18,11 +16,10 @@ serve(async (req) => {
     
     console.log("Generating recipes for child:", child, "with filters:", filters);
 
-    // Initialize OpenAI
-    const configuration = new Configuration({
-      apiKey: Deno.env.get("OPENAI_API_KEY"),
-    });
-    const openai = new OpenAIApi(configuration);
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
 
     // Construct a clear, structured prompt
     const prompt = `Generate 3 unique, healthy recipes suitable for a child aged ${calculateAge(child.birth_date)} years.
@@ -38,7 +35,7 @@ serve(async (req) => {
     {
       "name": "string",
       "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
-      "instructions": "string",
+      "instructions": ["string"],
       "nutritional_info": {"calories": number, "protein": number, "carbs": number, "fat": number},
       "preparation_time": number,
       "difficulty": "easy/medium/hard",
@@ -52,14 +49,28 @@ serve(async (req) => {
 
     console.log("Sending prompt to OpenAI:", prompt);
 
-    const completion = await openai.createChatCompletion({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 2000,
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
     });
 
-    const recipesText = completion.data.choices[0].message.content;
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("OpenAI API error:", error);
+      throw new Error('Failed to generate recipes from OpenAI');
+    }
+
+    const data = await response.json();
+    const recipesText = data.choices[0].message.content;
     console.log("Raw OpenAI response:", recipesText);
 
     // Safely parse the JSON response
