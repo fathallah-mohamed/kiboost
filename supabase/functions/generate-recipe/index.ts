@@ -82,14 +82,14 @@ serve(async (req) => {
 
     console.log("Generated prompt:", prompt);
 
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.createCompletion({
       model: "gpt-4o",
-      messages: [{ role: "user", content: prompt }],
+      prompt: prompt,
       temperature: 0.7,
       max_tokens: 2000,
     });
 
-    const recipes = JSON.parse(completion.data.choices[0].message.content);
+    const recipes = JSON.parse(completion.data.choices[0].text);
     console.log("Generated recipes:", recipes);
 
     return new Response(JSON.stringify(recipes), {
