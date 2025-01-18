@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.1.0";
 
 const corsHeaders = {
@@ -13,7 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { preferences, allergies, age } = await req.json();
+    const { childProfiles, filters } = await req.json();
+    const child = childProfiles[0];
+
+    // Ensure arrays exist and are not empty
+    const preferences = child.preferences?.filter(p => p && p.trim() !== '') || [];
+    const allergies = child.allergies?.filter(a => a && a.trim() !== '') || [];
 
     // Initialize OpenAI
     const configuration = new Configuration({
@@ -21,10 +25,22 @@ serve(async (req) => {
     });
     const openai = new OpenAIApi(configuration);
 
-    // Optimize prompt for faster generation
+    // Build the preferences and allergies strings
+    const preferencesStr = preferences.length > 0 ? `Consider these preferences: ${preferences.join(", ")}` : "";
+    const allergiesStr = allergies.length > 0 ? `Avoid these allergens: ${allergies.join(", ")}` : "";
+
+    // Calculate age
+    const birthDate = new Date(child.birth_date);
+    const today = new Date();
+    const age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+
+    // Build the prompt with filters
     const prompt = `Generate 3 unique, healthy recipes suitable for a ${age}-year-old child.
-    Consider these preferences: ${preferences.join(", ")}
-    Avoid these allergens: ${allergies.join(", ")}
+    ${preferencesStr}
+    ${allergiesStr}
+    ${filters?.mealType ? `Meal type: ${filters.mealType}` : ""}
+    ${filters?.maxPrepTime ? `Maximum preparation time: ${filters.maxPrepTime} minutes` : ""}
+    ${filters?.difficulty ? `Difficulty level: ${filters.difficulty}` : ""}
     
     Format each recipe as a JSON object with:
     - name (string)
@@ -40,7 +56,7 @@ serve(async (req) => {
     console.log("Generating recipes with prompt:", prompt);
 
     const completion = await openai.createChatCompletion({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
       max_tokens: 2000,
