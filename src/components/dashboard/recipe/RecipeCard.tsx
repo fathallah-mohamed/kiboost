@@ -49,7 +49,7 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
           : "La recette a été ajoutée à vos favoris",
       });
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      console.error('Erreur lors de la modification des favoris:', error);
       toast({
         variant: "destructive",
         title: "Erreur",

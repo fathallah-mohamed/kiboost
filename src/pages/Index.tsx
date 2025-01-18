@@ -16,25 +16,25 @@ const Index = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Get initial session
+    // Récupérer la session initiale
     const initializeSession = async () => {
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         if (error) {
-          console.error('Error fetching session:', error);
+          console.error('Erreur lors de la récupération de la session:', error);
           toast({
             variant: "destructive",
             title: "Erreur d'authentification",
             description: "Une erreur est survenue lors de la récupération de votre session.",
           });
-          // Clear any invalid session data
+          // Effacer les données de session invalides
           await supabase.auth.signOut();
           setSession(null);
         } else {
           setSession(currentSession);
         }
       } catch (error) {
-        console.error('Error in session initialization:', error);
+        console.error('Erreur lors de l\'initialisation de la session:', error);
         setSession(null);
       } finally {
         setLoading(false);
@@ -43,11 +43,11 @@ const Index = () => {
 
     initializeSession();
 
-    // Listen for auth changes
+    // Écouter les changements d'authentification
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
-      console.log('Auth state changed:', _event);
+      console.log('État d\'authentification modifié:', _event);
       if (_event === 'SIGNED_OUT') {
         setSession(null);
         navigate('/');
@@ -79,7 +79,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
+      {/* Section Héro */}
       <section className="container mx-auto px-4 py-20 text-center">
         <h1 className="text-5xl font-bold mb-6 text-primary">
           Kiboost
@@ -91,7 +91,7 @@ const Index = () => {
         <AuthForm />
       </section>
 
-      {/* Features Section */}
+      {/* Section Fonctionnalités */}
       <section className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <FeatureCard
@@ -117,7 +117,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Section CTA */}
       <section className="bg-secondary/50 py-20 mt-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-6">Prêt à révolutionner les petits-déjeuners ?</h2>
