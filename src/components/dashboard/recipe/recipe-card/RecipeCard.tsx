@@ -4,20 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Recipe } from "../../types";
 import { 
   Utensils, Clock, Heart, Beef, Wheat, 
-  Flame, Cookie, Star
+  Flame, Star
 } from "lucide-react";
 import { RecipeRating } from "./RecipeRating";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
   onAdd?: (recipe: Recipe) => void;
+  compact?: boolean;
 }
 
-export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, onAdd, compact = false }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showRating, setShowRating] = useState(false);
@@ -57,22 +58,26 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
     }
   };
 
-  return (
-    <Card className="overflow-hidden">
-      <div className="relative">
-        <img 
-          src={recipe.image_url} 
-          alt={recipe.name}
-          className="w-full h-48 object-cover"
-        />
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-          <div className="flex items-center gap-2 text-white">
+  if (compact) {
+    return (
+      <div className="p-4 border rounded-lg">
+        <h4 className="font-medium">{recipe.name}</h4>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+          <span className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
-            <span>{recipe.preparation_time} min</span>
-          </div>
+            {recipe.preparation_time} min
+          </span>
+          <span className="flex items-center gap-1">
+            <Star className="w-4 h-4" />
+            {recipe.meal_type}
+          </span>
         </div>
       </div>
+    );
+  }
 
+  return (
+    <Card className="overflow-hidden">
       <div className="p-6">
         <div className="space-y-4">
           <div className="flex justify-between items-start">
@@ -100,7 +105,7 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50">
               <Flame className="w-5 h-5 text-red-500" />
               <div>
@@ -125,15 +130,6 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
                 <div className="text-sm font-medium">Glucides</div>
                 <div className="text-lg font-bold text-yellow-600">
                   {recipe.nutritional_info.carbs}g
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50">
-              <Cookie className="w-5 h-5 text-purple-500" />
-              <div>
-                <div className="text-sm font-medium">Lipides</div>
-                <div className="text-lg font-bold text-purple-600">
-                  {recipe.nutritional_info.fat}g
                 </div>
               </div>
             </div>
