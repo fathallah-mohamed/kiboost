@@ -10,20 +10,16 @@ export const useRecipeGeneration = () => {
   const { toast } = useToast();
 
   const clearRecipes = () => {
-    console.log('Clearing recipes and localStorage');
-    localStorage.removeItem('generated_recipes');
     setRecipes([]);
-    setLoading(false);
     setError(null);
   };
 
   const generateRecipes = async (child: ChildProfile, filters?: RecipeFilters) => {
     try {
+      console.log('Début de la génération de recettes avec:', { child, filters });
       setLoading(true);
       setError(null);
-      
-      console.log('Generating recipes for child:', child, 'with filters:', filters);
-      
+
       const { data, error: functionError } = await supabase.functions.invoke('generate-recipe', {
         body: {
           childProfiles: [child],
@@ -32,17 +28,17 @@ export const useRecipeGeneration = () => {
       });
 
       if (functionError) {
-        console.error('Error from Edge Function:', functionError);
+        console.error('Erreur de la fonction Edge:', functionError);
         throw new Error(functionError.message);
       }
 
-      console.log('Generated recipes:', data);
-      
       if (!data || !Array.isArray(data)) {
         throw new Error('Format de réponse invalide');
       }
 
-      // Ensure each recipe has required fields
+      console.log('Recettes reçues:', data);
+
+      // Validate and transform recipes
       const validatedRecipes = data.map(recipe => ({
         ...recipe,
         id: crypto.randomUUID(),
@@ -50,14 +46,21 @@ export const useRecipeGeneration = () => {
         updated_at: new Date().toISOString(),
         profile_id: child.profile_id,
         is_generated: true,
+        image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
       }));
 
       setRecipes(validatedRecipes);
-      localStorage.setItem('generated_recipes', JSON.stringify(validatedRecipes));
+      
+      toast({
+        title: "Succès",
+        description: `${validatedRecipes.length} recettes ont été générées.`,
+      });
 
     } catch (err) {
-      console.error('Error generating recipes:', err);
-      setError('Une erreur est survenue lors de la génération des recettes.');
+      console.error('Erreur lors de la génération des recettes:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
+      setError(errorMessage);
+      
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -73,6 +76,6 @@ export const useRecipeGeneration = () => {
     loading,
     error,
     generateRecipes,
-    clearRecipes
+    clearRecipes,
   };
 };
