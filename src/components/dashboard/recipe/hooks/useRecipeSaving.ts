@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
 import { Recipe, ChildProfile } from '../../types';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 export const useRecipeSaving = () => {
   const [saving, setSaving] = useState(false);
 
   const saveRecipe = async (recipe: Recipe, selectedChildren: ChildProfile[]) => {
+    if (!recipe?.id) {
+      toast.error("Erreur: ID de recette manquant");
+      return null;
+    }
+
     if (selectedChildren.length === 0) {
       toast.error("Veuillez sélectionner au moins un enfant");
       return null;
@@ -18,10 +20,12 @@ export const useRecipeSaving = () => {
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Non authentifié");
+      if (!session) {
+        throw new Error("Non authentifié");
+      }
 
       const today = new Date();
-      const formattedDate = format(today, 'yyyy-MM-dd');
+      const formattedDate = today.toISOString().split('T')[0];
 
       // Créer les entrées dans meal_plans pour chaque enfant
       for (const child of selectedChildren) {
@@ -35,7 +39,10 @@ export const useRecipeSaving = () => {
             meal_time: recipe.meal_type || 'dinner'
           });
 
-        if (planError) throw planError;
+        if (planError) {
+          console.error('Error details:', planError);
+          throw planError;
+        }
       }
 
       toast.success("Recette planifiée !", {
