@@ -22,7 +22,7 @@ serve(async (req) => {
     }
 
     // Construct a clear, structured prompt
-    const prompt = `Generate 3 unique, healthy recipes suitable for a child aged ${calculateAge(child.birth_date)} years.
+    const prompt = `You are a recipe generation assistant. Generate exactly 3 unique, healthy recipes suitable for a child aged ${calculateAge(child.birth_date)} years.
     Consider these preferences: ${child.preferences?.join(", ") || "no specific preferences"}
     Avoid these allergens: ${child.allergies?.join(", ") || "no allergies"}
     
@@ -31,7 +31,7 @@ serve(async (req) => {
     - Maximum preparation time: ${filters?.maxPrepTime || "any"} minutes
     - Difficulty level: ${filters?.difficulty || "any"}
     
-    Format each recipe as a valid JSON object with:
+    Return ONLY a valid JSON array containing exactly 3 recipe objects. Each recipe object must follow this exact structure:
     {
       "name": "string",
       "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
@@ -45,7 +45,7 @@ serve(async (req) => {
       "max_age": number
     }
     
-    Return an array of exactly 3 recipe objects.`;
+    Do not include any markdown formatting, code blocks, or additional text. Return only the JSON array.`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
@@ -57,7 +57,13 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a recipe generation assistant. Always return valid JSON arrays containing exactly 3 recipe objects. Never include markdown formatting or additional text.' 
+          },
+          { role: 'user', content: prompt }
+        ],
         temperature: 0.7,
         max_tokens: 2000,
       }),
@@ -73,10 +79,14 @@ serve(async (req) => {
     const recipesText = data.choices[0].message.content;
     console.log("Raw OpenAI response:", recipesText);
 
+    // Clean up any potential markdown formatting
+    const cleanedText = recipesText.replace(/```json\n|\n```/g, '').trim();
+    console.log("Cleaned response:", cleanedText);
+
     // Safely parse the JSON response
     let recipes;
     try {
-      recipes = JSON.parse(recipesText.trim());
+      recipes = JSON.parse(cleanedText);
       
       // Validate the response structure
       if (!Array.isArray(recipes) || recipes.length !== 3) {
