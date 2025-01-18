@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -19,7 +20,6 @@ function calculateAge(birthDate: string): number {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -34,7 +34,7 @@ serve(async (req) => {
     
     console.log("Generating recipes for child:", child, "with filters:", filters);
 
-    const prompt = `You are a recipe generation assistant. Generate exactly 3 unique, healthy recipes suitable for a child aged ${calculateAge(child.birth_date)} years.
+    const prompt = `Generate exactly 3 unique, healthy recipes suitable for a child aged ${calculateAge(child.birth_date)} years.
     Consider these preferences: ${child.preferences?.join(", ") || "no specific preferences"}
     Avoid these allergens: ${child.allergies?.join(", ") || "no allergies"}
     
@@ -55,9 +55,7 @@ serve(async (req) => {
       "health_benefits": ["string"],
       "min_age": number,
       "max_age": number
-    }
-    
-    Do not include any markdown formatting, code blocks, or additional text. Return only the JSON array.`;
+    }`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
@@ -91,21 +89,17 @@ serve(async (req) => {
     const recipesText = data.choices[0].message.content;
     console.log("Raw OpenAI response:", recipesText);
 
-    // Clean up any potential markdown formatting
     const cleanedText = recipesText.replace(/```json\n|\n```/g, '').trim();
     console.log("Cleaned response:", cleanedText);
 
-    // Safely parse the JSON response
     let recipes;
     try {
       recipes = JSON.parse(cleanedText);
       
-      // Validate the response structure
       if (!Array.isArray(recipes) || recipes.length !== 3) {
         throw new Error("Invalid response format: expected array of 3 recipes");
       }
 
-      // Add generated flag and default image
       recipes = recipes.map(recipe => ({
         ...recipe,
         is_generated: true,
