@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Session } from '@supabase/auth-helpers-react';
 import { WelcomeSection } from '../sections/WelcomeSection';
 import { QuickActions } from '../sections/QuickActions';
@@ -9,7 +9,6 @@ import { MealPlanner } from '../MealPlanner';
 import { WeeklyPlanViewer } from '../WeeklyPlanViewer';
 import { ChildrenProfiles } from '../ChildrenProfiles';
 import { ShoppingList } from '../ShoppingList';
-import { DashboardNavigation } from './DashboardNavigation';
 import { FavoriteRecipes } from '../favorites/FavoriteRecipes';
 
 interface DashboardContentProps {
@@ -29,10 +28,6 @@ export const DashboardContent = ({ session, activeSection, setActiveSection }: D
         return (
           <div className="space-y-6">
             <WelcomeSection userId={session.user.id} />
-            <DashboardNavigation 
-              activeSection={activeSection} 
-              setActiveSection={setActiveSection}
-            />
             <QuickActions onSectionChange={setActiveSection} />
             <WeeklyProgress 
               plannedMeals={plannedMeals}
