@@ -3,11 +3,11 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, Calendar, Users, ChevronRight, Sparkles } from "lucide-react";
+import { Heart, Calendar, Users, ChevronRight, Sparkles, BookOpen, ShoppingCart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { Session } from '@supabase/supabase-js';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -50,17 +50,13 @@ const Index = () => {
         navigate('/');
       } else if (_event === 'SIGNED_IN') {
         setSession(currentSession);
-      } else if (_event === 'TOKEN_REFRESHED') {
-        setSession(currentSession);
-      } else if (_event === 'USER_UPDATED') {
-        setSession(currentSession);
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, toast]);
 
   if (loading) {
     return (
@@ -78,19 +74,19 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 text-center">
-        <h1 className="text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+        <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 animate-fade-in">
           Simplifiez vos repas, vos courses et vos activités
           <span className="text-primary">.</span>
         </h1>
-        <p className="text-2xl mb-8 text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-xl md:text-2xl mb-8 text-muted-foreground max-w-2xl mx-auto animate-fade-in [animation-delay:200ms]">
           Tout en un seul endroit !
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12 animate-fade-in [animation-delay:400ms]">
           <AuthForm />
-          <Button variant="outline" size="lg" className="gap-2" asChild>
+          <Button variant="outline" size="lg" className="gap-2 group" asChild>
             <Link to="/demo">
               Explorer sans inscription
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Button>
         </div>
@@ -100,7 +96,7 @@ const Index = () => {
       <section className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <FeatureCard
-            icon={<Heart className="w-8 h-8 text-primary" />}
+            icon={<BookOpen className="w-8 h-8 text-primary" />}
             title="Recettes personnalisées"
             description="Trouvez des idées adaptées à vos enfants"
             soon={false}
@@ -117,6 +113,24 @@ const Index = () => {
             description="Suivez les besoins de chacun de vos enfants"
             soon={false}
           />
+          <FeatureCard
+            icon={<ShoppingCart className="w-8 h-8 text-primary" />}
+            title="Liste de courses"
+            description="Générez automatiquement votre liste"
+            soon={false}
+          />
+          <FeatureCard
+            icon={<Heart className="w-8 h-8 text-primary" />}
+            title="Favoris"
+            description="Sauvegardez vos recettes préférées"
+            soon={false}
+          />
+          <FeatureCard
+            icon={<Sparkles className="w-8 h-8 text-primary" />}
+            title="Premium"
+            description="Accédez à toutes les fonctionnalités"
+            soon={true}
+          />
         </div>
       </section>
 
@@ -127,7 +141,10 @@ const Index = () => {
           <p className="text-xl mb-8 text-muted-foreground max-w-2xl mx-auto">
             Rejoignez des milliers de parents qui font confiance à Kiboost pour simplifier leur quotidien.
           </p>
-          <Button size="lg" className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg">
+          <Button 
+            size="lg" 
+            className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg animate-float"
+          >
             Commencer gratuitement
           </Button>
         </div>
@@ -147,7 +164,7 @@ const FeatureCard = ({
   description: string;
   soon?: boolean;
 }) => (
-  <Card className="p-6 text-center hover:shadow-lg transition-shadow bg-white/80 backdrop-blur-sm relative overflow-hidden">
+  <Card className="p-6 text-center hover:shadow-lg transition-shadow bg-white/80 backdrop-blur-sm relative overflow-hidden animate-fade-in">
     {soon && (
       <div className="absolute top-2 right-2 flex items-center gap-1 text-xs font-medium text-primary">
         <Sparkles className="w-3 h-3" />
