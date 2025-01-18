@@ -86,13 +86,9 @@ serve(async (req) => {
 
     console.log('Prompt généré:', prompt);
 
-    // Call OpenAI API with timeout handling
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Timeout de la requête OpenAI")), 30000);
-    });
-
-    const completionPromise = openai.createChatCompletion({
-      model: "gpt-4",
+    // Call OpenAI API
+    const completion = await openai.createChatCompletion({
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -106,8 +102,6 @@ serve(async (req) => {
       temperature: 0.7,
       max_tokens: 2000,
     });
-
-    const completion = await Promise.race([completionPromise, timeoutPromise]);
     
     if (!completion.data.choices[0].message?.content) {
       throw new Error("Pas de réponse de OpenAI");
@@ -126,12 +120,9 @@ serve(async (req) => {
   } catch (error) {
     console.error("Erreur lors de la génération des recettes:", error);
     
-    // Format error for client
-    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-    
     return new Response(
       JSON.stringify({
-        error: errorMessage,
+        error: error.message || "Erreur inconnue",
         details: error.stack || "Pas de détails disponibles"
       }), {
         status: 500,
