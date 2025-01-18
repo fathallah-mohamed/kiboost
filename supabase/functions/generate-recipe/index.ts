@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.1.0";
+import { Configuration, OpenAIApi } from "https://esm.sh/openai@4.24.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,14 +82,27 @@ serve(async (req) => {
 
     console.log("Generated prompt:", prompt);
 
-    const response = await openai.createCompletion({
+    const response = await openai.createChatCompletion({
       model: "gpt-4o-mini",
-      prompt: prompt,
-      max_tokens: 2000,
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that generates recipes in JSON format."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
       temperature: 0.7,
+      max_tokens: 2000,
     });
 
-    const recipes = JSON.parse(response.data.choices[0].text);
+    if (!response.data.choices[0].message?.content) {
+      throw new Error("No response from OpenAI");
+    }
+
+    const recipes = JSON.parse(response.data.choices[0].message.content);
     console.log("Generated recipes:", recipes);
 
     return new Response(JSON.stringify(recipes), {
