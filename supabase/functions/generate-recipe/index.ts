@@ -4,9 +4,12 @@ import { Configuration, OpenAIApi } from "https://esm.sh/openai@4.24.1";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -83,7 +86,7 @@ serve(async (req) => {
     console.log("Generated prompt:", prompt);
 
     const response = await openai.createChatCompletion({
-      model: "gpt-4o-mini",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
@@ -106,7 +109,10 @@ serve(async (req) => {
     console.log("Generated recipes:", recipes);
 
     return new Response(JSON.stringify(recipes), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { 
+        ...corsHeaders, 
+        "Content-Type": "application/json" 
+      },
     });
   } catch (error) {
     console.error("Error generating recipes:", error);
@@ -116,7 +122,10 @@ serve(async (req) => {
         stack: error.stack 
       }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json" 
+        },
       }
     );
   }
