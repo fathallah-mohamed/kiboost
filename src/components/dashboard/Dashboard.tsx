@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { ChildrenProfiles } from './ChildrenProfiles';
@@ -9,9 +8,10 @@ import { MealPlanner } from './MealPlanner';
 import { ShoppingList } from './ShoppingList';
 import { RecipeGenerator } from './RecipeGenerator';
 import { StatsAndLeftovers } from './statistics/StatsAndLeftovers';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChildProfile } from './types';
 import { LeftoversManager } from './leftovers/LeftoversManager';
+import { DashboardSidebar } from './DashboardSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 interface DashboardProps {
   session: Session;
@@ -21,15 +21,12 @@ export const Dashboard = ({ session }: DashboardProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
+  const [activeTab, setActiveTab] = useState('profiles');
 
   const handleSignOut = async () => {
     try {
       setLoading(true);
       await supabase.auth.signOut();
-      toast({
-        title: "Déconnexion réussie",
-        description: "À bientôt sur Kiboost !",
-      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -41,64 +38,44 @@ export const Dashboard = ({ session }: DashboardProps) => {
     }
   };
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'profiles':
+        return (
+          <ChildrenProfiles 
+            userId={session.user.id} 
+            onSelectChild={setSelectedChild}
+          />
+        );
+      case 'recipes':
+        return <RecipeGenerator />;
+      case 'planner':
+        return <MealPlanner userId={session.user.id} />;
+      case 'shopping':
+        return <ShoppingList userId={session.user.id} />;
+      case 'leftovers':
+        return <LeftoversManager userId={session.user.id} />;
+      case 'stats':
+        return <StatsAndLeftovers />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Tableau de bord</h1>
-        <Button onClick={handleSignOut} variant="outline" disabled={loading}>
-          {loading ? 'Déconnexion...' : 'Se déconnecter'}
-        </Button>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <DashboardSidebar 
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onSignOut={handleSignOut}
+        />
+        <main className="flex-1 p-6">
+          <Card className="p-6">
+            {renderContent()}
+          </Card>
+        </main>
       </div>
-
-      <Tabs defaultValue="profiles" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profiles">Profils enfants</TabsTrigger>
-          <TabsTrigger value="recipes">Recettes</TabsTrigger>
-          <TabsTrigger value="planner">Planificateur</TabsTrigger>
-          <TabsTrigger value="shopping">Liste de courses</TabsTrigger>
-          <TabsTrigger value="leftovers">Restes</TabsTrigger>
-          <TabsTrigger value="stats">Statistiques</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profiles">
-          <Card className="p-6">
-            <ChildrenProfiles 
-              userId={session.user.id} 
-              onSelectChild={setSelectedChild}
-            />
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="recipes">
-          <Card className="p-6">
-            <RecipeGenerator />
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="planner">
-          <Card className="p-6">
-            <MealPlanner userId={session.user.id} />
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="shopping">
-          <Card className="p-6">
-            <ShoppingList userId={session.user.id} />
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="leftovers">
-          <Card className="p-6">
-            <LeftoversManager userId={session.user.id} />
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="stats">
-          <Card className="p-6">
-            <StatsAndLeftovers />
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+    </SidebarProvider>
   );
 };
