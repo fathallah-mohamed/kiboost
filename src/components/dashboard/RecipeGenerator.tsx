@@ -2,7 +2,7 @@ import { RecipeGeneratorLayout } from './recipe/RecipeGeneratorLayout';
 import { RecipeGeneratorContent } from './recipe/RecipeGeneratorContent';
 import { useRecipeGeneration } from './recipe/useRecipeGeneration';
 import { useState } from 'react';
-import { Recipe, ChildProfile } from './types';
+import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from './types';
 import { useRecipeSaving } from './recipe/hooks/useRecipeSaving';
 import { toast } from 'sonner';
 
@@ -17,12 +17,27 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const { recipes, loading, error, generateRecipes } = useRecipeGeneration();
   const { saveRecipe, saving } = useRecipeSaving();
 
+  // États pour les filtres
+  const [mealType, setMealType] = useState<MealType | "all">("all");
+  const [maxPrepTime, setMaxPrepTime] = useState(60);
+  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({});
+
   const handleGenerateRecipes = async () => {
     if (selectedChildren.length === 0) {
       toast.error("Veuillez sélectionner au moins un enfant");
       return;
     }
-    await generateRecipes(selectedChildren[0]);
+
+    const filters: RecipeFilters = {
+      ...advancedFilters,
+      mealType: mealType === "all" ? undefined : mealType,
+      maxPrepTime,
+      difficulty: difficulty === "all" ? undefined : difficulty,
+    };
+
+    await generateRecipes(selectedChildren[0], filters);
   };
 
   const handleSaveRecipe = async (recipe: Recipe) => {
@@ -57,6 +72,16 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
         handleGenerateRecipes={handleGenerateRecipes}
         handleSaveRecipe={handleSaveRecipe}
         handleLoadMore={handleLoadMore}
+        mealType={mealType}
+        setMealType={setMealType}
+        maxPrepTime={maxPrepTime}
+        setMaxPrepTime={setMaxPrepTime}
+        difficulty={difficulty}
+        setDifficulty={setDifficulty}
+        showAdvancedFilters={showAdvancedFilters}
+        setShowAdvancedFilters={setShowAdvancedFilters}
+        advancedFilters={advancedFilters}
+        setAdvancedFilters={setAdvancedFilters}
       />
     </RecipeGeneratorLayout>
   );

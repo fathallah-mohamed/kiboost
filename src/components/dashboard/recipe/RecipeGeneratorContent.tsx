@@ -4,7 +4,8 @@ import { MultiChildSelector } from "./MultiChildSelector";
 import { RecipeGeneratorHeader } from "./RecipeGeneratorHeader";
 import { RecipeList } from "./RecipeList";
 import { LoadMoreButton } from "./LoadMoreButton";
-import { Recipe, ChildProfile } from "../types";
+import { RecipeFiltersSection } from "./RecipeFiltersSection";
+import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from "../types";
 
 interface RecipeGeneratorContentProps {
   loading: boolean;
@@ -18,6 +19,16 @@ interface RecipeGeneratorContentProps {
   handleGenerateRecipes: () => Promise<void>;
   handleSaveRecipe: (recipe: Recipe) => Promise<void>;
   handleLoadMore: () => void;
+  mealType: MealType | "all";
+  setMealType: (type: MealType | "all") => void;
+  maxPrepTime: number;
+  setMaxPrepTime: (time: number) => void;
+  difficulty: Difficulty | "all";
+  setDifficulty: (difficulty: Difficulty | "all") => void;
+  showAdvancedFilters: boolean;
+  setShowAdvancedFilters: (show: boolean) => void;
+  advancedFilters: RecipeFilters;
+  setAdvancedFilters: (filters: RecipeFilters) => void;
 }
 
 export const RecipeGeneratorContent = ({
@@ -32,9 +43,19 @@ export const RecipeGeneratorContent = ({
   handleGenerateRecipes,
   handleSaveRecipe,
   handleLoadMore,
+  mealType,
+  setMealType,
+  maxPrepTime,
+  setMaxPrepTime,
+  difficulty,
+  setDifficulty,
+  showAdvancedFilters,
+  setShowAdvancedFilters,
+  advancedFilters,
+  setAdvancedFilters,
 }: RecipeGeneratorContentProps) => {
   return (
-    <>
+    <div className="space-y-6">
       {loading && <LoadingOverlay />}
 
       <Card className="p-4">
@@ -44,6 +65,19 @@ export const RecipeGeneratorContent = ({
           mode="compact"
         />
       </Card>
+
+      <RecipeFiltersSection
+        mealType={mealType}
+        setMealType={setMealType}
+        maxPrepTime={maxPrepTime}
+        setMaxPrepTime={setMaxPrepTime}
+        difficulty={difficulty}
+        setDifficulty={setDifficulty}
+        showAdvancedFilters={showAdvancedFilters}
+        setShowAdvancedFilters={setShowAdvancedFilters}
+        advancedFilters={advancedFilters}
+        setAdvancedFilters={setAdvancedFilters}
+      />
 
       <div className="flex justify-end">
         <RecipeGeneratorHeader
@@ -66,6 +100,6 @@ export const RecipeGeneratorContent = ({
         totalCount={recipes.length}
         onLoadMore={handleLoadMore}
       />
-    </>
+    </div>
   );
 };
