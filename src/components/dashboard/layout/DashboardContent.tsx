@@ -22,28 +22,53 @@ export const DashboardContent = ({
   selectedChild,
   setSelectedChild,
 }: DashboardContentProps) => {
+  const handleSectionChange = (section: string) => {
+    // Cette fonction sera passée aux composants enfants
+  };
+
   if (activeSection === 'overview') {
     return (
       <div className="space-y-6">
-        <WelcomeSection />
-        <QuickActions />
-        <WeeklyProgress />
+        <WelcomeSection userId={session.user.id} />
+        <QuickActions onSectionChange={handleSectionChange} />
+        <WeeklyProgress 
+          plannedMeals={0} 
+          totalMeals={21} 
+          newRecipes={0} 
+        />
         <StatsAndLeftovers />
-        <WeeklyPlanViewer />
+        <WeeklyPlanViewer 
+          userId={session.user.id} 
+          onSectionChange={handleSectionChange} 
+        />
       </div>
     );
   }
 
   if (activeSection === 'children') {
-    return <ChildrenProfiles session={session} />;
+    return (
+      <ChildrenProfiles 
+        userId={session.user.id} 
+        onSelectChild={setSelectedChild} 
+      />
+    );
   }
 
   if (activeSection === 'recipes') {
-    return <RecipeGenerator session={session} />;
+    return (
+      <RecipeGenerator 
+        onSectionChange={handleSectionChange} 
+      />
+    );
   }
 
   if (activeSection === 'planner') {
-    return <MealPlanner session={session} />;
+    return (
+      <MealPlanner 
+        userId={session.user.id} 
+        onSectionChange={handleSectionChange} 
+      />
+    );
   }
 
   return null;
