@@ -1,26 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Recipe, ChildProfile, RecipeFilters } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-const STORAGE_KEY = 'generated_recipes';
-
 export const useRecipeGeneration = () => {
-  const [recipes, setRecipes] = useState<Recipe[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
-  }, [recipes]);
-
   const clearRecipes = () => {
     console.log('Clearing recipes and localStorage');
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('generated_recipes');
     setRecipes([]);
     setLoading(false);
     setError(null);
@@ -31,7 +22,7 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Generating recipes for children:', child, 'with filters:', filters);
+      console.log('Generating recipes for child:', child, 'with filters:', filters);
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-recipe', {
         body: {
@@ -51,14 +42,26 @@ export const useRecipeGeneration = () => {
         throw new Error('Format de réponse invalide');
       }
 
-      setRecipes(data);
+      // Ensure each recipe has required fields
+      const validatedRecipes = data.map(recipe => ({
+        ...recipe,
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        profile_id: child.profile_id,
+        is_generated: true,
+      }));
+
+      setRecipes(validatedRecipes);
+      localStorage.setItem('generated_recipes', JSON.stringify(validatedRecipes));
+
     } catch (err) {
       console.error('Error generating recipes:', err);
       setError('Une erreur est survenue lors de la génération des recettes.');
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de générer les recettes.",
+        description: "Impossible de générer les recettes. Veuillez réessayer.",
       });
     } finally {
       setLoading(false);
