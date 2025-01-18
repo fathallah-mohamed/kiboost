@@ -37,7 +37,17 @@ export const useRecipes = (userId: string) => {
           (typeof recipe.health_benefits === 'string' 
             ? JSON.parse(recipe.health_benefits) 
             : recipe.health_benefits) as HealthBenefit[]
-          : undefined
+          : undefined,
+        cooking_steps: recipe.cooking_steps ? 
+          (typeof recipe.cooking_steps === 'string'
+            ? JSON.parse(recipe.cooking_steps)
+            : recipe.cooking_steps) as { 
+              step: number; 
+              description: string; 
+              duration?: number; 
+              tips?: string; 
+            }[]
+          : []
       })));
     } catch (error) {
       console.error('Error fetching recipes:', error);
