@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { ChildProfile, Recipe, MealType, Difficulty } from "./types";
+import { ChildProfile, Recipe, MealType, Difficulty, RecipeFilters } from "./types";
 import { Card } from "@/components/ui/card";
-import { RecipeFilters } from "./recipe/RecipeFilters";
+import { RecipeFilters as BasicRecipeFilters } from "./recipe/RecipeFilters";
 import { RecipeGeneratorHeader } from "./recipe/RecipeGeneratorHeader";
 import { RecipeList } from "./recipe/RecipeList";
 import { MultiChildSelector } from "./recipe/MultiChildSelector";
@@ -13,6 +13,7 @@ import { LoadingOverlay } from "./recipe/LoadingOverlay";
 import { RecipeGeneratorTitle } from "./recipe/RecipeGeneratorTitle";
 import { LoadMoreButton } from "./recipe/LoadMoreButton";
 import { Button } from "@/components/ui/button";
+import { AdvancedFilters } from "./recipe/AdvancedFilters";
 
 export const RecipeGenerator = () => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
@@ -20,6 +21,8 @@ export const RecipeGenerator = () => {
   const [maxPrepTime, setMaxPrepTime] = useState(10);
   const [difficulty, setDifficulty] = useState<Difficulty | "all">("easy");
   const [displayCount, setDisplayCount] = useState(3);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({});
   
   const { toast } = useToast();
   const { loading, recipes, error, generateRecipes } = useRecipeGeneration();
@@ -36,8 +39,9 @@ export const RecipeGenerator = () => {
       return;
     }
 
-    setDisplayCount(3); // Reset display count when generating new recipes
+    setDisplayCount(3);
     await generateRecipes(selectedChildren[0], {
+      ...advancedFilters,
       mealType: mealType === "all" ? undefined : mealType,
       maxPrepTime,
       difficulty: difficulty === "all" ? undefined : difficulty,
@@ -66,7 +70,7 @@ export const RecipeGenerator = () => {
         />
       </Card>
 
-      <RecipeFilters
+      <BasicRecipeFilters
         mealType={mealType}
         setMealType={setMealType}
         maxPrepTime={maxPrepTime}
@@ -74,6 +78,21 @@ export const RecipeGenerator = () => {
         difficulty={difficulty}
         setDifficulty={setDifficulty}
       />
+
+      <Button
+        variant="outline"
+        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+        className="w-full"
+      >
+        {showAdvancedFilters ? "Masquer les filtres avancés" : "Afficher les filtres avancés"}
+      </Button>
+
+      {showAdvancedFilters && (
+        <AdvancedFilters
+          filters={advancedFilters}
+          onFiltersChange={setAdvancedFilters}
+        />
+      )}
 
       <div className="flex justify-end">
         <RecipeGeneratorHeader

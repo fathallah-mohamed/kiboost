@@ -300,9 +300,52 @@ export type Database = {
           },
         ]
       }
-      recipes: {
+      recipe_tags: {
         Row: {
           created_at: string
+          id: string
+          profile_id: string | null
+          recipe_id: string | null
+          tag: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id?: string | null
+          recipe_id?: string | null
+          tag: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string | null
+          recipe_id?: string | null
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_tags_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_tags_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          allergens: string[] | null
+          cooking_steps: Json | null
+          cost_estimate: number | null
+          created_at: string
+          dietary_preferences: string[] | null
           difficulty: string
           health_benefits: Json | null
           id: string
@@ -310,16 +353,23 @@ export type Database = {
           ingredients: Json
           instructions: string
           is_generated: boolean | null
+          max_age: number | null
           meal_type: string
+          min_age: number | null
           name: string
           nutritional_info: Json
           preparation_time: number
           profile_id: string
+          seasonal_months: number[] | null
           servings: number
           updated_at: string
         }
         Insert: {
+          allergens?: string[] | null
+          cooking_steps?: Json | null
+          cost_estimate?: number | null
           created_at?: string
+          dietary_preferences?: string[] | null
           difficulty?: string
           health_benefits?: Json | null
           id?: string
@@ -327,16 +377,23 @@ export type Database = {
           ingredients: Json
           instructions: string
           is_generated?: boolean | null
+          max_age?: number | null
           meal_type?: string
+          min_age?: number | null
           name: string
           nutritional_info: Json
           preparation_time?: number
           profile_id: string
+          seasonal_months?: number[] | null
           servings?: number
           updated_at?: string
         }
         Update: {
+          allergens?: string[] | null
+          cooking_steps?: Json | null
+          cost_estimate?: number | null
           created_at?: string
+          dietary_preferences?: string[] | null
           difficulty?: string
           health_benefits?: Json | null
           id?: string
@@ -344,11 +401,14 @@ export type Database = {
           ingredients?: Json
           instructions?: string
           is_generated?: boolean | null
+          max_age?: number | null
           meal_type?: string
+          min_age?: number | null
           name?: string
           nutritional_info?: Json
           preparation_time?: number
           profile_id?: string
+          seasonal_months?: number[] | null
           servings?: number
           updated_at?: string
         }

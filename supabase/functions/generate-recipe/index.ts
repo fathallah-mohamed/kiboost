@@ -27,7 +27,6 @@ serve(async (req) => {
     console.log('Received request with child profiles:', childProfiles);
     console.log('Filters:', filters);
 
-    // Combiner les allergies et préférences
     const allAllergies = [...new Set(childProfiles.flatMap(child => child.allergies || []))];
     const commonPreferences = childProfiles.reduce((common, child) => {
       if (common.length === 0) return child.preferences || [];
@@ -35,20 +34,38 @@ serve(async (req) => {
     }, []);
 
     const ageRange = {
-      min: Math.min(...childProfiles.map(child => child.age)),
-      max: Math.max(...childProfiles.map(child => child.age))
+      min: filters?.minAge || Math.min(...childProfiles.map(child => child.age)),
+      max: filters?.maxAge || Math.max(...childProfiles.map(child => child.age))
     };
 
+    // Construction du prompt avec les nouveaux filtres
     const mealTypePrompt = filters?.mealType ? `pour le ${filters.mealType}` : 'pour n\'importe quel repas';
     const difficultyPrompt = filters?.difficulty ? `de difficulté ${filters.difficulty}` : '';
     const timePrompt = filters?.maxPrepTime ? `qui se prépare en moins de ${filters.maxPrepTime} minutes` : '';
+    const costPrompt = filters?.maxCost ? `avec un coût maximum de ${filters.maxCost}€ par portion` : '';
+    const seasonPrompt = filters?.season ? `en utilisant des ingrédients de saison pour le mois ${filters.season}` : '';
+    
+    const dietaryPrompt = filters?.dietaryPreferences?.length 
+      ? `\n⚠️ RÉGIMES ALIMENTAIRES SPÉCIAUX :
+         - Respecte strictement ces régimes : ${filters.dietaryPreferences.join(', ')}
+         - Adapte les ingrédients en conséquence`
+      : '';
 
-    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français spécialisé dans l'alimentation multi-âges, crée 9 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} pour ${childProfiles.length} enfant(s) âgés de ${ageRange.min} à ${ageRange.max} ans.
+    const allergensPrompt = filters?.excludedAllergens?.length
+      ? `\n⚠️ ALLERGÈNES À EXCLURE ABSOLUMENT :
+         - Évite totalement ces allergènes : ${filters.excludedAllergens.join(', ')}
+         - Vérifie les contaminations croisées possibles`
+      : '';
+
+    const prompt = `En tant que chef cuisinier et pédiatre nutritionniste français spécialisé dans l'alimentation multi-âges, crée 9 recettes exceptionnelles, gourmandes et équilibrées ${mealTypePrompt} ${difficultyPrompt} ${timePrompt} ${costPrompt} ${seasonPrompt} pour ${childProfiles.length} enfant(s) âgés de ${ageRange.min} à ${ageRange.max} ans.
 
     ${allAllergies.length > 0 ? `⚠️ SÉCURITÉ ALIMENTAIRE CRITIQUE - ALLERGIES :
     - Exclus ABSOLUMENT et STRICTEMENT ces allergènes pour TOUS les enfants : ${allAllergies.join(', ')}
     - Vérifie TOUS les ingrédients pour éviter les contaminations croisées
     - Propose des alternatives sûres pour les ingrédients allergènes` : ''}
+
+    ${dietaryPrompt}
+    ${allergensPrompt}
 
     ${commonPreferences.length > 0 ? `✨ PRÉFÉRENCES PARTAGÉES :
     - Privilégie ces ingrédients appréciés par TOUS les enfants : ${commonPreferences.join(', ')}
@@ -126,7 +143,13 @@ serve(async (req) => {
       "meal_type": "${filters?.mealType || 'dinner'}",
       "preparation_time": nombre,
       "difficulty": "${filters?.difficulty || 'medium'}",
-      "servings": 4
+      "servings": 4,
+      "min_age": ${ageRange.min},
+      "max_age": ${ageRange.max},
+      "dietary_preferences": ${JSON.stringify(filters?.dietaryPreferences || [])},
+      "allergens": ${JSON.stringify(filters?.excludedAllergens || [])},
+      "cost_estimate": ${filters?.maxCost || 0},
+      "seasonal_months": ${filters?.season ? `[${filters.season}]` : '[1,2,3,4,5,6,7,8,9,10,11,12]'}
     }`;
 
     console.log('Sending request to OpenAI with prompt:', prompt);
@@ -138,7 +161,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           {
             role: 'system',
@@ -182,7 +205,6 @@ serve(async (req) => {
       throw new Error('Structure des recettes invalide');
     }
 
-    // Add generated flag and timestamps to each recipe
     const processedRecipes = recipes.map(recipe => ({
       ...recipe,
       is_generated: true,

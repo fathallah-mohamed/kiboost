@@ -28,33 +28,28 @@ export interface Recipe {
   updated_at: string;
   profile_id: string;
   health_benefits?: HealthBenefit[];
-}
-
-export interface RecipeRating {
-  id: string;
-  recipe_id: string;
-  profile_id: string;
-  rating: number;
-  comment?: string;
-  created_at: string;
-}
-
-export interface RecipeFavorite {
-  id: string;
-  recipe_id: string;
-  profile_id: string;
-  created_at: string;
+  min_age?: number;
+  max_age?: number;
+  dietary_preferences?: string[];
+  allergens?: string[];
+  cost_estimate?: number;
+  seasonal_months?: number[];
+  cooking_steps?: Array<{
+    step: number;
+    description: string;
+    duration?: number;
+    tips?: string;
+  }>;
 }
 
 export interface RecipeFilters {
   mealType?: MealType;
   maxPrepTime?: number;
   difficulty?: Difficulty;
-}
-
-export interface RecipeCardProps {
-  recipe: Recipe;
-  isPlanned?: boolean;
-  onAdd?: (recipe: Recipe) => void;
-  compact?: boolean;
+  minAge?: number;
+  maxAge?: number;
+  dietaryPreferences?: string[];
+  excludedAllergens?: string[];
+  maxCost?: number;
+  season?: number;
 }
