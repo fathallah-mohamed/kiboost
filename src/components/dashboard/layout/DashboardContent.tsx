@@ -57,7 +57,7 @@ export const DashboardContent = ({
   if (activeSection === 'recipes') {
     return (
       <RecipeGenerator 
-        onSectionChange={handleSectionChange} 
+        onSectionChange={() => setActiveSection('overview')} 
       />
     );
   }
