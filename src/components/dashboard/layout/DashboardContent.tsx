@@ -12,6 +12,7 @@ import { MealPlanner } from '../MealPlanner';
 interface DashboardContentProps {
   session: Session;
   activeSection: string;
+  setActiveSection: (section: string) => void;
   selectedChild: ChildProfile | null;
   setSelectedChild: (child: ChildProfile | null) => void;
 }
@@ -19,11 +20,12 @@ interface DashboardContentProps {
 export const DashboardContent = ({
   session,
   activeSection,
+  setActiveSection,
   selectedChild,
   setSelectedChild,
 }: DashboardContentProps) => {
   const handleSectionChange = (section: string) => {
-    // Cette fonction sera passée aux composants enfants
+    setActiveSection(section);
   };
 
   if (activeSection === 'overview') {

@@ -49,6 +49,7 @@ export const Dashboard = ({ session }: DashboardProps) => {
       <DashboardContent
         session={session}
         activeSection={activeSection}
+        setActiveSection={setActiveSection}
         selectedChild={selectedChild}
         setSelectedChild={setSelectedChild}
       />
