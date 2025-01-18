@@ -9,9 +9,9 @@ import { MealPlanner } from './MealPlanner';
 import { ShoppingList } from './ShoppingList';
 import { RecipeGenerator } from './RecipeGenerator';
 import { StatsAndLeftovers } from './statistics/StatsAndLeftovers';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChildProfile } from './types';
 import { LeftoversManager } from './leftovers/LeftoversManager';
+import { Sidebar } from '../layout/Sidebar';
 
 interface DashboardProps {
   session: Session;
@@ -21,6 +21,7 @@ export const Dashboard = ({ session }: DashboardProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
+  const [activeTab, setActiveTab] = useState('profiles');
 
   const handleSignOut = async () => {
     try {
@@ -41,64 +42,68 @@ export const Dashboard = ({ session }: DashboardProps) => {
     }
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Tableau de bord</h1>
-        <Button onClick={handleSignOut} variant="outline" disabled={loading}>
-          {loading ? 'Déconnexion...' : 'Se déconnecter'}
-        </Button>
-      </div>
-
-      <Tabs defaultValue="profiles" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profiles">Profils enfants</TabsTrigger>
-          <TabsTrigger value="recipes">Recettes</TabsTrigger>
-          <TabsTrigger value="planner">Planificateur</TabsTrigger>
-          <TabsTrigger value="shopping">Liste de courses</TabsTrigger>
-          <TabsTrigger value="leftovers">Restes</TabsTrigger>
-          <TabsTrigger value="stats">Statistiques</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profiles">
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'profiles':
+        return (
           <Card className="p-6">
             <ChildrenProfiles 
               userId={session.user.id} 
               onSelectChild={setSelectedChild}
             />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="recipes">
+        );
+      case 'recipes':
+        return (
           <Card className="p-6">
             <RecipeGenerator />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="planner">
+        );
+      case 'planner':
+        return (
           <Card className="p-6">
             <MealPlanner userId={session.user.id} />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="shopping">
+        );
+      case 'shopping':
+        return (
           <Card className="p-6">
             <ShoppingList userId={session.user.id} />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="leftovers">
+        );
+      case 'leftovers':
+        return (
           <Card className="p-6">
             <LeftoversManager userId={session.user.id} />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="stats">
+        );
+      case 'stats':
+        return (
           <Card className="p-6">
             <StatsAndLeftovers />
           </Card>
-        </TabsContent>
-      </Tabs>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">Tableau de bord</h1>
+            <Button onClick={handleSignOut} variant="outline" disabled={loading}>
+              {loading ? 'Déconnexion...' : 'Se déconnecter'}
+            </Button>
+          </div>
+          <div className="animate-fade-in">
+            {renderContent()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
