@@ -9,18 +9,18 @@ interface RecipeHealthBenefitsProps {
 }
 
 const categoryColors: { [key: string]: string } = {
-  cognitive: "bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-300",
-  energy: "bg-yellow-100 hover:bg-yellow-200 text-yellow-700 border-yellow-300",
-  satiety: "bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300",
-  digestive: "bg-green-100 hover:bg-green-200 text-green-700 border-green-300",
-  immunity: "bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300",
-  growth: "bg-pink-100 hover:bg-pink-200 text-pink-700 border-pink-300",
-  mental: "bg-indigo-100 hover:bg-indigo-200 text-indigo-700 border-indigo-300",
-  organs: "bg-red-100 hover:bg-red-200 text-red-700 border-red-300",
-  beauty: "bg-rose-100 hover:bg-rose-200 text-rose-700 border-rose-300",
-  physical: "bg-cyan-100 hover:bg-cyan-200 text-cyan-700 border-cyan-300",
-  prevention: "bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300",
-  global: "bg-violet-100 hover:bg-violet-200 text-violet-700 border-violet-300"
+  cognitive: "bg-[#FFE2E2] hover:bg-[#FFD1D1] text-[#FF9494] border-[#FF9494]",
+  energy: "bg-[#FFF2CC] hover:bg-[#FFE5A3] text-[#FFB347] border-[#FFB347]",
+  satiety: "bg-[#E2F0CB] hover:bg-[#D4E7B0] text-[#7FB069] border-[#7FB069]",
+  digestive: "bg-[#D4F0F0] hover:bg-[#A8E6E6] text-[#30BFBF] border-[#30BFBF]",
+  immunity: "bg-[#FFE5F1] hover:bg-[#FFD1E6] text-[#FF69B4] border-[#FF69B4]",
+  growth: "bg-[#E0F4FF] hover:bg-[#B8E8FF] text-[#59B4D1] border-[#59B4D1]",
+  mental: "bg-[#E2E0FF] hover:bg-[#CBC7FF] text-[#766CD1] border-[#766CD1]",
+  organs: "bg-[#FFE8D6] hover:bg-[#FFD7B5] text-[#FF8B3D] border-[#FF8B3D]",
+  beauty: "bg-[#FFE2FF] hover:bg-[#FFD1FF] text-[#FF69FF] border-[#FF69FF]",
+  physical: "bg-[#D1F5D3] hover:bg-[#B5EDB8] text-[#4CAF50] border-[#4CAF50]",
+  prevention: "bg-[#E6E6FA] hover:bg-[#D1D1FF] text-[#8080FF] border-[#8080FF]",
+  global: "bg-[#FFE4E1] hover:bg-[#FFD1CC] text-[#FF6B6B] border-[#FF6B6B]"
 };
 
 export const RecipeHealthBenefits = ({ benefits, compact }: RecipeHealthBenefitsProps) => {
@@ -40,14 +40,18 @@ export const RecipeHealthBenefits = ({ benefits, compact }: RecipeHealthBenefits
               <Badge 
                 variant="secondary" 
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-2 rounded-full transition-all duration-300",
-                  "transform hover:scale-105 cursor-help shadow-sm hover:shadow-md",
-                  "font-medium text-sm leading-relaxed",
-                  "border-2",
+                  "flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-all duration-300",
+                  "transform hover:scale-110 cursor-help",
+                  "font-quicksand font-bold text-sm leading-relaxed",
+                  "border-2 shadow-sm hover:shadow-md",
                   categoryColors[benefit.category],
+                  "animate-[fadeIn_0.5s_ease-in-out]",
                   "animate-fade-in [animation-delay:var(--delay)]"
                 )}
-                style={{ "--delay": `${index * 100}ms` } as React.CSSProperties}
+                style={{ 
+                  "--delay": `${index * 100}ms`,
+                  transform: `rotate(${Math.random() * 2 - 1}deg)`
+                } as React.CSSProperties}
               >
                 <span className="text-lg">{
                   benefit.icon === "brain" ? "🧠" :
@@ -71,8 +75,11 @@ export const RecipeHealthBenefits = ({ benefits, compact }: RecipeHealthBenefits
                 </span>
               </Badge>
             </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-sm">{benefit.description}</p>
+            <TooltipContent 
+              className="bg-white/95 backdrop-blur-sm border-2 p-3 rounded-xl shadow-xl"
+              side="top"
+            >
+              <p className="text-sm font-medium">{benefit.description}</p>
             </TooltipContent>
           </Tooltip>
         ))}
