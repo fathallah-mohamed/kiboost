@@ -1,36 +1,37 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Calendar, ChefHat, User, ShoppingCart, Heart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
-export const QuickActions = () => {
-  const navigate = useNavigate();
+interface QuickActionsProps {
+  onSectionChange: (section: string) => void;
+}
 
+export const QuickActions = ({ onSectionChange }: QuickActionsProps) => {
   const actions = [
     {
       label: 'Planifier un repas',
       icon: Calendar,
-      onClick: () => navigate('/dashboard?tab=planner')
+      onClick: () => onSectionChange('planner')
     },
     {
       label: 'Générer des recettes',
       icon: ChefHat,
-      onClick: () => navigate('/dashboard?tab=recipes')
+      onClick: () => onSectionChange('recipes')
     },
     {
       label: 'Ajouter un profil enfant',
       icon: User,
-      onClick: () => navigate('/dashboard?tab=profiles')
+      onClick: () => onSectionChange('profiles')
     },
     {
       label: 'Liste de courses',
       icon: ShoppingCart,
-      onClick: () => navigate('/dashboard?tab=shopping')
+      onClick: () => onSectionChange('shopping')
     },
     {
       label: 'Mes favoris',
       icon: Heart,
-      onClick: () => navigate('/dashboard?tab=recipes')
+      onClick: () => onSectionChange('recipes')
     }
   ];
 

@@ -3,7 +3,6 @@ import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WelcomeSection } from './sections/WelcomeSection';
 import { QuickActions } from './sections/QuickActions';
 import { WeeklyProgress } from './sections/WeeklyProgress';
@@ -23,6 +22,7 @@ export const Dashboard = ({ session }: DashboardProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
+  const [activeSection, setActiveSection] = useState<string>('overview');
   const [weeklyStats, setWeeklyStats] = useState({
     plannedMeals: 0,
     totalMeals: 5,
@@ -31,7 +31,6 @@ export const Dashboard = ({ session }: DashboardProps) => {
 
   useEffect(() => {
     const fetchWeeklyStats = async () => {
-      // Fetch planned meals for the current week
       const startOfWeek = new Date();
       startOfWeek.setHours(0, 0, 0, 0);
       startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
@@ -81,6 +80,35 @@ export const Dashboard = ({ session }: DashboardProps) => {
     }
   };
 
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case 'profiles':
+        return (
+          <ChildrenProfiles 
+            userId={session.user.id} 
+            onSelectChild={setSelectedChild}
+          />
+        );
+      case 'recipes':
+        return <RecipeGenerator />;
+      case 'planner':
+        return <MealPlanner userId={session.user.id} />;
+      case 'shopping':
+        return <ShoppingList userId={session.user.id} />;
+      case 'stats':
+        return <StatsAndLeftovers />;
+      default:
+        return (
+          <div className="space-y-6">
+            <WelcomeSection userId={session.user.id} />
+            <QuickActions onSectionChange={setActiveSection} />
+            <WeeklyProgress {...weeklyStats} />
+            <PremiumTeaser />
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       <div className="flex justify-between items-center">
@@ -90,46 +118,7 @@ export const Dashboard = ({ session }: DashboardProps) => {
         </Button>
       </div>
 
-      <div className="grid gap-6">
-        <WelcomeSection userId={session.user.id} />
-        <QuickActions />
-        <WeeklyProgress {...weeklyStats} />
-      </div>
-
-      <Tabs defaultValue="profiles" className="space-y-4">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="profiles">Profils enfants</TabsTrigger>
-          <TabsTrigger value="recipes">Recettes</TabsTrigger>
-          <TabsTrigger value="planner">Planificateur</TabsTrigger>
-          <TabsTrigger value="shopping">Liste de courses</TabsTrigger>
-          <TabsTrigger value="stats">Statistiques</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profiles">
-          <ChildrenProfiles 
-            userId={session.user.id} 
-            onSelectChild={setSelectedChild}
-          />
-        </TabsContent>
-
-        <TabsContent value="recipes">
-          <RecipeGenerator />
-        </TabsContent>
-
-        <TabsContent value="planner">
-          <MealPlanner userId={session.user.id} />
-        </TabsContent>
-
-        <TabsContent value="shopping">
-          <ShoppingList userId={session.user.id} />
-        </TabsContent>
-
-        <TabsContent value="stats">
-          <StatsAndLeftovers />
-        </TabsContent>
-      </Tabs>
-
-      <PremiumTeaser />
+      {renderActiveSection()}
     </div>
   );
 };
