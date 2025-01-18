@@ -13,11 +13,27 @@ serve(async (req) => {
 
   try {
     const { childProfiles, filters } = await req.json();
+    
+    // Add validation for required data
+    if (!childProfiles || !childProfiles[0]) {
+      throw new Error("No child profile provided");
+    }
+    
     const child = childProfiles[0];
+    console.log("Received child profile:", child);
+    console.log("Received filters:", filters);
 
-    // Ensure arrays exist and are not empty
-    const preferences = child.preferences?.filter(p => p && p.trim() !== '') || [];
-    const allergies = child.allergies?.filter(a => a && a.trim() !== '') || [];
+    // Safely access and filter arrays with null checks
+    const preferences = Array.isArray(child.preferences) 
+      ? child.preferences.filter(p => p && typeof p === 'string' && p.trim() !== '')
+      : [];
+    
+    const allergies = Array.isArray(child.allergies)
+      ? child.allergies.filter(a => a && typeof a === 'string' && a.trim() !== '')
+      : [];
+
+    console.log("Processed preferences:", preferences);
+    console.log("Processed allergies:", allergies);
 
     // Initialize OpenAI
     const configuration = new Configuration({
@@ -25,14 +41,25 @@ serve(async (req) => {
     });
     const openai = new OpenAIApi(configuration);
 
-    // Build the preferences and allergies strings
-    const preferencesStr = preferences.length > 0 ? `Consider these preferences: ${preferences.join(", ")}` : "";
-    const allergiesStr = allergies.length > 0 ? `Avoid these allergens: ${allergies.join(", ")}` : "";
+    // Build the preferences and allergies strings safely
+    const preferencesStr = preferences.length > 0 
+      ? `Consider these preferences: ${preferences.join(", ")}`
+      : "";
+    
+    const allergiesStr = allergies.length > 0
+      ? `Avoid these allergens: ${allergies.join(", ")}`
+      : "";
 
-    // Calculate age
-    const birthDate = new Date(child.birth_date);
-    const today = new Date();
-    const age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    // Calculate age with validation
+    let age = 0;
+    try {
+      const birthDate = new Date(child.birth_date);
+      const today = new Date();
+      age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    } catch (error) {
+      console.error("Error calculating age:", error);
+      age = 5; // Default age if calculation fails
+    }
 
     // Build the prompt with filters
     const prompt = `Generate 3 unique, healthy recipes suitable for a ${age}-year-old child.
@@ -53,7 +80,7 @@ serve(async (req) => {
     
     Return an array of 3 recipe objects.`;
 
-    console.log("Generating recipes with prompt:", prompt);
+    console.log("Generated prompt:", prompt);
 
     const completion = await openai.createChatCompletion({
       model: "gpt-4o",
@@ -70,9 +97,14 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Error generating recipes:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        stack: error.stack 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });
