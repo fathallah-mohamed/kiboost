@@ -2,10 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { 
-  Calendar, 
-  Clock, 
   DollarSign, 
   Filter, 
   Heart,
@@ -14,34 +11,18 @@ import {
   Zap,
   Shield,
   Apple,
-  Dumbbell
+  Dumbbell,
+  Calendar
 } from "lucide-react";
 import { RecipeFilters } from "../types";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 interface AdvancedFiltersProps {
   filters: RecipeFilters;
   onFiltersChange: (filters: RecipeFilters) => void;
 }
-
-const dietaryOptions = [
-  "végétarien",
-  "végétalien",
-  "sans gluten",
-  "sans lactose",
-  "halal",
-  "casher",
-];
-
-const allergenOptions = [
-  "arachides",
-  "fruits à coque",
-  "lait",
-  "œufs",
-  "poisson",
-  "crustacés",
-  "soja",
-  "blé",
-];
 
 const healthBenefits = [
   { category: 'cognitive', icon: <Brain className="w-4 h-4" />, label: 'Développement cognitif' },
@@ -51,24 +32,16 @@ const healthBenefits = [
   { category: 'physical', icon: <Dumbbell className="w-4 h-4" />, label: 'Développement physique' },
 ];
 
-export const AdvancedFilters = ({ 
-  filters, 
-  onFiltersChange 
-}: AdvancedFiltersProps) => {
-  const handleFilterChange = (
-    key: keyof RecipeFilters, 
-    value: any
-  ) => {
+const FilterContent = ({ filters, onFiltersChange }: AdvancedFiltersProps) => {
+  const handleFilterChange = (key: keyof RecipeFilters, value: any) => {
     onFiltersChange({
       ...filters,
       [key]: value,
     });
   };
 
-  const currentMonth = new Date().getMonth() + 1;
-
   return (
-    <Card className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
         <Filter className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold">Filtres avancés</h3>
@@ -78,7 +51,7 @@ export const AdvancedFilters = ({
         {/* Bienfaits santé */}
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
-            <Heart className="w-4 h-4" />
+            <Heart className="w-4 h-4 text-primary" />
             Bienfaits santé recherchés
           </Label>
           <div className="flex flex-wrap gap-2">
@@ -86,7 +59,12 @@ export const AdvancedFilters = ({
               <Badge
                 key={benefit.category}
                 variant={filters.healthBenefits?.includes(benefit.category) ? "default" : "outline"}
-                className="cursor-pointer flex items-center gap-1"
+                className={cn(
+                  "cursor-pointer flex items-center gap-1 transition-all",
+                  filters.healthBenefits?.includes(benefit.category) 
+                    ? "bg-primary hover:bg-primary/90" 
+                    : "hover:bg-secondary/50"
+                )}
                 onClick={() => {
                   const current = filters.healthBenefits || [];
                   const updated = current.includes(benefit.category)
@@ -102,95 +80,27 @@ export const AdvancedFilters = ({
           </div>
         </div>
 
-        {/* Temps de préparation */}
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Temps de préparation max: {filters.maxPrepTime || 60}min
-          </Label>
-          <Slider
-            value={[filters.maxPrepTime || 60]}
-            onValueChange={([value]) => handleFilterChange('maxPrepTime', value)}
-            min={10}
-            max={120}
-            step={5}
-          />
-        </div>
-
-        {/* Préférences alimentaires */}
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            <Leaf className="w-4 h-4" />
-            Préférences alimentaires
-          </Label>
-          <div className="flex flex-wrap gap-2">
-            {dietaryOptions.map((pref) => (
-              <Badge
-                key={pref}
-                variant={filters.dietaryPreferences?.includes(pref) ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => {
-                  const current = filters.dietaryPreferences || [];
-                  const updated = current.includes(pref)
-                    ? current.filter(p => p !== pref)
-                    : [...current, pref];
-                  handleFilterChange('dietaryPreferences', updated);
-                }}
-              >
-                {pref}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        {/* Allergènes à exclure */}
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            Allergènes à exclure
-          </Label>
-          <div className="flex flex-wrap gap-2">
-            {allergenOptions.map((allergen) => (
-              <Badge
-                key={allergen}
-                variant={filters.excludedAllergens?.includes(allergen) ? "destructive" : "outline"}
-                className="cursor-pointer"
-                onClick={() => {
-                  const current = filters.excludedAllergens || [];
-                  const updated = current.includes(allergen)
-                    ? current.filter(a => a !== allergen)
-                    : [...current, allergen];
-                  handleFilterChange('excludedAllergens', updated);
-                }}
-              >
-                {allergen}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
         {/* Budget */}
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4" />
-            Budget maximum par portion
+            <DollarSign className="w-4 h-4 text-primary" />
+            Budget maximum par portion: {filters.maxCost || 15}€
           </Label>
-          <Slider
-            value={[filters.maxCost || 15]}
-            onValueChange={([value]) => handleFilterChange('maxCost', value)}
+          <input
+            type="range"
             min={5}
             max={30}
             step={1}
+            value={filters.maxCost || 15}
+            onChange={(e) => handleFilterChange('maxCost', Number(e.target.value))}
+            className="w-full accent-primary"
           />
-          <div className="text-sm text-muted-foreground">
-            {filters.maxCost || 15}€ par portion
-          </div>
         </div>
 
         {/* Saisonnalité */}
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
+            <Calendar className="w-4 h-4 text-primary" />
             Saisonnalité
           </Label>
           <div className="flex flex-wrap gap-2">
@@ -198,7 +108,12 @@ export const AdvancedFilters = ({
               <Badge
                 key={month}
                 variant={filters.season === month ? "default" : "outline"}
-                className="cursor-pointer"
+                className={cn(
+                  "cursor-pointer transition-all",
+                  filters.season === month 
+                    ? "bg-primary hover:bg-primary/90" 
+                    : "hover:bg-secondary/50"
+                )}
                 onClick={() => handleFilterChange('season', month)}
               >
                 {new Date(2024, month - 1).toLocaleString('fr-FR', { month: 'long' })}
@@ -217,6 +132,32 @@ export const AdvancedFilters = ({
           Réinitialiser les filtres
         </Button>
       </div>
+    </div>
+  );
+};
+
+export const AdvancedFilters = ({ filters, onFiltersChange }: AdvancedFiltersProps) => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" size="lg" className="w-full flex items-center gap-2">
+            <Filter className="w-6 h-6" />
+            Filtres avancés
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="h-[80vh]">
+          <FilterContent filters={filters} onFiltersChange={onFiltersChange} />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <Card className="p-6">
+      <FilterContent filters={filters} onFiltersChange={onFiltersChange} />
     </Card>
   );
 };
