@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, Edit2 } from 'lucide-react';
+import { X, Edit2, Info } from 'lucide-react';
 import { ChildProfile } from '../types';
 import {
   AlertDialog,
@@ -14,6 +14,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AgeDisplay } from './child-card/AgeDisplay';
@@ -43,8 +49,8 @@ export const ChildCard = ({ child, isSelected, onSelect, onDelete, onUpdate }: C
         .update({
           name: editedName,
           birth_date: editedBirthDate,
-          allergies: editedAllergies.split(',').map(a => a.trim()),
-          preferences: editedPreferences.split(',').map(p => p.trim()),
+          allergies: editedAllergies.split(',').map(a => a.trim()).filter(Boolean),
+          preferences: editedPreferences.split(',').map(p => p.trim()).filter(Boolean),
         })
         .eq('id', child.id);
 
@@ -55,7 +61,7 @@ export const ChildCard = ({ child, isSelected, onSelect, onDelete, onUpdate }: C
       
       toast({
         title: "Profil mis à jour",
-        description: "Le profil a été mis à jour avec succès.",
+        description: `Le profil de ${editedName} a été mis à jour avec succès.`,
       });
     } catch (error) {
       toast({
@@ -86,61 +92,81 @@ export const ChildCard = ({ child, isSelected, onSelect, onDelete, onUpdate }: C
   }
 
   return (
-    <Card 
-      className={`p-4 relative cursor-pointer transition-colors ${
-        isSelected ? 'ring-2 ring-primary' : ''
-      }`}
-      onClick={() => onSelect(child)}
-    >
-      <div className="absolute top-2 right-2 flex space-x-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsEditing(true);
-          }}
-        >
-          <Edit2 className="w-4 h-4" />
-        </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-              <AlertDialogDescription>
-                Êtes-vous sûr de vouloir supprimer le profil de {child.name} ? Cette action est irréversible.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(child.id)}>
-                Supprimer
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-      <h3 className="font-semibold text-lg mb-2">{child.name}</h3>
-      <AgeDisplay birthDate={child.birth_date} />
-      <ChildInfo
-        label="Allergies"
-        items={child.allergies}
-        emptyMessage="Aucune allergie connue"
-      />
-      <ChildInfo
-        label="Préférences"
-        items={child.preferences}
-        emptyMessage="Aucune préférence renseignée"
-      />
-    </Card>
+    <TooltipProvider>
+      <Card 
+        className={`p-4 relative cursor-pointer transition-all duration-200 hover:shadow-md ${
+          isSelected ? 'ring-2 ring-primary animate-scale-in' : ''
+        }`}
+        onClick={() => onSelect(child)}
+      >
+        <div className="absolute top-2 right-2 flex space-x-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditing(true);
+                }}
+              >
+                <Edit2 className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Modifier le profil</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <AlertDialog>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Supprimer ce profil</p>
+              </TooltipContent>
+            </Tooltip>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Êtes-vous sûr de vouloir supprimer le profil de {child.name} ? Cette action est irréversible.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(child.id)}>
+                  Supprimer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        <div className="pt-8">
+          <h3 className="font-semibold text-lg mb-2">{child.name}</h3>
+          <AgeDisplay birthDate={child.birth_date} />
+          <ChildInfo
+            label="Allergies"
+            items={child.allergies}
+            emptyMessage="Aucune allergie connue"
+          />
+          <ChildInfo
+            label="Préférences"
+            items={child.preferences}
+            emptyMessage="Aucune préférence renseignée"
+          />
+        </div>
+      </Card>
+    </TooltipProvider>
   );
 };
