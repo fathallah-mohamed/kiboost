@@ -43,7 +43,7 @@ export const DashboardNavigation = ({ activeSection, setActiveSection }: Dashboa
     {
       label: 'Mes favoris',
       icon: Heart,
-      action: () => setActiveSection('recipes')
+      action: () => setActiveSection('favorites')
     }
   ];
 
@@ -52,11 +52,11 @@ export const DashboardNavigation = ({ activeSection, setActiveSection }: Dashboa
       {quickActions.map((action, index) => (
         <Button
           key={index}
-          variant="outline"
+          variant={activeSection === action.label.toLowerCase() ? 'default' : 'outline'}
           onClick={action.action}
           className="whitespace-nowrap"
         >
-          <action.icon className="h-4 w-4" />
+          <action.icon className="h-4 w-4 mr-2" />
           <span>{action.label}</span>
         </Button>
       ))}

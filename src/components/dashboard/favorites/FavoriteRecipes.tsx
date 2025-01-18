@@ -1,0 +1,106 @@
+import { useEffect, useState } from 'react';
+import { Recipe } from '../types';
+import { supabase } from '@/integrations/supabase/client';
+import { RecipeCard } from '../recipe/RecipeCard';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
+import { useFavorites } from '../recipe/hooks/useFavorites';
+
+interface FavoriteRecipesProps {
+  onSectionChange: (section: string) => void;
+}
+
+export const FavoriteRecipes = ({ onSectionChange }: FavoriteRecipesProps) => {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const { favoriteRecipes, toggleFavorite } = useFavorites();
+
+  useEffect(() => {
+    fetchFavoriteRecipes();
+  }, [favoriteRecipes]);
+
+  const fetchFavoriteRecipes = async () => {
+    try {
+      if (!favoriteRecipes.length) {
+        setRecipes([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('recipes')
+        .select('*')
+        .in('id', favoriteRecipes);
+
+      if (error) throw error;
+
+      setRecipes(data.map(recipe => ({
+        ...recipe,
+        ingredients: typeof recipe.ingredients === 'string' 
+          ? JSON.parse(recipe.ingredients) 
+          : recipe.ingredients,
+        nutritional_info: typeof recipe.nutritional_info === 'string'
+          ? JSON.parse(recipe.nutritional_info)
+          : recipe.nutritional_info,
+        instructions: Array.isArray(recipe.instructions)
+          ? recipe.instructions
+          : [recipe.instructions].filter(Boolean),
+        health_benefits: recipe.health_benefits
+          ? (typeof recipe.health_benefits === 'string'
+            ? JSON.parse(recipe.health_benefits)
+            : recipe.health_benefits)
+          : undefined,
+      })));
+    } catch (error) {
+      console.error('Error fetching favorite recipes:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger vos recettes favorites.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveFavorite = async (recipe: Recipe) => {
+    await toggleFavorite(recipe);
+    toast({
+      title: "Favori supprimé",
+      description: "La recette a été retirée de vos favoris.",
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Mes recettes favorites</h2>
+      {recipes.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">
+            Vous n'avez pas encore de recettes favorites.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {recipes.map((recipe) => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              isFavorite={true}
+              onToggleFavorite={() => handleRemoveFavorite(recipe)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};

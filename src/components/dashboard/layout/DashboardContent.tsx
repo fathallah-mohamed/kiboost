@@ -1,77 +1,57 @@
-import { Session } from '@supabase/auth-helpers-react';
-import { ChildProfile } from '../types';
+import { useEffect, useState } from 'react';
 import { WelcomeSection } from '../sections/WelcomeSection';
 import { QuickActions } from '../sections/QuickActions';
 import { WeeklyProgress } from '../sections/WeeklyProgress';
 import { StatsAndLeftovers } from '../statistics/StatsAndLeftovers';
-import { WeeklyPlanViewer } from '../WeeklyPlanViewer';
-import { ChildrenProfiles } from '../ChildrenProfiles';
 import { RecipeGenerator } from '../RecipeGenerator';
 import { MealPlanner } from '../MealPlanner';
+import { WeeklyPlanViewer } from '../WeeklyPlanViewer';
+import { ChildrenProfiles } from '../ChildrenProfiles';
+import { ShoppingList } from '../ShoppingList';
+import { DashboardNavigation } from './DashboardNavigation';
+import { FavoriteRecipes } from '../favorites/FavoriteRecipes';
 
 interface DashboardContentProps {
-  session: Session;
   activeSection: string;
   setActiveSection: (section: string) => void;
-  selectedChild: ChildProfile | null;
-  setSelectedChild: (child: ChildProfile | null) => void;
 }
 
-export const DashboardContent = ({
-  session,
-  activeSection,
-  setActiveSection,
-  selectedChild,
-  setSelectedChild,
-}: DashboardContentProps) => {
-  const handleSectionChange = (section: string) => {
-    setActiveSection(section);
+export const DashboardContent = ({ activeSection, setActiveSection }: DashboardContentProps) => {
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'overview':
+        return (
+          <div className="space-y-6">
+            <WelcomeSection />
+            <DashboardNavigation 
+              activeSection={activeSection} 
+              setActiveSection={setActiveSection}
+            />
+            <QuickActions onSectionChange={setActiveSection} />
+            <WeeklyProgress />
+            <StatsAndLeftovers />
+          </div>
+        );
+      case 'recipes':
+        return <RecipeGenerator onSectionChange={setActiveSection} />;
+      case 'planner':
+        return <MealPlanner onSectionChange={setActiveSection} />;
+      case 'view-planner':
+        return <WeeklyPlanViewer onSectionChange={setActiveSection} />;
+      case 'children':
+        return <ChildrenProfiles onSectionChange={setActiveSection} />;
+      case 'shopping':
+        return <ShoppingList onSectionChange={setActiveSection} />;
+      case 'favorites':
+        return <FavoriteRecipes onSectionChange={setActiveSection} />;
+      default:
+        return null;
+    }
   };
 
-  if (activeSection === 'overview') {
-    return (
-      <div className="space-y-6">
-        <WelcomeSection userId={session.user.id} />
-        <QuickActions onSectionChange={handleSectionChange} />
-        <WeeklyProgress 
-          plannedMeals={0} 
-          totalMeals={21} 
-          newRecipes={0} 
-        />
-        <StatsAndLeftovers />
-        <WeeklyPlanViewer 
-          userId={session.user.id} 
-          onSectionChange={handleSectionChange} 
-        />
-      </div>
-    );
-  }
-
-  if (activeSection === 'children') {
-    return (
-      <ChildrenProfiles 
-        userId={session.user.id} 
-        onSelectChild={setSelectedChild} 
-      />
-    );
-  }
-
-  if (activeSection === 'recipes') {
-    return (
-      <RecipeGenerator 
-        onSectionChange={() => setActiveSection('overview')} 
-      />
-    );
-  }
-
-  if (activeSection === 'planner') {
-    return (
-      <MealPlanner 
-        userId={session.user.id} 
-        onSectionChange={handleSectionChange} 
-      />
-    );
-  }
-
-  return null;
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {renderContent()}
+    </div>
+  );
 };
