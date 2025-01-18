@@ -2,20 +2,21 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Configuration, OpenAIApi } from "https://esm.sh/openai@4.24.1";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    console.log('Received request to generate recipe');
     const { childProfiles, filters } = await req.json();
-    console.log("Received request:", { childProfiles, filters });
+    console.log('Request data:', { childProfiles, filters });
     
     if (!childProfiles || !childProfiles[0]) {
       throw new Error("No child profile provided");
@@ -23,7 +24,7 @@ serve(async (req) => {
     
     const child = childProfiles[0];
     
-    // Safely access and filter arrays
+    // Filter out empty strings from preferences and allergies
     const preferences = Array.isArray(child.preferences) 
       ? child.preferences.filter(p => p && typeof p === 'string' && p.length > 0)
       : [];
@@ -37,14 +38,14 @@ serve(async (req) => {
     const today = new Date();
     const age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 
-    console.log("Processing request for child:", {
+    console.log('Processing request for child:', {
       age,
       preferences,
       allergies,
       filters
     });
 
-    // Initialize OpenAI with error handling
+    // Initialize OpenAI
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiApiKey) {
       throw new Error("OpenAI API key not configured");
@@ -74,7 +75,7 @@ serve(async (req) => {
     
     Return an array of 3 recipe objects.`;
 
-    console.log("Generated prompt:", prompt);
+    console.log('Generated prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
       model: "gpt-4o-mini",
@@ -97,7 +98,7 @@ serve(async (req) => {
     }
 
     const recipes = JSON.parse(completion.data.choices[0].message.content);
-    console.log("Generated recipes:", recipes);
+    console.log('Generated recipes:', recipes);
 
     return new Response(JSON.stringify(recipes), {
       headers: { 
