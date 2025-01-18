@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Recipe } from "../../types";
 import { 
   Utensils, Clock, Heart, Beef, Wheat, 
-  Flame, Cookie, Star 
+  Flame, Cookie, Star, ChevronDown
 } from "lucide-react";
 import { RecipeRating } from "../RecipeRating";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,8 +59,12 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
                 <Heart className="w-4 h-4" fill={isFavorite ? "currentColor" : "none"} />
               </Button>
               {onAdd && (
-                <Button onClick={() => onAdd(recipe)} disabled={isPlanned}>
-                  {isPlanned ? 'Déjà planifiée' : 'Planifier'}
+                <Button 
+                  onClick={() => onAdd(recipe)} 
+                  disabled={isPlanned}
+                  className="whitespace-nowrap"
+                >
+                  {isPlanned ? 'Déjà planifiée' : 'Ajouter au planificateur'}
                 </Button>
               )}
             </div>
