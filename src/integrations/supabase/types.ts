@@ -459,7 +459,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      validate_health_benefit_categories: {
+        Args: {
+          benefits: Json
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -43,6 +43,10 @@ serve(async (req) => {
     - Maximum preparation time: ${filters?.maxPrepTime || "any"} minutes
     - Difficulty level: ${filters?.difficulty || "any"}
     
+    For each recipe, include specific health benefits that are appropriate for children.
+    Use these categories for health benefits: cognitive, energy, satiety, digestive, immunity, growth, mental, organs, beauty, physical, prevention, global.
+    Use these icons for benefits: brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles.
+    
     Return ONLY a valid JSON array containing exactly 3 recipe objects. Each recipe object must follow this exact structure:
     {
       "name": "string",
@@ -52,7 +56,7 @@ serve(async (req) => {
       "preparation_time": number,
       "difficulty": "easy/medium/hard",
       "meal_type": "breakfast/lunch/dinner/snack",
-      "health_benefits": ["string"],
+      "health_benefits": [{"icon": "string", "category": "string", "description": "string"}],
       "min_age": number,
       "max_age": number
     }`;

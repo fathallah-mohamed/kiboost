@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Recipe } from "../types";
 import { 
   Utensils, Clock, Heart, Beef, Wheat, 
-  Flame, Cookie, Star, Share2, ChevronDown
+  Flame, Cookie, Star, ChevronDown
 } from "lucide-react";
 import { RecipeRating } from "./RecipeRating";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { RecipeHealthBenefits } from "./recipe-card/RecipeHealthBenefits";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -99,6 +100,10 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
               {recipe.meal_type}
             </span>
           </div>
+
+          {recipe.health_benefits && (
+            <RecipeHealthBenefits benefits={recipe.health_benefits} />
+          )}
 
           <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             <CollapsibleContent className="space-y-6 mt-4">
