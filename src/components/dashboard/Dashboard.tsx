@@ -1,104 +1,82 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
 import { ChildrenProfiles } from './ChildrenProfiles';
 import { MealPlanner } from './MealPlanner';
 import { ShoppingList } from './ShoppingList';
 import { RecipeGenerator } from './RecipeGenerator';
 import { StatsAndLeftovers } from './statistics/StatsAndLeftovers';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChildProfile } from './types';
 import { LeftoversManager } from './leftovers/LeftoversManager';
+import { Sidebar } from './navigation/Sidebar';
+import { DashboardOverview } from './overview/DashboardOverview';
+import { ChildProfile } from './types';
 
 interface DashboardProps {
   session: Session;
 }
 
 export const Dashboard = ({ session }: DashboardProps) => {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
+  const [currentSection, setCurrentSection] = useState('overview');
 
-  const handleSignOut = async () => {
-    try {
-      setLoading(true);
-      await supabase.auth.signOut();
-      toast({
-        title: "Déconnexion réussie",
-        description: "À bientôt sur Kiboost !",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la déconnexion.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Écouter les changements de hash dans l'URL
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace('#', '');
+    setCurrentSection(hash || 'overview');
+  });
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Tableau de bord</h1>
-        <Button onClick={handleSignOut} variant="outline" disabled={loading}>
-          {loading ? 'Déconnexion...' : 'Se déconnecter'}
-        </Button>
-      </div>
-
-      <Tabs defaultValue="profiles" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profiles">Profils enfants</TabsTrigger>
-          <TabsTrigger value="recipes">Recettes</TabsTrigger>
-          <TabsTrigger value="planner">Planificateur</TabsTrigger>
-          <TabsTrigger value="shopping">Liste de courses</TabsTrigger>
-          <TabsTrigger value="leftovers">Restes</TabsTrigger>
-          <TabsTrigger value="stats">Statistiques</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profiles">
+  const renderContent = () => {
+    switch (currentSection) {
+      case 'profiles':
+        return (
           <Card className="p-6">
             <ChildrenProfiles 
               userId={session.user.id} 
               onSelectChild={setSelectedChild}
             />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="recipes">
+        );
+      case 'recipes':
+        return (
           <Card className="p-6">
             <RecipeGenerator />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="planner">
+        );
+      case 'planner':
+        return (
           <Card className="p-6">
             <MealPlanner userId={session.user.id} />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="shopping">
+        );
+      case 'shopping':
+        return (
           <Card className="p-6">
             <ShoppingList userId={session.user.id} />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="leftovers">
+        );
+      case 'leftovers':
+        return (
           <Card className="p-6">
             <LeftoversManager userId={session.user.id} />
           </Card>
-        </TabsContent>
-
-        <TabsContent value="stats">
+        );
+      case 'stats':
+        return (
           <Card className="p-6">
             <StatsAndLeftovers />
           </Card>
-        </TabsContent>
-      </Tabs>
+        );
+      default:
+        return <DashboardOverview />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex bg-background">
+      <Sidebar currentSection={currentSection} />
+      <div className="flex-1 p-4 lg:p-6 overflow-auto">
+        {renderContent()}
+      </div>
     </div>
   );
 };
