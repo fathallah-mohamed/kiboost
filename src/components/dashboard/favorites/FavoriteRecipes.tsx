@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Recipe, MealType } from '../types';
+import { Recipe, MealType, Difficulty } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import { RecipeCard } from '../recipe/RecipeCard';
 import { useToast } from '@/hooks/use-toast';
@@ -52,6 +52,16 @@ export const FavoriteRecipes = ({ onSectionChange }: FavoriteRecipesProps) => {
             : recipe.health_benefits)
           : undefined,
         meal_type: recipe.meal_type as MealType,
+        difficulty: recipe.difficulty as Difficulty,
+        dietary_preferences: recipe.dietary_preferences || [],
+        allergens: recipe.allergens || [],
+        seasonal_months: recipe.seasonal_months || [],
+        cooking_steps: recipe.cooking_steps || [],
+        cost_estimate: recipe.cost_estimate || 0,
+        min_age: recipe.min_age || 0,
+        max_age: recipe.max_age || 18,
+        is_generated: recipe.is_generated || false,
+        image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
       }));
 
       setRecipes(parsedRecipes);
