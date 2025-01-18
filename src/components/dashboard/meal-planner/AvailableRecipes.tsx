@@ -40,7 +40,7 @@ export const AvailableRecipes = ({
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Recettes disponibles</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sortedRecipes.map((recipe, index) => (
+        {sortedRecipes.map((recipe) => (
           <Card key={recipe.id} className={`p-4 ${favoriteRecipes.includes(recipe.id) ? 'border-primary' : ''}`}>
             <div className="flex flex-col h-full">
               <div className="flex-1">
