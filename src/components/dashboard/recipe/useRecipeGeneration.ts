@@ -29,7 +29,7 @@ export const useRecipeGeneration = () => {
 
       if (functionError) {
         console.error('Erreur de la fonction Edge:', functionError);
-        throw new Error(functionError.message);
+        throw functionError;
       }
 
       if (!data || !Array.isArray(data)) {
