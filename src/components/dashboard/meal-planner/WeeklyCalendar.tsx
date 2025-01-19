@@ -5,6 +5,7 @@ import { fr } from 'date-fns/locale';
 import { Recipe, ChildProfile } from '../types';
 import { RecipeCard } from '../recipe/recipe-card/RecipeCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { RecipeHealthBenefits } from '../recipe/recipe-card/RecipeHealthBenefits';
 
 interface WeeklyCalendarProps {
   selectedDate: Date;
@@ -121,8 +122,11 @@ export const WeeklyCalendar = ({
               </div>
               
               {recipe && (
-                <div className="mt-2">
+                <div className="mt-2 space-y-2">
                   <RecipeCard recipe={recipe} compact />
+                  {recipe.health_benefits && (
+                    <RecipeHealthBenefits benefits={recipe.health_benefits} compact />
+                  )}
                 </div>
               )}
             </Card>
