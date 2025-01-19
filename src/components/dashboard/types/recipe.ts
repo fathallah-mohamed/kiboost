@@ -26,7 +26,7 @@ export interface Recipe {
   image_url?: string;
   health_benefits?: Array<{
     icon: string;
-    category: string;
+    category: HealthBenefitCategory;
     description: string;
   }>;
   min_age?: number;
