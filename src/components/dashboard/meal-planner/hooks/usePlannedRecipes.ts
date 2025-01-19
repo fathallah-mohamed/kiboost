@@ -21,6 +21,17 @@ export const usePlannedRecipes = (
     }));
   };
 
+  const deduplicateHealthBenefits = (benefits: HealthBenefit[]): HealthBenefit[] => {
+    const uniqueBenefits = benefits.reduce((acc: HealthBenefit[], current) => {
+      const exists = acc.some(benefit => benefit.description === current.description);
+      if (!exists) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+    return uniqueBenefits;
+  };
+
   const fetchPlannedRecipes = async () => {
     try {
       let dates: string[] = [];
@@ -56,7 +67,7 @@ export const usePlannedRecipes = (
 
       if (error) throw error;
 
-      console.log('Fetched meal plans:', data); // Debug log
+      console.log('Fetched meal plans:', data);
 
       const plannedRecipesByDate: { [key: string]: Recipe | null } = {};
       dates.forEach(date => {
@@ -66,16 +77,19 @@ export const usePlannedRecipes = (
       data.forEach(plan => {
         if (plan.recipes) {
           const recipe = plan.recipes;
-          console.log('Processing recipe:', recipe); // Debug log
-          console.log('Health benefits before parsing:', recipe.health_benefits); // Debug log
+          console.log('Processing recipe:', recipe);
+          console.log('Health benefits before parsing:', recipe.health_benefits);
 
-          const parsedHealthBenefits = recipe.health_benefits ? 
+          let parsedHealthBenefits = recipe.health_benefits ? 
             (typeof recipe.health_benefits === 'string' 
               ? JSON.parse(recipe.health_benefits) 
               : recipe.health_benefits) as HealthBenefit[]
             : [];
 
-          console.log('Parsed health benefits:', parsedHealthBenefits); // Debug log
+          // Dédupliquer les bienfaits de santé
+          parsedHealthBenefits = deduplicateHealthBenefits(parsedHealthBenefits);
+
+          console.log('Parsed and deduplicated health benefits:', parsedHealthBenefits);
 
           plannedRecipesByDate[plan.date] = {
             ...recipe,
