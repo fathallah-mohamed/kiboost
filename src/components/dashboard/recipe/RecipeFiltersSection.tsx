@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { RecipeFilters as BasicRecipeFilters } from "./RecipeFilters";
 import { AdvancedFilters } from "./AdvancedFilters";
 import { MealType, Difficulty, RecipeFilters } from "../types";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Filter } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface RecipeFiltersSectionProps {
   mealType: MealType | "all";
@@ -29,6 +30,8 @@ export const RecipeFiltersSection = ({
   advancedFilters,
   setAdvancedFilters,
 }: RecipeFiltersSectionProps) => {
+  const isMobile = useIsMobile();
+
   return (
     <>
       <BasicRecipeFilters
@@ -45,26 +48,31 @@ export const RecipeFiltersSection = ({
           variant="outline"
           onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
           className="w-full flex items-center justify-center gap-2"
+          size={isMobile ? "lg" : "default"}
         >
-          {showAdvancedFilters ? (
+          {isMobile ? (
             <>
-              Masquer les filtres avancés
-              <ChevronUp className="h-4 w-4" />
+              <Filter className="w-6 h-6" />
+              Filtres avancés
             </>
           ) : (
             <>
-              Afficher les filtres avancés
-              <ChevronDown className="h-4 w-4" />
+              {showAdvancedFilters ? "Masquer" : "Afficher"} les filtres avancés
+              {showAdvancedFilters ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </>
           )}
         </Button>
 
-        {showAdvancedFilters && (
-          <AdvancedFilters
-            filters={advancedFilters}
-            onFiltersChange={setAdvancedFilters}
-          />
-        )}
+        <AdvancedFilters
+          filters={advancedFilters}
+          onFiltersChange={setAdvancedFilters}
+          open={showAdvancedFilters}
+          onOpenChange={setShowAdvancedFilters}
+        />
       </div>
     </>
   );
