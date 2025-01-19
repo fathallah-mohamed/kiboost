@@ -1,3 +1,5 @@
+import { HealthBenefitCategory } from './health';
+
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type SpecialOccasion = 'birthday' | 'school' | 'quick' | 'party' | 'holiday';
