@@ -56,6 +56,8 @@ export const usePlannedRecipes = (
 
       if (error) throw error;
 
+      console.log('Fetched meal plans:', data); // Debug log
+
       const plannedRecipesByDate: { [key: string]: Recipe | null } = {};
       dates.forEach(date => {
         plannedRecipesByDate[date] = null;
@@ -64,6 +66,17 @@ export const usePlannedRecipes = (
       data.forEach(plan => {
         if (plan.recipes) {
           const recipe = plan.recipes;
+          console.log('Processing recipe:', recipe); // Debug log
+          console.log('Health benefits before parsing:', recipe.health_benefits); // Debug log
+
+          const parsedHealthBenefits = recipe.health_benefits ? 
+            (typeof recipe.health_benefits === 'string' 
+              ? JSON.parse(recipe.health_benefits) 
+              : recipe.health_benefits) as HealthBenefit[]
+            : [];
+
+          console.log('Parsed health benefits:', parsedHealthBenefits); // Debug log
+
           plannedRecipesByDate[plan.date] = {
             ...recipe,
             ingredients: typeof recipe.ingredients === 'string'
@@ -77,11 +90,7 @@ export const usePlannedRecipes = (
               : [recipe.instructions].filter(Boolean),
             meal_type: recipe.meal_type as MealType,
             difficulty: recipe.difficulty as Difficulty,
-            health_benefits: recipe.health_benefits ? 
-              (typeof recipe.health_benefits === 'string' 
-                ? JSON.parse(recipe.health_benefits) 
-                : recipe.health_benefits) as HealthBenefit[]
-              : undefined,
+            health_benefits: parsedHealthBenefits,
             cooking_steps: recipe.cooking_steps ? 
               (typeof recipe.cooking_steps === 'string'
                 ? JSON.parse(recipe.cooking_steps)
