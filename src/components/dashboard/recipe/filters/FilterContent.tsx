@@ -1,9 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
-import { RecipeFilters } from "../../types";
+import { RecipeFilters, SpecialOccasion } from "../../types";
 import { HealthBenefitsFilter } from "./HealthBenefitsFilter";
 import { BudgetFilter } from "./BudgetFilter";
 import { SeasonalityFilter } from "./SeasonalityFilter";
+import { IngredientsFilter } from "./IngredientsFilter";
+import { SpecialOccasionsFilter } from "./SpecialOccasionsFilter";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface FilterContentProps {
   filters: RecipeFilters;
@@ -25,22 +33,59 @@ export const FilterContent = ({ filters, onFiltersChange }: FilterContentProps) 
         <h3 className="text-lg font-semibold">Filtres avancés</h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <HealthBenefitsFilter
-          selectedBenefits={filters.healthBenefits || []}
-          onBenefitsChange={(benefits) => handleFilterChange('healthBenefits', benefits)}
-        />
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="ingredients">
+          <AccordionTrigger>Ingrédients</AccordionTrigger>
+          <AccordionContent>
+            <IngredientsFilter
+              includedIngredients={filters.includedIngredients || []}
+              excludedIngredients={filters.excludedIngredients || []}
+              onIncludedChange={(ingredients) => handleFilterChange('includedIngredients', ingredients)}
+              onExcludedChange={(ingredients) => handleFilterChange('excludedIngredients', ingredients)}
+            />
+          </AccordionContent>
+        </AccordionItem>
 
-        <BudgetFilter
-          maxCost={filters.maxCost || 15}
-          onMaxCostChange={(cost) => handleFilterChange('maxCost', cost)}
-        />
+        <AccordionItem value="health">
+          <AccordionTrigger>Bienfaits santé</AccordionTrigger>
+          <AccordionContent>
+            <HealthBenefitsFilter
+              selectedBenefits={filters.healthBenefits || []}
+              onBenefitsChange={(benefits) => handleFilterChange('healthBenefits', benefits)}
+            />
+          </AccordionContent>
+        </AccordionItem>
 
-        <SeasonalityFilter
-          selectedMonth={filters.season}
-          onMonthChange={(month) => handleFilterChange('season', month)}
-        />
-      </div>
+        <AccordionItem value="budget">
+          <AccordionTrigger>Budget</AccordionTrigger>
+          <AccordionContent>
+            <BudgetFilter
+              maxCost={filters.maxCost || 15}
+              onMaxCostChange={(cost) => handleFilterChange('maxCost', cost)}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="seasonality">
+          <AccordionTrigger>Saisonnalité</AccordionTrigger>
+          <AccordionContent>
+            <SeasonalityFilter
+              selectedMonth={filters.season}
+              onMonthChange={(month) => handleFilterChange('season', month)}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="occasions">
+          <AccordionTrigger>Occasions spéciales</AccordionTrigger>
+          <AccordionContent>
+            <SpecialOccasionsFilter
+              selectedOccasion={filters.specialOccasion}
+              onOccasionChange={(occasion) => handleFilterChange('specialOccasion', occasion)}
+            />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <div className="flex justify-end">
         <Button

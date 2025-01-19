@@ -1,46 +1,6 @@
-import { HealthBenefit } from './health';
-
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type Difficulty = 'easy' | 'medium' | 'hard';
-
-export interface Recipe {
-  id: string;
-  name: string;
-  ingredients: Array<{
-    item: string;
-    quantity: string;
-    unit: string;
-  }>;
-  instructions: string[];
-  nutritional_info: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  meal_type: MealType;
-  preparation_time: number;
-  difficulty: Difficulty;
-  servings: number;
-  image_url?: string;
-  is_generated?: boolean;
-  created_at: string;
-  updated_at: string;
-  profile_id: string;
-  health_benefits?: HealthBenefit[];
-  min_age?: number;
-  max_age?: number;
-  dietary_preferences?: string[];
-  allergens?: string[];
-  cost_estimate?: number;
-  seasonal_months?: number[];
-  cooking_steps?: Array<{
-    step: number;
-    description: string;
-    duration?: number;
-    tips?: string;
-  }>;
-}
+export type SpecialOccasion = 'birthday' | 'school' | 'quick' | 'party' | 'holiday';
 
 export interface RecipeFilters {
   mealType?: MealType;
@@ -51,4 +11,15 @@ export interface RecipeFilters {
   maxCost?: number;
   season?: number;
   healthBenefits?: string[];
+  includedIngredients?: string[];
+  excludedIngredients?: string[];
+  totalTime?: number;
+  nutritionalTargets?: {
+    calories?: { min?: number; max?: number };
+    protein?: { min?: number; max?: number };
+    carbs?: { min?: number; max?: number };
+    fat?: { min?: number; max?: number };
+  };
+  specialOccasion?: SpecialOccasion;
+  servings?: number;
 }
