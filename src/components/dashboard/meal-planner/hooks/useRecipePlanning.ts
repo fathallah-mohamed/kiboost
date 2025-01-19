@@ -14,6 +14,13 @@ export const useRecipePlanning = () => {
     date: Date,
     userId: string
   ) => {
+    if (!recipe?.id) {
+      toast.error("Erreur lors de la planification", {
+        description: "ID de recette manquant. Impossible de planifier la recette.",
+      });
+      return;
+    }
+
     setSaving(true);
     const formattedDate = format(date, 'yyyy-MM-dd');
 
