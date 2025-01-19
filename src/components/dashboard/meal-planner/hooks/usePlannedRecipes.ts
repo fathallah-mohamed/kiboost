@@ -14,6 +14,13 @@ export const usePlannedRecipes = (
   const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
   const [loading, setLoading] = useState(true);
 
+  const updateLocalPlannedRecipes = (date: string, recipe: Recipe) => {
+    setPlannedRecipes(prev => ({
+      ...prev,
+      [date]: recipe
+    }));
+  };
+
   const fetchPlannedRecipes = async () => {
     try {
       let dates: string[] = [];
@@ -106,5 +113,5 @@ export const usePlannedRecipes = (
     fetchPlannedRecipes();
   }, [selectedDate, viewMode, selectedChildren]);
 
-  return { plannedRecipes, loading };
+  return { plannedRecipes, loading, updateLocalPlannedRecipes };
 };
