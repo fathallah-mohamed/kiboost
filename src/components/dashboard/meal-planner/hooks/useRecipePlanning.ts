@@ -42,22 +42,23 @@ export const useRecipePlanning = () => {
       for (const child of children) {
         try {
           console.log('Inserting meal plan for child:', child.id);
-          // Try to upsert the meal plan
+          
+          const mealPlanData = {
+            profile_id: userId,
+            recipe_id: recipe.id,
+            date: formattedDate,
+            child_id: child.id,
+            meal_time: recipe.meal_type || 'dinner',
+            updated_at: new Date().toISOString()
+          };
+
+          console.log('Meal plan data:', mealPlanData);
+
           const { error } = await supabase
             .from('meal_plans')
-            .upsert(
-              {
-                profile_id: userId,
-                recipe_id: recipe.id,
-                date: formattedDate,
-                child_id: child.id,
-                meal_time: recipe.meal_type || 'dinner',
-                updated_at: new Date().toISOString()
-              },
-              {
-                onConflict: 'profile_id,date,child_id,meal_time'
-              }
-            );
+            .upsert(mealPlanData, {
+              onConflict: 'profile_id,date,child_id,meal_time'
+            });
 
           if (error) {
             console.error('Error managing meal plan:', error);
