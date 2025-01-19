@@ -14,9 +14,23 @@ export const useRecipePlanning = () => {
     date: Date,
     userId: string
   ) => {
+    console.log('Planning recipe:', recipe);
+    console.log('Recipe ID:', recipe?.id);
+    console.log('Children:', children);
+    console.log('Date:', date);
+    console.log('User ID:', userId);
+
     if (!recipe?.id) {
+      console.error('Recipe ID is missing:', recipe);
       toast.error("Erreur lors de la planification", {
         description: "ID de recette manquant. Impossible de planifier la recette.",
+      });
+      return;
+    }
+
+    if (children.length === 0) {
+      toast.error("Erreur lors de la planification", {
+        description: "Veuillez sélectionner au moins un enfant.",
       });
       return;
     }
@@ -27,6 +41,7 @@ export const useRecipePlanning = () => {
     try {
       for (const child of children) {
         try {
+          console.log('Inserting meal plan for child:', child.id);
           // Try to upsert the meal plan
           const { error } = await supabase
             .from('meal_plans')
