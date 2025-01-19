@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { RecipeFilters as BasicRecipeFilters } from "./RecipeFilters";
 import { AdvancedFilters } from "./AdvancedFilters";
 import { MealType, Difficulty, RecipeFilters } from "../types";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface RecipeFiltersSectionProps {
   mealType: MealType | "all";
@@ -39,20 +40,32 @@ export const RecipeFiltersSection = ({
         setDifficulty={setDifficulty}
       />
 
-      <Button
-        variant="outline"
-        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-        className="w-full"
-      >
-        {showAdvancedFilters ? "Masquer les filtres avancés" : "Afficher les filtres avancés"}
-      </Button>
+      <div className="space-y-4">
+        <Button
+          variant="outline"
+          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+          className="w-full flex items-center justify-center gap-2"
+        >
+          {showAdvancedFilters ? (
+            <>
+              Masquer les filtres avancés
+              <ChevronUp className="h-4 w-4" />
+            </>
+          ) : (
+            <>
+              Afficher les filtres avancés
+              <ChevronDown className="h-4 w-4" />
+            </>
+          )}
+        </Button>
 
-      {showAdvancedFilters && (
-        <AdvancedFilters
-          filters={advancedFilters}
-          onFiltersChange={setAdvancedFilters}
-        />
-      )}
+        {showAdvancedFilters && (
+          <AdvancedFilters
+            filters={advancedFilters}
+            onFiltersChange={setAdvancedFilters}
+          />
+        )}
+      </div>
     </>
   );
 };
