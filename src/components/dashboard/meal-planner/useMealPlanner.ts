@@ -19,14 +19,14 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
 
   const loading = recipesLoading || plannedRecipesLoading;
 
-  // Force refresh on mount
+  // Force refresh on mount only
   useEffect(() => {
     clearRecipes();
   }, []);
 
-  const handlePlanRecipe = (recipe: Recipe, children: ChildProfile[]) => {
-    planRecipe(recipe, children, selectedDate, userId);
-    clearRecipes();
+  const handlePlanRecipe = async (recipe: Recipe, children: ChildProfile[]) => {
+    await planRecipe(recipe, children, selectedDate, userId);
+    // Nous ne vidons plus les recettes après la planification
   };
 
   return {
