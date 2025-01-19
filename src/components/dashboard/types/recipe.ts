@@ -2,6 +2,47 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type SpecialOccasion = 'birthday' | 'school' | 'quick' | 'party' | 'holiday';
 
+export interface Recipe {
+  id: string;
+  profile_id: string;
+  name: string;
+  ingredients: Array<{
+    item: string;
+    quantity: string;
+    unit: string;
+  }>;
+  instructions: string[];
+  nutritional_info: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  meal_type: MealType;
+  preparation_time: number;
+  difficulty: Difficulty;
+  servings: number;
+  is_generated?: boolean;
+  image_url?: string;
+  health_benefits?: Array<{
+    icon: string;
+    category: string;
+    description: string;
+  }>;
+  min_age?: number;
+  max_age?: number;
+  dietary_preferences?: string[];
+  allergens?: string[];
+  cost_estimate?: number;
+  seasonal_months?: number[];
+  cooking_steps?: Array<{
+    step: number;
+    description: string;
+    duration?: number;
+    tips?: string;
+  }>;
+}
+
 export interface RecipeFilters {
   mealType?: MealType;
   maxPrepTime?: number;
