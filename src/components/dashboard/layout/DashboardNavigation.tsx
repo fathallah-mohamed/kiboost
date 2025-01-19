@@ -9,6 +9,7 @@ import {
   Heart, 
   CalendarRange,
 } from 'lucide-react';
+import { useState } from 'react';
 
 interface DashboardNavigationProps {
   activeSection: string;
@@ -16,36 +17,56 @@ interface DashboardNavigationProps {
 }
 
 export const DashboardNavigation = ({ activeSection, setActiveSection }: DashboardNavigationProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+
   const quickActions = [
     {
       label: 'Générer des recettes',
       icon: ChefHat,
-      action: () => setActiveSection('recipes')
+      action: () => {
+        setActiveSection('recipes');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Planificateur de repas',
       icon: Calendar,
-      action: () => setActiveSection('planner')
+      action: () => {
+        setActiveSection('planner');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Voir le planning',
       icon: CalendarRange,
-      action: () => setActiveSection('view-planner')
+      action: () => {
+        setActiveSection('view-planner');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Profils enfants',
       icon: User,
-      action: () => setActiveSection('children')
+      action: () => {
+        setActiveSection('children');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Liste de courses',
       icon: ShoppingCart,
-      action: () => setActiveSection('shopping')
+      action: () => {
+        setActiveSection('shopping');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Mes favoris',
       icon: Heart,
-      action: () => setActiveSection('favorites')
+      action: () => {
+        setActiveSection('favorites');
+        setIsOpen(false);
+      }
     }
   ];
 
@@ -69,7 +90,7 @@ export const DashboardNavigation = ({ activeSection, setActiveSection }: Dashboa
     <div className="mb-6">
       {/* Mobile Navigation */}
       <div className="md:hidden">
-        <Sheet>
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" size="lg" className="w-full flex items-center gap-2 justify-start">
               <Menu className="h-6 w-6" />
@@ -82,9 +103,7 @@ export const DashboardNavigation = ({ activeSection, setActiveSection }: Dashboa
                 <Button
                   key={index}
                   variant={activeSection === action.label.toLowerCase() ? 'default' : 'outline'}
-                  onClick={() => {
-                    action.action();
-                  }}
+                  onClick={action.action}
                   className="w-full justify-start gap-2"
                 >
                   <action.icon className="h-4 w-4" />
