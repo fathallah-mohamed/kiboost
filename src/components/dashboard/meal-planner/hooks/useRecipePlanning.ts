@@ -39,6 +39,22 @@ export const useRecipePlanning = () => {
     const formattedDate = format(date, 'yyyy-MM-dd');
 
     try {
+      // Vérifier d'abord que l'utilisateur a accès à la table children_profiles
+      const { data: childrenCheck, error: childrenError } = await supabase
+        .from('children_profiles')
+        .select('id')
+        .eq('profile_id', userId)
+        .in('id', children.map(child => child.id));
+
+      if (childrenError) {
+        console.error('Error checking children access:', childrenError);
+        throw new Error('Erreur de vérification des profils enfants');
+      }
+
+      if (!childrenCheck || childrenCheck.length !== children.length) {
+        throw new Error('Accès non autorisé à certains profils enfants');
+      }
+
       for (const child of children) {
         try {
           console.log('Inserting meal plan for child:', child.id);
@@ -82,7 +98,7 @@ export const useRecipePlanning = () => {
     } catch (error: any) {
       console.error('Error planning recipe:', error);
       toast.error("Erreur lors de la planification", {
-        description: "Une erreur est survenue lors de la planification de la recette.",
+        description: error.message || "Une erreur est survenue lors de la planification de la recette.",
       });
     } finally {
       setSaving(false);
