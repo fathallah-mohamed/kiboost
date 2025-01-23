@@ -151,22 +151,30 @@ serve(async (req) => {
       };
 
       recipes = recipes.map(recipe => {
+        // Ensure health_benefits exists and is an array
+        const healthBenefits = Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [];
+        
         // Validate and map health benefits
-        const mappedHealthBenefits = recipe.health_benefits.map((benefit: any) => {
+        const mappedHealthBenefits = healthBenefits.map((benefit: any) => {
+          if (!benefit || typeof benefit.category !== 'string') {
+            console.error('Invalid benefit format:', benefit);
+            return null;
+          }
+
           // Get the correct category from the map or try to use the lowercase version
           const mappedCategory = categoryMap[benefit.category] || benefit.category.toLowerCase();
           
           // Verify the category is valid
           if (!VALID_CATEGORIES.includes(mappedCategory)) {
             console.error(`Invalid category found: ${benefit.category}, mapped to: ${mappedCategory}`);
-            throw new Error(`Catégorie de bienfait invalide: ${benefit.category}`);
+            return null;
           }
 
           return {
             ...benefit,
             category: mappedCategory
           };
-        });
+        }).filter(Boolean); // Remove any null values
 
         return {
           ...recipe,
