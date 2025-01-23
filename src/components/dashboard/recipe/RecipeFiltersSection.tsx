@@ -33,7 +33,7 @@ export const RecipeFiltersSection = ({
   const isMobile = useIsMobile();
 
   return (
-    <>
+    <div className="space-y-4">
       <BasicRecipeFilters
         mealType={mealType}
         setMealType={setMealType}
@@ -43,37 +43,35 @@ export const RecipeFiltersSection = ({
         setDifficulty={setDifficulty}
       />
 
-      <div className="space-y-4">
-        <Button
-          variant="outline"
-          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          className="w-full flex items-center justify-center gap-2"
-          size={isMobile ? "lg" : "default"}
-        >
-          {isMobile ? (
-            <>
-              <Filter className="w-6 h-6" />
-              Filtres avancés
-            </>
-          ) : (
-            <>
-              {showAdvancedFilters ? "Masquer" : "Afficher"} les filtres avancés
-              {showAdvancedFilters ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </>
-          )}
-        </Button>
+      <Button
+        variant="outline"
+        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+        className="w-full flex items-center justify-center gap-2"
+        size={isMobile ? "lg" : "default"}
+      >
+        {isMobile ? (
+          <>
+            <Filter className="w-6 h-6" />
+            Filtres avancés
+          </>
+        ) : (
+          <>
+            {showAdvancedFilters ? "Masquer" : "Afficher"} les filtres avancés
+            {showAdvancedFilters ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </>
+        )}
+      </Button>
 
-        <AdvancedFilters
-          filters={advancedFilters}
-          onFiltersChange={setAdvancedFilters}
-          open={showAdvancedFilters}
-          onOpenChange={setShowAdvancedFilters}
-        />
-      </div>
-    </>
+      <AdvancedFilters
+        filters={advancedFilters}
+        onFiltersChange={setAdvancedFilters}
+        open={showAdvancedFilters}
+        onOpenChange={setShowAdvancedFilters}
+      />
+    </div>
   );
 };

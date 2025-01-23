@@ -24,6 +24,10 @@ export const AdvancedFilters = ({ filters, onFiltersChange, open, onOpenChange }
     );
   }
 
+  if (!open) {
+    return null;
+  }
+
   return (
     <Card className="p-6">
       <FilterContent filters={filters} onFiltersChange={onFiltersChange} />
