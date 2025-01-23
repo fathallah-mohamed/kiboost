@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { QuickActions } from "./QuickActions";
 
 interface WelcomeSectionProps {
   userId: string;
@@ -19,7 +18,6 @@ export const WelcomeSection = ({ userId, onSectionChange }: WelcomeSectionProps)
   const [username, setUsername] = useState<string>("");
   const navigate = useNavigate();
   const [lastConnection, setLastConnection] = useState<Date | null>(null);
-  const [showQuickPlan, setShowQuickPlan] = useState(false);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -36,13 +34,11 @@ export const WelcomeSection = ({ userId, onSectionChange }: WelcomeSectionProps)
       new Promise((resolve) => setTimeout(resolve, 2000)),
       {
         loading: 'Génération de votre planning express...',
-        success: () => {
-          onSectionChange('planner');
-          return 'Votre planning express est prêt !';
-        },
+        success: 'Votre planning express est prêt !',
         error: 'Une erreur est survenue',
       }
     );
+    onSectionChange('planner');
   };
 
   return (
