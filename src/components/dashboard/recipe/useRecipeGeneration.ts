@@ -69,7 +69,29 @@ export const useRecipeGeneration = () => {
             throw saveError;
           }
 
-          return savedRecipe;
+          // Transform the saved recipe to match the Recipe type
+          return {
+            ...savedRecipe,
+            ingredients: typeof savedRecipe.ingredients === 'string' 
+              ? JSON.parse(savedRecipe.ingredients)
+              : savedRecipe.ingredients,
+            nutritional_info: typeof savedRecipe.nutritional_info === 'string'
+              ? JSON.parse(savedRecipe.nutritional_info)
+              : savedRecipe.nutritional_info,
+            instructions: Array.isArray(savedRecipe.instructions)
+              ? savedRecipe.instructions
+              : [savedRecipe.instructions].filter(Boolean),
+            health_benefits: savedRecipe.health_benefits
+              ? (typeof savedRecipe.health_benefits === 'string'
+                ? JSON.parse(savedRecipe.health_benefits)
+                : savedRecipe.health_benefits)
+              : undefined,
+            cooking_steps: savedRecipe.cooking_steps
+              ? (typeof savedRecipe.cooking_steps === 'string'
+                ? JSON.parse(savedRecipe.cooking_steps)
+                : savedRecipe.cooking_steps)
+              : []
+          } as Recipe;
         })
       );
 
