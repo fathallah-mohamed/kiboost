@@ -8,11 +8,28 @@ const corsHeaders = {
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
-// Map French categories to English database values
+// Valid categories as defined in the database validation function
+const VALID_CATEGORIES = [
+  'cognitive',
+  'energy',
+  'satiety',
+  'digestive',
+  'immunity',
+  'growth',
+  'mental',
+  'organs',
+  'beauty',
+  'physical',
+  'prevention',
+  'global'
+];
+
+// Map French categories to valid database categories
 const categoryMap: { [key: string]: string } = {
   'Énergie': 'energy',
   'Cognitive': 'cognitive',
   'Satiété': 'satiety',
+  'Digestif': 'digestive',
   'Digestive': 'digestive',
   'Immunité': 'immunity',
   'Croissance': 'growth',
@@ -59,21 +76,21 @@ serve(async (req) => {
     - Temps de préparation maximum : ${filters?.maxPrepTime || "non spécifié"} minutes
     - Niveau de difficulté : ${filters?.difficulty || "tous"}
     
-    Pour chaque recette, inclus 3-5 bienfaits spécifiques pour la santé des enfants, en choisissant parmi ces catégories :
-    1. Cognitive : amélioration de la mémoire, stimulation de la créativité, concentration accrue
-    2. Énergie : boost d'énergie, réduction de la fatigue, énergie rapide
-    3. Satiété : satiété prolongée, régulation de l'appétit
-    4. Digestive : amélioration de la digestion, santé intestinale, réduction des ballonnements
-    5. Immunité : renforcement du système immunitaire, protection contre les maladies
-    6. Croissance : renforcement des os, développement musculaire
-    7. Mental : amélioration de l'humeur, réduction du stress, meilleur sommeil
-    8. Organes : santé des yeux, protection cardiaque, santé respiratoire
-    9. Beauté : santé de la peau et des cheveux, hydratation
-    10. Physique : préparation à l'exercice, récupération, endurance
-    11. Prévention : anti-âge, détox, équilibre nutritionnel
-    12. Global : vitalité générale, nutrition durable
-
-    Utilise ces icônes pour les bienfaits : brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles
+    Pour chaque recette, inclus exactement 3 bienfaits pour la santé parmi ces catégories :
+    - cognitive : amélioration de la mémoire, concentration
+    - energy : boost d'énergie, vitalité
+    - satiety : satiété prolongée
+    - digestive : santé digestive
+    - immunity : renforcement immunitaire
+    - growth : croissance, développement
+    - mental : bien-être mental
+    - organs : santé des organes
+    - beauty : santé de la peau
+    - physical : performance physique
+    - prevention : prévention santé
+    - global : santé globale
+    
+    Utilise ces icônes : brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles
     
     Retourne UNIQUEMENT un tableau JSON valide contenant exactement 3 objets de recette.`;
 
@@ -120,14 +137,12 @@ serve(async (req) => {
         throw new Error("Format de réponse invalide : tableau de 3 recettes attendu");
       }
 
-      // Conversion des niveaux de difficulté en anglais pour la base de données
       const difficultyMap: { [key: string]: string } = {
         'facile': 'easy',
         'moyen': 'medium',
         'difficile': 'hard'
       };
 
-      // Conversion des types de repas en anglais pour la base de données
       const mealTypeMap: { [key: string]: string } = {
         'petit-déjeuner': 'breakfast',
         'déjeuner': 'lunch',
@@ -136,11 +151,22 @@ serve(async (req) => {
       };
 
       recipes = recipes.map(recipe => {
-        // Ensure health benefits have correct categories
-        const mappedHealthBenefits = recipe.health_benefits.map((benefit: any) => ({
-          ...benefit,
-          category: categoryMap[benefit.category] || benefit.category.toLowerCase()
-        }));
+        // Validate and map health benefits
+        const mappedHealthBenefits = recipe.health_benefits.map((benefit: any) => {
+          // Get the correct category from the map or try to use the lowercase version
+          const mappedCategory = categoryMap[benefit.category] || benefit.category.toLowerCase();
+          
+          // Verify the category is valid
+          if (!VALID_CATEGORIES.includes(mappedCategory)) {
+            console.error(`Invalid category found: ${benefit.category}, mapped to: ${mappedCategory}`);
+            throw new Error(`Catégorie de bienfait invalide: ${benefit.category}`);
+          }
+
+          return {
+            ...benefit,
+            category: mappedCategory
+          };
+        });
 
         return {
           ...recipe,
