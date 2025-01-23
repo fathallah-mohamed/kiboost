@@ -22,8 +22,20 @@ interface RecipeCardProps {
 export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [showRating, setShowRating] = useState(false);
   const { toast } = useToast();
+
+  const handleAdd = () => {
+    if (!recipe.id) {
+      console.error('Recipe ID is missing:', recipe);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'ajouter la recette au planificateur. ID manquant.",
+      });
+      return;
+    }
+    onAdd?.(recipe);
+  };
 
   if (compact) {
     return (
@@ -60,7 +72,7 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
               </Button>
               {onAdd && (
                 <Button 
-                  onClick={() => onAdd(recipe)} 
+                  onClick={handleAdd} 
                   disabled={isPlanned}
                   className="whitespace-nowrap"
                 >
@@ -173,6 +185,7 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
               onClick={() => setIsOpen(!isOpen)}
               className="w-full md:w-auto"
             >
+              <ChevronDown className={`w-4 h-4 mr-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
               {isOpen ? 'Masquer la recette' : 'Afficher la recette'}
             </Button>
           </div>
