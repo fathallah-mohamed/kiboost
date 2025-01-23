@@ -1,211 +1,213 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { Configuration, OpenAIApi } from 'https://esm.sh/openai@3.2.1';
+import { corsHeaders } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-
-// Valid categories as defined in the database validation function
+// Constants
 const VALID_CATEGORIES = [
-  'cognitive',
-  'energy',
-  'satiety',
-  'digestive',
-  'immunity',
-  'growth',
-  'mental',
-  'organs',
-  'beauty',
-  'physical',
-  'prevention',
-  'global'
+  'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
+  'growth', 'mental', 'organs', 'beauty', 'physical',
+  'prevention', 'global'
 ];
 
-// Map French categories to valid database categories
 const categoryMap: { [key: string]: string } = {
-  'Énergie': 'energy',
-  'Cognitive': 'cognitive',
-  'Satiété': 'satiety',
-  'Digestif': 'digestive',
-  'Digestive': 'digestive',
-  'Immunité': 'immunity',
-  'Croissance': 'growth',
-  'Mental': 'mental',
-  'Organes': 'organs',
-  'Beauté': 'beauty',
-  'Physique': 'physical',
-  'Prévention': 'prevention',
-  'Global': 'global'
+  'cognitif': 'cognitive',
+  'énergie': 'energy',
+  'satiété': 'satiety',
+  'digestif': 'digestive',
+  'immunité': 'immunity',
+  'croissance': 'growth',
+  'mental': 'mental',
+  'organes': 'organs',
+  'beauté': 'beauty',
+  'physique': 'physical',
+  'prévention': 'prevention',
+  'global': 'global'
 };
 
-function calculateAge(birthDate: string): number {
-  const today = new Date();
-  const birth = new Date(birthDate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  return age;
+// Types
+interface ChildProfile {
+  id: string;
+  name: string;
+  birth_date: string;
+  allergies: string[];
+  preferences: string[];
 }
 
+interface RecipeFilters {
+  mealType?: string;
+  maxPrepTime?: number;
+  difficulty?: string;
+  healthBenefits?: string[];
+  maxCost?: number;
+  season?: number;
+  specialOccasion?: string;
+  includedIngredients?: string[];
+  excludedIngredients?: string[];
+}
+
+// Helper Functions
+const validateAndMapHealthBenefits = (healthBenefits: any[]) => {
+  if (!Array.isArray(healthBenefits)) {
+    console.error('Health benefits is not an array:', healthBenefits);
+    return [];
+  }
+
+  return healthBenefits
+    .map(benefit => {
+      if (!benefit || typeof benefit.category !== 'string') {
+        console.error('Invalid benefit format:', benefit);
+        return null;
+      }
+
+      const mappedCategory = categoryMap[benefit.category] || benefit.category.toLowerCase();
+      
+      if (!VALID_CATEGORIES.includes(mappedCategory)) {
+        console.error(`Invalid category found: ${benefit.category}, mapped to: ${mappedCategory}`);
+        return null;
+      }
+
+      return {
+        ...benefit,
+        category: mappedCategory
+      };
+    })
+    .filter(Boolean);
+};
+
+const generatePrompt = (childProfiles: ChildProfile[], filters: RecipeFilters) => {
+  const child = childProfiles[0];
+  const constraints = [];
+
+  if (filters.mealType) constraints.push(`Type de repas : ${filters.mealType}`);
+  if (filters.maxPrepTime) constraints.push(`Temps de préparation maximum : ${filters.maxPrepTime} minutes`);
+  if (filters.difficulty) constraints.push(`Difficulté : ${filters.difficulty}`);
+  if (filters.maxCost) constraints.push(`Coût maximum : ${filters.maxCost}€`);
+  if (filters.season) constraints.push(`Mois : ${filters.season}`);
+  if (filters.specialOccasion) constraints.push(`Occasion spéciale : ${filters.specialOccasion}`);
+  
+  const allergiesText = child.allergies?.length > 0 
+    ? `Allergies à éviter : ${child.allergies.join(', ')}`
+    : 'Aucune allergie connue';
+    
+  const preferencesText = child.preferences?.length > 0
+    ? `Préférences alimentaires : ${child.preferences.join(', ')}`
+    : 'Aucune préférence particulière';
+
+  return `Génère 3 recettes pour enfants avec les caractéristiques suivantes :
+
+Profil de l'enfant :
+- Nom : ${child.name}
+- Date de naissance : ${child.birth_date}
+- ${allergiesText}
+- ${preferencesText}
+
+Contraintes :
+${constraints.join('\n')}
+
+Pour chaque recette, fournis :
+- Un nom accrocheur
+- Une liste d'ingrédients avec quantités
+- Des instructions détaillées
+- Le temps de préparation
+- La difficulté
+- Les informations nutritionnelles
+- Les bienfaits santé (utilise uniquement ces catégories : cognitif, énergie, satiété, digestif, immunité, croissance, mental, organes, beauté, physique, prévention, global)
+
+Format de réponse souhaité : un tableau JSON de recettes.`;
+};
+
+const processRecipes = (recipes: any[]) => {
+  return recipes.map(recipe => {
+    const healthBenefits = validateAndMapHealthBenefits(recipe.health_benefits);
+
+    return {
+      ...recipe,
+      health_benefits: healthBenefits,
+      ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+      instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [recipe.instructions].filter(Boolean),
+      nutritional_info: recipe.nutritional_info || {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+      }
+    };
+  });
+};
+
+// Main Handler
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    if (!openAIApiKey) {
-      throw new Error('Clé API OpenAI non configurée');
-    }
-
     const { childProfiles, filters } = await req.json();
-    const child = childProfiles[0];
-    
-    console.log("Génération de recettes pour l'enfant:", child, "avec les filtres:", filters);
 
-    const prompt = `Génère exactement 3 recettes uniques et saines adaptées à un enfant de ${calculateAge(child.birth_date)} ans.
-    Prends en compte ces préférences : ${child.preferences?.join(", ") || "aucune préférence spécifique"}
-    Évite ces allergènes : ${child.allergies?.join(", ") || "aucune allergie"}
-    
-    Filtres supplémentaires :
-    - Type de repas : ${filters?.mealType || "tous"}
-    - Temps de préparation maximum : ${filters?.maxPrepTime || "non spécifié"} minutes
-    - Niveau de difficulté : ${filters?.difficulty || "tous"}
-    
-    Pour chaque recette, inclus exactement 3 bienfaits pour la santé parmi ces catégories :
-    - cognitive : amélioration de la mémoire, concentration
-    - energy : boost d'énergie, vitalité
-    - satiety : satiété prolongée
-    - digestive : santé digestive
-    - immunity : renforcement immunitaire
-    - growth : croissance, développement
-    - mental : bien-être mental
-    - organs : santé des organes
-    - beauty : santé de la peau
-    - physical : performance physique
-    - prevention : prévention santé
-    - global : santé globale
-    
-    Utilise ces icônes : brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles
-    
-    Retourne UNIQUEMENT un tableau JSON valide contenant exactement 3 objets de recette.`;
-
-    console.log("Envoi du prompt à OpenAI:", prompt);
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'Tu es un assistant culinaire français qui génère des recettes adaptées aux enfants. Réponds toujours en français et retourne uniquement du JSON valide contenant exactement 3 objets de recette. N\'inclus jamais de formatage markdown ou de texte supplémentaire.' 
-          },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error("Erreur API OpenAI:", error);
-      throw new Error('Échec de la génération des recettes depuis OpenAI');
+    if (!childProfiles || !Array.isArray(childProfiles) || childProfiles.length === 0) {
+      throw new Error('Profil enfant invalide ou manquant');
     }
 
-    const data = await response.json();
-    const recipesText = data.choices[0].message.content;
-    console.log("Réponse brute d'OpenAI:", recipesText);
+    // Initialize OpenAI
+    const openAiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAiKey) {
+      throw new Error('Clé API OpenAI manquante');
+    }
 
-    const cleanedText = recipesText.replace(/```json\n|\n```/g, '').trim();
-    console.log("Réponse nettoyée:", cleanedText);
+    const configuration = new Configuration({ apiKey: openAiKey });
+    const openai = new OpenAIApi(configuration);
+
+    // Generate recipes
+    const prompt = generatePrompt(childProfiles, filters || {});
+    console.log('Prompt:', prompt);
+
+    const completion = await openai.createChatCompletion({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
 
     let recipes;
     try {
-      recipes = JSON.parse(cleanedText);
-      
-      if (!Array.isArray(recipes) || recipes.length !== 3) {
-        throw new Error("Format de réponse invalide : tableau de 3 recettes attendu");
+      const content = completion.data.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('Réponse OpenAI invalide');
       }
-
-      const difficultyMap: { [key: string]: string } = {
-        'facile': 'easy',
-        'moyen': 'medium',
-        'difficile': 'hard'
-      };
-
-      const mealTypeMap: { [key: string]: string } = {
-        'petit-déjeuner': 'breakfast',
-        'déjeuner': 'lunch',
-        'dîner': 'dinner',
-        'collation': 'snack'
-      };
-
-      recipes = recipes.map(recipe => {
-        // Ensure health_benefits exists and is an array
-        const healthBenefits = Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [];
-        
-        // Validate and map health benefits
-        const mappedHealthBenefits = healthBenefits.map((benefit: any) => {
-          if (!benefit || typeof benefit.category !== 'string') {
-            console.error('Invalid benefit format:', benefit);
-            return null;
-          }
-
-          // Get the correct category from the map or try to use the lowercase version
-          const mappedCategory = categoryMap[benefit.category] || benefit.category.toLowerCase();
-          
-          // Verify the category is valid
-          if (!VALID_CATEGORIES.includes(mappedCategory)) {
-            console.error(`Invalid category found: ${benefit.category}, mapped to: ${mappedCategory}`);
-            return null;
-          }
-
-          return {
-            ...benefit,
-            category: mappedCategory
-          };
-        }).filter(Boolean); // Remove any null values
-
-        return {
-          ...recipe,
-          difficulty: difficultyMap[recipe.difficulty.toLowerCase()] || recipe.difficulty,
-          meal_type: mealTypeMap[recipe.meal_type.toLowerCase()] || recipe.meal_type,
-          health_benefits: mappedHealthBenefits,
-          is_generated: true,
-          image_url: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9",
-        };
-      });
-
-    } catch (parseError) {
-      console.error("Erreur d'analyse JSON:", parseError);
-      throw new Error(`Erreur d'analyse JSON: ${parseError.message}`);
+      recipes = JSON.parse(content);
+    } catch (error) {
+      console.error('Error parsing OpenAI response:', error);
+      throw new Error('Erreur lors du parsing de la réponse OpenAI');
     }
 
-    return new Response(JSON.stringify(recipes), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Process and validate recipes
+    const processedRecipes = processRecipes(recipes);
+
+    return new Response(
+      JSON.stringify(processedRecipes),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
 
   } catch (error) {
-    console.error("Erreur dans la fonction generate-recipe:", error);
+    console.error('Error in generate-recipe function:', error);
     return new Response(
       JSON.stringify({
-        error: error.message,
-        details: "Une erreur est survenue lors de la génération des recettes. Veuillez réessayer."
+        error: error instanceof Error ? error.message : 'Une erreur inconnue est survenue',
+        details: 'Une erreur est survenue lors de la génération des recettes. Veuillez réessayer.'
       }),
       {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   }
 });
