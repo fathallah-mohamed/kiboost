@@ -10,11 +10,13 @@ import {
   ShoppingCart,
   Check,
   ArrowRight,
-  Lock
+  Lock,
+  Sparkles
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface ProgressStepsProps {
   onSectionChange: (section: string) => void;
@@ -22,13 +24,14 @@ interface ProgressStepsProps {
 
 export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
   const navigate = useNavigate();
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   
   const steps = [
     {
       id: "profiles",
       label: "Configurer les profils enfants",
       icon: User,
-      status: "completed" as const,
+      status: completedSteps.includes("profiles") ? "completed" as const : "in-progress" as const,
       action: "Mettre à jour",
       route: "children",
       description: "Ajoutez ou modifiez les profils de vos enfants",
@@ -38,7 +41,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "recipes",
       label: "Générer des recettes",
       icon: ChefHat,
-      status: "in-progress" as const,
+      status: completedSteps.includes("profiles") ? "in-progress" as const : "locked" as const,
       action: "Générer maintenant",
       route: "recipes",
       description: "Créez des recettes adaptées à vos enfants",
@@ -48,7 +51,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "planning",
       label: "Planifier les repas",
       icon: Calendar,
-      status: "locked" as const,
+      status: completedSteps.includes("recipes") ? "in-progress" as const : "locked" as const,
       action: "Commencer à planifier",
       route: "planner",
       description: "Organisez les repas de la semaine",
@@ -59,7 +62,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "shopping",
       label: "Liste de courses",
       icon: ShoppingCart,
-      status: "locked" as const,
+      status: completedSteps.includes("planning") ? "in-progress" as const : "locked" as const,
       action: "Préparer ma liste",
       route: "shopping",
       description: "Préparez votre liste de courses",
@@ -70,7 +73,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "validate",
       label: "Valider le planning",
       icon: Check,
-      status: "locked" as const,
+      status: completedSteps.includes("shopping") ? "in-progress" as const : "locked" as const,
       action: "Finaliser",
       route: "view-planner",
       description: "Finalisez votre planning hebdomadaire",
@@ -80,8 +83,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
   ];
 
   const getProgress = () => {
-    const completed = steps.filter(step => step.status === "completed").length;
-    return (completed / steps.length) * 100;
+    return (completedSteps.length / steps.length) * 100;
   };
 
   const getStatusIcon = (status: "completed" | "in-progress" | "locked") => {
@@ -102,14 +104,22 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
     }
 
     onSectionChange(step.route);
-    toast.success(step.feedback);
+    if (step.status === "completed") {
+      toast.success("Étape déjà complétée !");
+    } else {
+      toast.success(step.feedback);
+      setCompletedSteps(prev => [...prev, step.id]);
+    }
   };
 
   return (
     <Card className="p-6 space-y-6">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Progression</h3>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Progression
+          </h3>
           <span className="text-sm text-muted-foreground">
             {Math.round(getProgress())}% complété
           </span>

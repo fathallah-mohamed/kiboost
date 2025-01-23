@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AlertCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export const PriorityTasks = () => {
   const navigate = useNavigate();
@@ -34,6 +35,11 @@ export const PriorityTasks = () => {
     }
   };
 
+  const handleTaskClick = (task: typeof tasks[0]) => {
+    toast.success(`Redirection vers ${task.action.toLowerCase()}...`);
+    navigate(task.route);
+  };
+
   return (
     <Card className="p-6 space-y-4">
       <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -45,13 +51,13 @@ export const PriorityTasks = () => {
         {tasks.map((task) => (
           <div
             key={task.id}
-            className={`flex items-center justify-between p-4 rounded-lg border animate-fade-in ${getPriorityColor(task.priority)}`}
+            className={`flex items-center justify-between p-4 rounded-lg border animate-fade-in hover:shadow-md transition-all ${getPriorityColor(task.priority)}`}
           >
             <p className="text-sm">{task.message}</p>
             <Button
               variant="default"
-              onClick={() => navigate(task.route)}
-              className="whitespace-nowrap ml-4 group"
+              onClick={() => handleTaskClick(task)}
+              className="whitespace-nowrap ml-4 group hover:scale-105 transition-all"
             >
               {task.action}
               <ArrowRight className="w-4 h-4 ml-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
