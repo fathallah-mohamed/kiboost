@@ -33,7 +33,7 @@ export const useRecipeGeneration = () => {
       
       console.log('Generating recipes for children:', child, 'with filters:', filters);
       
-      const { data, error: functionError } = await supabase.functions.invoke('generate-recipe', {
+      const { data: generatedRecipes, error: functionError } = await supabase.functions.invoke('generate-recipe', {
         body: {
           childProfiles: [child],
           filters,
@@ -45,13 +45,37 @@ export const useRecipeGeneration = () => {
         throw new Error(functionError.message);
       }
 
-      console.log('Generated recipes:', data);
+      console.log('Generated recipes:', generatedRecipes);
       
-      if (!data || !Array.isArray(data)) {
+      if (!generatedRecipes || !Array.isArray(generatedRecipes)) {
         throw new Error('Format de réponse invalide');
       }
 
-      setRecipes(data);
+      // Sauvegarder les recettes générées dans la base de données
+      const savedRecipes = await Promise.all(
+        generatedRecipes.map(async (recipe) => {
+          const { data: savedRecipe, error: saveError } = await supabase
+            .from('recipes')
+            .insert({
+              ...recipe,
+              profile_id: (await supabase.auth.getSession()).data.session?.user.id,
+              is_generated: true,
+            })
+            .select('*')
+            .single();
+
+          if (saveError) {
+            console.error('Error saving recipe:', saveError);
+            throw saveError;
+          }
+
+          return savedRecipe;
+        })
+      );
+
+      console.log('Saved recipes:', savedRecipes);
+      setRecipes(savedRecipes);
+
     } catch (err) {
       console.error('Error generating recipes:', err);
       setError('Une erreur est survenue lors de la génération des recettes.');
