@@ -10,17 +10,18 @@ export const WeeklyOverview = () => {
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   
-  // Simuler des jours planifiés (à remplacer par les vraies données)
   const plannedDays = ["2024-01-22", "2024-01-23", "2024-01-24"];
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const date = addDays(weekStart, i);
     const formattedDate = format(date, "yyyy-MM-dd");
     const isPlanned = plannedDays.includes(formattedDate);
+    const isToday = format(date, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
     
     return {
       date,
       isPlanned,
+      isToday,
       dayName: format(date, "EEE", { locale: fr }),
       dayNumber: format(date, "d")
     };
@@ -30,16 +31,16 @@ export const WeeklyOverview = () => {
     <Card className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
+          <Calendar className="w-5 h-5 text-primary" />
           Aperçu de la semaine
         </h3>
         <Button
           variant="ghost"
-          onClick={() => navigate("view-planner")}
-          className="text-sm"
+          onClick={() => navigate("/dashboard/view-planner")}
+          className="text-sm group"
         >
           Voir le planning complet
-          <ChevronRight className="w-4 h-4 ml-1" />
+          <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>
 
@@ -47,8 +48,10 @@ export const WeeklyOverview = () => {
         {weekDays.map((day) => (
           <div
             key={day.date.toString()}
-            className={`flex flex-col items-center p-2 rounded-lg ${
-              day.isPlanned
+            className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
+              day.isToday
+                ? "bg-primary text-primary-foreground"
+                : day.isPlanned
                 ? "bg-primary/10 text-primary"
                 : "bg-gray-50 text-gray-500"
             }`}
@@ -62,6 +65,17 @@ export const WeeklyOverview = () => {
             />
           </div>
         ))}
+      </div>
+
+      <div className="flex items-center justify-between text-sm text-muted-foreground mt-4">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-primary" />
+          <span>Jours planifiés</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-gray-300" />
+          <span>Jours à planifier</span>
+        </div>
       </div>
     </Card>
   );

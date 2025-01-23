@@ -1,7 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Circle, User, ChefHat, Calendar, ShoppingCart, Check } from "lucide-react";
+import { 
+  CheckCircle, 
+  Circle, 
+  User, 
+  ChefHat, 
+  Calendar, 
+  ShoppingCart, 
+  Check,
+  ArrowRight
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Step {
@@ -11,6 +20,7 @@ interface Step {
   status: "todo" | "in-progress" | "completed";
   action: string;
   route: string;
+  description: string;
 }
 
 export const ProgressSteps = () => {
@@ -23,7 +33,8 @@ export const ProgressSteps = () => {
       icon: User,
       status: "completed",
       action: "Mettre à jour",
-      route: "children"
+      route: "children",
+      description: "Ajoutez ou modifiez les profils de vos enfants"
     },
     {
       id: "recipes",
@@ -31,7 +42,8 @@ export const ProgressSteps = () => {
       icon: ChefHat,
       status: "in-progress",
       action: "Générer",
-      route: "recipes"
+      route: "recipes",
+      description: "Créez des recettes adaptées à vos enfants"
     },
     {
       id: "planning",
@@ -39,7 +51,8 @@ export const ProgressSteps = () => {
       icon: Calendar,
       status: "todo",
       action: "Planifier",
-      route: "planner"
+      route: "planner",
+      description: "Organisez les repas de la semaine"
     },
     {
       id: "shopping",
@@ -47,7 +60,8 @@ export const ProgressSteps = () => {
       icon: ShoppingCart,
       status: "todo",
       action: "Générer",
-      route: "shopping"
+      route: "shopping",
+      description: "Préparez votre liste de courses"
     },
     {
       id: "validate",
@@ -55,7 +69,8 @@ export const ProgressSteps = () => {
       icon: Check,
       status: "todo",
       action: "Valider",
-      route: "view-planner"
+      route: "view-planner",
+      description: "Finalisez votre planning hebdomadaire"
     }
   ];
 
@@ -78,34 +93,46 @@ export const ProgressSteps = () => {
   return (
     <Card className="p-6 space-y-6">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Progression</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Progression</h3>
+          <span className="text-sm text-muted-foreground">
+            {Math.round(getProgress())}% complété
+          </span>
+        </div>
         <Progress value={getProgress()} className="h-2" />
       </div>
 
       <div className="grid gap-4">
-        {steps.map((step) => (
+        {steps.map((step, index) => (
           <div
             key={step.id}
-            className="flex items-center justify-between p-4 bg-white rounded-lg border animate-fade-in"
+            className="relative"
           >
-            <div className="flex items-center gap-4">
-              {getStatusIcon(step.status)}
-              <div>
-                <p className="font-medium">{step.label}</p>
-                <p className="text-sm text-muted-foreground">
-                  {step.status === "completed" ? "Terminé" : 
-                   step.status === "in-progress" ? "En cours" : "À faire"}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant={step.status === "completed" ? "outline" : "default"}
-              onClick={() => navigate(step.route)}
-              className="whitespace-nowrap"
+            {index < steps.length - 1 && (
+              <div className="absolute left-[1.4rem] top-[3rem] bottom-[-1rem] w-0.5 bg-gray-200" />
+            )}
+            <div
+              className="flex items-center justify-between p-4 bg-white rounded-lg border animate-fade-in hover:shadow-md transition-shadow"
             >
-              <step.icon className="w-4 h-4 mr-2" />
-              {step.action}
-            </Button>
+              <div className="flex items-center gap-4">
+                {getStatusIcon(step.status)}
+                <div>
+                  <p className="font-medium">{step.label}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant={step.status === "completed" ? "outline" : "default"}
+                onClick={() => navigate(step.route)}
+                className="gap-2 group"
+              >
+                <step.icon className="w-4 h-4" />
+                {step.action}
+                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </Button>
+            </div>
           </div>
         ))}
       </div>

@@ -23,19 +23,21 @@ export const WelcomeSection = ({ userId }: WelcomeSectionProps) => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
+    <div className="space-y-6 animate-fade-in">
+      <Card className="p-6 bg-gradient-to-r from-primary/10 to-accent/10">
         <h2 className="text-2xl font-bold">
           Bonjour {username} 👋
         </h2>
         <p className="text-muted-foreground mt-2">
-          Bienvenue sur votre tableau de bord Kiboost
+          Bienvenue sur votre tableau de bord Kiboost. Commençons à planifier des repas sains pour vos enfants !
         </p>
       </Card>
 
       <ProgressSteps />
-      <PriorityTasks />
-      <WeeklyOverview />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <PriorityTasks />
+        <WeeklyOverview />
+      </div>
     </div>
   );
 };
