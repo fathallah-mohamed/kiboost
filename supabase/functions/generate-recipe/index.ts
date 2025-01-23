@@ -119,7 +119,7 @@ Format de réponse souhaité : un tableau JSON de recettes.`;
 
 const processRecipes = (recipes: any[]) => {
   return recipes.map(recipe => {
-    const healthBenefits = validateAndMapHealthBenefits(recipe.health_benefits);
+    const healthBenefits = validateAndMapHealthBenefits(recipe.health_benefits || []);
 
     return {
       ...recipe,
