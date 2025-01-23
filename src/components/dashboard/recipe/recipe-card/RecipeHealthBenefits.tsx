@@ -23,27 +23,17 @@ const categoryColors: { [key: string]: string } = {
   global: "bg-[#FFE4E1] hover:bg-[#FFD1CC] text-[#FF6B6B] border-[#FF6B6B]"
 };
 
-const getLevelDescription = (type: string, level: string): string => {
-  const descriptions = {
-    bio: {
-      excellent: 'Bio certifié',
-      good: 'Partiellement bio',
-      moderate: 'Culture raisonnée',
-      poor: 'Conventionnel'
-    }
-  };
-
-  return descriptions[type as keyof typeof descriptions]?.[level as keyof typeof descriptions['bio']] || level;
-};
-
 export const RecipeHealthBenefits = ({ benefits, compact }: RecipeHealthBenefitsProps) => {
   if (!benefits || benefits.length === 0) {
     return null;
   }
 
-  // Dédupliquer les bienfaits en se basant sur la description
+  // Dédupliquer les bienfaits en se basant sur la catégorie et la description
   const uniqueBenefits = benefits.reduce((acc: HealthBenefit[], current) => {
-    const exists = acc.some(benefit => benefit.description === current.description);
+    const exists = acc.some(benefit => 
+      benefit.category === current.category && 
+      benefit.description === current.description
+    );
     if (!exists) {
       acc.push(current);
     }
@@ -57,7 +47,7 @@ export const RecipeHealthBenefits = ({ benefits, compact }: RecipeHealthBenefits
         compact ? "justify-start" : "justify-center"
       )}>
         {uniqueBenefits.map((benefit, index) => (
-          <Tooltip key={index}>
+          <Tooltip key={`${benefit.category}-${benefit.description}-${index}`}>
             <TooltipTrigger>
               <Badge 
                 variant="secondary" 

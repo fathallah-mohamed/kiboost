@@ -22,14 +22,56 @@ export const usePlannedRecipes = (
   };
 
   const deduplicateHealthBenefits = (benefits: HealthBenefit[]): HealthBenefit[] => {
-    const uniqueBenefits = benefits.reduce((acc: HealthBenefit[], current) => {
-      const exists = acc.some(benefit => benefit.description === current.description);
-      if (!exists) {
-        acc.push(current);
+    if (!benefits) return [];
+    
+    const seen = new Set();
+    return benefits.filter(benefit => {
+      const key = `${benefit.category}-${benefit.description}`;
+      if (seen.has(key)) {
+        return false;
       }
-      return acc;
-    }, []);
-    return uniqueBenefits;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const parseRecipeData = (recipe: any): Recipe => {
+    let parsedHealthBenefits: HealthBenefit[] = [];
+    
+    try {
+      if (recipe.health_benefits) {
+        parsedHealthBenefits = typeof recipe.health_benefits === 'string'
+          ? JSON.parse(recipe.health_benefits)
+          : recipe.health_benefits;
+      }
+    } catch (error) {
+      console.error('Error parsing health benefits:', error);
+      parsedHealthBenefits = [];
+    }
+
+    // Dédupliquer les bienfaits
+    parsedHealthBenefits = deduplicateHealthBenefits(parsedHealthBenefits);
+
+    return {
+      ...recipe,
+      ingredients: typeof recipe.ingredients === 'string'
+        ? JSON.parse(recipe.ingredients)
+        : recipe.ingredients,
+      nutritional_info: typeof recipe.nutritional_info === 'string'
+        ? JSON.parse(recipe.nutritional_info)
+        : recipe.nutritional_info,
+      instructions: Array.isArray(recipe.instructions)
+        ? recipe.instructions
+        : [recipe.instructions].filter(Boolean),
+      meal_type: recipe.meal_type as MealType,
+      difficulty: recipe.difficulty as Difficulty,
+      health_benefits: parsedHealthBenefits,
+      cooking_steps: recipe.cooking_steps
+        ? (typeof recipe.cooking_steps === 'string'
+          ? JSON.parse(recipe.cooking_steps)
+          : recipe.cooking_steps)
+        : []
+    };
   };
 
   const fetchPlannedRecipes = async () => {
@@ -67,8 +109,6 @@ export const usePlannedRecipes = (
 
       if (error) throw error;
 
-      console.log('Fetched meal plans:', data);
-
       const plannedRecipesByDate: { [key: string]: Recipe | null } = {};
       dates.forEach(date => {
         plannedRecipesByDate[date] = null;
@@ -76,46 +116,7 @@ export const usePlannedRecipes = (
 
       data.forEach(plan => {
         if (plan.recipes) {
-          const recipe = plan.recipes;
-          console.log('Processing recipe:', recipe);
-          console.log('Health benefits before parsing:', recipe.health_benefits);
-
-          let parsedHealthBenefits = recipe.health_benefits ? 
-            (typeof recipe.health_benefits === 'string' 
-              ? JSON.parse(recipe.health_benefits) 
-              : recipe.health_benefits) as HealthBenefit[]
-            : [];
-
-          // Dédupliquer les bienfaits de santé
-          parsedHealthBenefits = deduplicateHealthBenefits(parsedHealthBenefits);
-
-          console.log('Parsed and deduplicated health benefits:', parsedHealthBenefits);
-
-          plannedRecipesByDate[plan.date] = {
-            ...recipe,
-            ingredients: typeof recipe.ingredients === 'string'
-              ? JSON.parse(recipe.ingredients)
-              : recipe.ingredients,
-            nutritional_info: typeof recipe.nutritional_info === 'string'
-              ? JSON.parse(recipe.nutritional_info)
-              : recipe.nutritional_info,
-            instructions: Array.isArray(recipe.instructions)
-              ? recipe.instructions
-              : [recipe.instructions].filter(Boolean),
-            meal_type: recipe.meal_type as MealType,
-            difficulty: recipe.difficulty as Difficulty,
-            health_benefits: parsedHealthBenefits,
-            cooking_steps: recipe.cooking_steps ? 
-              (typeof recipe.cooking_steps === 'string'
-                ? JSON.parse(recipe.cooking_steps)
-                : recipe.cooking_steps) as { 
-                  step: number; 
-                  description: string; 
-                  duration?: number; 
-                  tips?: string; 
-                }[]
-              : []
-          };
+          plannedRecipesByDate[plan.date] = parseRecipeData(plan.recipes);
         }
       });
 
