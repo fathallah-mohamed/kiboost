@@ -8,6 +8,22 @@ const corsHeaders = {
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
+// Map French categories to English database values
+const categoryMap: { [key: string]: string } = {
+  'Énergie': 'energy',
+  'Cognitive': 'cognitive',
+  'Satiété': 'satiety',
+  'Digestive': 'digestive',
+  'Immunité': 'immunity',
+  'Croissance': 'growth',
+  'Mental': 'mental',
+  'Organes': 'organs',
+  'Beauté': 'beauty',
+  'Physique': 'physical',
+  'Prévention': 'prevention',
+  'Global': 'global'
+};
+
 function calculateAge(birthDate: string): number {
   const today = new Date();
   const birth = new Date(birthDate);
@@ -59,19 +75,7 @@ serve(async (req) => {
 
     Utilise ces icônes pour les bienfaits : brain, zap, cookie, shield, leaf, lightbulb, battery, apple, heart, sun, dumbbell, sparkles
     
-    Retourne UNIQUEMENT un tableau JSON valide contenant exactement 3 objets de recette. Chaque objet de recette doit suivre exactement cette structure :
-    {
-      "name": "string",
-      "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
-      "instructions": ["string"],
-      "nutritional_info": {"calories": number, "protein": number, "carbs": number, "fat": number},
-      "preparation_time": number,
-      "difficulty": "facile/moyen/difficile",
-      "meal_type": "petit-déjeuner/déjeuner/dîner/collation",
-      "health_benefits": [{"icon": "string", "category": "string", "description": "string"}],
-      "min_age": number,
-      "max_age": number
-    }`;
+    Retourne UNIQUEMENT un tableau JSON valide contenant exactement 3 objets de recette.`;
 
     console.log("Envoi du prompt à OpenAI:", prompt);
 
@@ -82,7 +86,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           { 
             role: 'system', 
@@ -131,13 +135,22 @@ serve(async (req) => {
         'collation': 'snack'
       };
 
-      recipes = recipes.map(recipe => ({
-        ...recipe,
-        difficulty: difficultyMap[recipe.difficulty.toLowerCase()] || recipe.difficulty,
-        meal_type: mealTypeMap[recipe.meal_type.toLowerCase()] || recipe.meal_type,
-        is_generated: true,
-        image_url: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9",
-      }));
+      recipes = recipes.map(recipe => {
+        // Ensure health benefits have correct categories
+        const mappedHealthBenefits = recipe.health_benefits.map((benefit: any) => ({
+          ...benefit,
+          category: categoryMap[benefit.category] || benefit.category.toLowerCase()
+        }));
+
+        return {
+          ...recipe,
+          difficulty: difficultyMap[recipe.difficulty.toLowerCase()] || recipe.difficulty,
+          meal_type: mealTypeMap[recipe.meal_type.toLowerCase()] || recipe.meal_type,
+          health_benefits: mappedHealthBenefits,
+          is_generated: true,
+          image_url: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9",
+        };
+      });
 
     } catch (parseError) {
       console.error("Erreur d'analyse JSON:", parseError);
