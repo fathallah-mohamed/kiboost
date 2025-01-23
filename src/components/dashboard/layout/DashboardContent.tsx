@@ -1,9 +1,5 @@
-import { useState } from 'react';
 import { Session } from '@supabase/auth-helpers-react';
 import { WelcomeSection } from '../sections/WelcomeSection';
-import { QuickActions } from '../sections/QuickActions';
-import { WeeklyProgress } from '../sections/WeeklyProgress';
-import { StatsAndLeftovers } from '../statistics/StatsAndLeftovers';
 import { RecipeGenerator } from '../RecipeGenerator';
 import { MealPlanner } from '../MealPlanner';
 import { WeeklyPlanViewer } from '../WeeklyPlanViewer';
@@ -18,24 +14,14 @@ interface DashboardContentProps {
 }
 
 export const DashboardContent = ({ session, activeSection, setActiveSection }: DashboardContentProps) => {
-  const [plannedMeals, setPlannedMeals] = useState(0);
-  const [totalMeals, setTotalMeals] = useState(21); // 3 meals per day for 7 days
-  const [newRecipes, setNewRecipes] = useState(0);
-
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
         return (
-          <div className="space-y-6">
-            <WelcomeSection userId={session.user.id} />
-            <QuickActions onSectionChange={setActiveSection} />
-            <WeeklyProgress 
-              plannedMeals={plannedMeals}
-              totalMeals={totalMeals}
-              newRecipes={newRecipes}
-            />
-            <StatsAndLeftovers />
-          </div>
+          <WelcomeSection 
+            userId={session.user.id} 
+            onSectionChange={setActiveSection}
+          />
         );
       case 'recipes':
         return <RecipeGenerator onSectionChange={setActiveSection} />;

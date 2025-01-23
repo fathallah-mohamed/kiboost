@@ -5,7 +5,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ChildProfile } from './types';
 import { DashboardHeader } from './layout/DashboardHeader';
-import { DashboardNavigation } from './layout/DashboardNavigation';
 import { DashboardContent } from './layout/DashboardContent';
 
 interface DashboardProps {
@@ -40,12 +39,8 @@ export const Dashboard = ({ session }: DashboardProps) => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background">
       <DashboardHeader handleLogout={handleLogout} />
-      <DashboardNavigation 
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
       <DashboardContent
         session={session}
         activeSection={activeSection}
