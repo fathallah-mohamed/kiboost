@@ -54,8 +54,9 @@ const validateAndMapHealthBenefits = (healthBenefits: any[]) => {
   }
 
   return healthBenefits
+    .filter(benefit => benefit && typeof benefit === 'object')
     .map(benefit => {
-      if (!benefit || typeof benefit.category !== 'string') {
+      if (!benefit.category || typeof benefit.category !== 'string') {
         console.error('Invalid benefit format:', benefit);
         return null;
       }
@@ -118,7 +119,17 @@ Format de réponse souhaité : un tableau JSON de recettes.`;
 };
 
 const processRecipes = (recipes: any[]) => {
+  if (!Array.isArray(recipes)) {
+    console.error('Recipes is not an array:', recipes);
+    throw new Error('Format de réponse invalide: les recettes doivent être un tableau');
+  }
+
   return recipes.map(recipe => {
+    if (!recipe || typeof recipe !== 'object') {
+      console.error('Invalid recipe format:', recipe);
+      throw new Error('Format de recette invalide');
+    }
+
     const healthBenefits = validateAndMapHealthBenefits(recipe.health_benefits || []);
 
     return {
@@ -138,6 +149,7 @@ const processRecipes = (recipes: any[]) => {
 
 // Main Handler
 serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -169,12 +181,13 @@ serve(async (req) => {
       max_tokens: 2000,
     });
 
+    const content = completion.data.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('Réponse OpenAI invalide');
+    }
+
     let recipes;
     try {
-      const content = completion.data.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error('Réponse OpenAI invalide');
-      }
       recipes = JSON.parse(content);
     } catch (error) {
       console.error('Error parsing OpenAI response:', error);
