@@ -33,7 +33,6 @@ const generatePrompt = (child: any, filters: any) => {
     constraints.push(`Difficulté : ${filters.difficulty}`);
   }
 
-  // Suggestions de recettes variées selon le type de repas
   const mealSuggestions = filters.mealType === 'breakfast' && filters.maxPrepTime <= 15
     ? `\nSuggestions de petit-déjeuner rapide (choisis-en 3 différentes):
     - Porridge express aux fruits
@@ -67,18 +66,40 @@ IMPORTANT:
 - Étapes courtes et efficaces
 - CHAQUE recette doit être DIFFÉRENTE des autres
 
-RÉPONDS UNIQUEMENT EN JSON VALIDE SANS BACKTICKS NI COMMENTAIRES. Format:
-[{
-  "name": "Nom de la recette",
-  "ingredients": [{"item": "Ingrédient", "quantity": "Quantité", "unit": "Unité"}],
-  "instructions": ["Étape 1", "Étape 2"],
-  "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
-  "meal_type": "breakfast",
-  "preparation_time": 15,
-  "difficulty": "easy",
-  "servings": 4,
-  "health_benefits": [{"icon": "brain", "category": "cognitive", "description": "Description du bienfait"}]
-}]`;
+RÉPONDS UNIQUEMENT EN JSON VALIDE AVEC CE FORMAT EXACT:
+[
+  {
+    "name": "Nom de la recette",
+    "ingredients": [
+      {
+        "item": "Ingrédient",
+        "quantity": "Quantité",
+        "unit": "Unité"
+      }
+    ],
+    "instructions": [
+      "Étape 1",
+      "Étape 2"
+    ],
+    "nutritional_info": {
+      "calories": 0,
+      "protein": 0,
+      "carbs": 0,
+      "fat": 0
+    },
+    "meal_type": "breakfast",
+    "preparation_time": 15,
+    "difficulty": "easy",
+    "servings": 4,
+    "health_benefits": [
+      {
+        "icon": "brain",
+        "category": "cognitive",
+        "description": "Description du bienfait"
+      }
+    ]
+  }
+]`;
 };
 
 serve(async (req) => {
@@ -104,7 +125,7 @@ serve(async (req) => {
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef créatif spécialisé en recettes rapides pour enfants. Assure-toi que chaque recette soit UNIQUE et DIFFÉRENTE des autres. RÉPONDS UNIQUEMENT EN JSON VALIDE.' 
+          content: 'Tu es un chef créatif spécialisé en recettes rapides pour enfants. Tu dois générer UNIQUEMENT du JSON valide, sans aucun texte avant ou après. Assure-toi que chaque recette soit UNIQUE et DIFFÉRENTE des autres.' 
         },
         { role: 'user', content: prompt }
       ],
@@ -117,10 +138,11 @@ serve(async (req) => {
 
     console.log('Raw OpenAI response:', content);
 
-    // Nettoyage et validation du JSON
+    // Nettoyage plus strict du JSON
     const cleanedContent = content
-      .replace(/```json\n?|\n?```/g, '')
-      .replace(/\n/g, ' ')
+      .replace(/```json\n?|\n?```/g, '') // Remove code blocks
+      .replace(/[\u0000-\u001F]+/g, ' ') // Remove control characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
 
     console.log('Cleaned content:', cleanedContent);
@@ -137,6 +159,13 @@ serve(async (req) => {
       if (recipeNames.size !== recipes.length) {
         throw new Error('Les recettes doivent être différentes');
       }
+
+      // Validation supplémentaire de la structure
+      recipes.forEach((recipe, index) => {
+        if (!recipe.name || !Array.isArray(recipe.ingredients) || !Array.isArray(recipe.instructions)) {
+          throw new Error(`Structure invalide pour la recette ${index + 1}`);
+        }
+      });
 
       return new Response(
         JSON.stringify({ recipes }),
