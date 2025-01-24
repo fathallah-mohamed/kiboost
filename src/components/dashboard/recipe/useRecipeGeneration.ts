@@ -1,71 +1,38 @@
 import { useState } from 'react';
-import { Recipe, ChildProfile } from '../types';
+import { Recipe, ChildProfile, RecipeFilters } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-interface RecipeResponse {
-  name: string;
-  ingredients: Array<{
-    item: string;
-    quantity: string;
-    unit: string;
-  }>;
-  instructions: string[];
-  nutritional_info: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  meal_type: string;
-  preparation_time: number;
-  difficulty: string;
-  servings: number;
-  health_benefits?: Array<{
-    icon: string;
-    category: string;
-    description: string;
-  }>;
-}
-
-const normalizeRecipeName = (name: string): string => {
-  return name.toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]/g, ' ')
-    .trim();
-};
-
-const areRecipesSimilar = (recipe1: string, recipe2: string): boolean => {
-  const name1 = normalizeRecipeName(recipe1);
-  const name2 = normalizeRecipeName(recipe2);
-  
-  // Calculer la similarité des noms
-  const words1 = new Set(name1.split(' '));
-  const words2 = new Set(name2.split(' '));
-  const commonWords = [...words1].filter(word => words2.has(word));
-  
-  // Si plus de 70% des mots sont communs, considérer comme similaire
-  return commonWords.length / Math.max(words1.size, words2.size) > 0.7;
-};
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateRecipes = async (child: ChildProfile) => {
+  const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     try {
       setLoading(true);
       setError(null);
       
-      // Récupérer d'abord les recettes existantes
       const { data: existingRecipes } = await supabase
         .from('recipes')
         .select('name')
         .eq('profile_id', (await supabase.auth.getSession()).data.session?.user.id);
 
       const { data: generatedRecipes, error: functionError } = await supabase.functions.invoke('generate-recipe', {
-        body: { childProfiles: [child] }
+        body: { 
+          childProfiles: [child],
+          filters: {
+            mealType: filters.mealType || 'all',
+            maxPrepTime: filters.maxPrepTime || 60,
+            difficulty: filters.difficulty || 'all',
+            dietaryPreferences: filters.dietaryPreferences || [],
+            excludedAllergens: filters.excludedAllergens || [],
+            maxCost: filters.maxCost || 15,
+            healthBenefits: filters.healthBenefits || [],
+            season: filters.season || null,
+            includedIngredients: filters.includedIngredients || [],
+            excludedIngredients: filters.excludedIngredients || []
+          }
+        }
       });
 
       if (functionError) {
@@ -97,12 +64,12 @@ export const useRecipeGeneration = () => {
       }
 
       const savedRecipes = await Promise.all(
-        uniqueRecipes.map(async (recipe: RecipeResponse) => {
+        uniqueRecipes.map(async (recipe: any) => {
           const recipeData = {
             profile_id: userId,
             name: recipe.name,
             ingredients: recipe.ingredients,
-            instructions: recipe.instructions.map((instruction, index) => 
+            instructions: recipe.instructions.map((instruction: string, index: number) => 
               `${index + 1}. ${instruction}`
             ).join('\n'),
             nutritional_info: recipe.nutritional_info,
@@ -115,10 +82,10 @@ export const useRecipeGeneration = () => {
             cooking_steps: [],
             min_age: 0,
             max_age: 18,
-            dietary_preferences: [],
-            allergens: [],
-            cost_estimate: 0,
-            seasonal_months: [1,2,3,4,5,6,7,8,9,10,11,12]
+            dietary_preferences: filters.dietaryPreferences || [],
+            allergens: filters.excludedAllergens || [],
+            cost_estimate: filters.maxCost || 0,
+            seasonal_months: filters.season ? [filters.season] : [1,2,3,4,5,6,7,8,9,10,11,12]
           };
 
           const { data: savedRecipe, error: saveError } = await supabase
@@ -162,4 +129,23 @@ export const useRecipeGeneration = () => {
     loading,
     error
   };
+};
+
+const normalizeRecipeName = (name: string): string => {
+  return name.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, ' ')
+    .trim();
+};
+
+const areRecipesSimilar = (recipe1: string, recipe2: string): boolean => {
+  const name1 = normalizeRecipeName(recipe1);
+  const name2 = normalizeRecipeName(recipe2);
+  
+  const words1 = new Set(name1.split(' '));
+  const words2 = new Set(name2.split(' '));
+  const commonWords = [...words1].filter(word => words2.has(word));
+  
+  return commonWords.length / Math.max(words1.size, words2.size) > 0.7;
 };

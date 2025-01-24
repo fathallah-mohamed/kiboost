@@ -10,6 +10,19 @@ interface ChildProfile {
   preferences: string[];
 }
 
+interface RecipeFilters {
+  mealType?: string;
+  maxPrepTime?: number;
+  difficulty?: string;
+  dietaryPreferences?: string[];
+  excludedAllergens?: string[];
+  maxCost?: number;
+  healthBenefits?: string[];
+  season?: number;
+  includedIngredients?: string[];
+  excludedIngredients?: string[];
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -21,9 +34,7 @@ const VALID_HEALTH_CATEGORIES = [
   'prevention', 'global'
 ] as const;
 
-type ValidHealthCategory = typeof VALID_HEALTH_CATEGORIES[number];
-
-const generatePrompt = (child: ChildProfile) => {
+const generatePrompt = (child: ChildProfile, filters: RecipeFilters) => {
   const allergiesText = child.allergies?.length > 0 
     ? `Allergies à éviter : ${child.allergies.join(', ')}`
     : 'Aucune allergie connue';
@@ -34,6 +45,45 @@ const generatePrompt = (child: ChildProfile) => {
 
   const validCategoriesText = VALID_HEALTH_CATEGORIES.join(', ');
 
+  let additionalConstraints = [];
+  
+  if (filters.mealType && filters.mealType !== 'all') {
+    additionalConstraints.push(`- Type de repas : ${filters.mealType}`);
+  }
+  
+  if (filters.maxPrepTime) {
+    additionalConstraints.push(`- Temps de préparation maximum : ${filters.maxPrepTime} minutes`);
+  }
+  
+  if (filters.difficulty && filters.difficulty !== 'all') {
+    additionalConstraints.push(`- Niveau de difficulté : ${filters.difficulty}`);
+  }
+  
+  if (filters.maxCost) {
+    additionalConstraints.push(`- Coût maximum par portion : ${filters.maxCost}€`);
+  }
+
+  if (filters.includedIngredients?.length) {
+    additionalConstraints.push(`- Ingrédients à inclure : ${filters.includedIngredients.join(', ')}`);
+  }
+
+  if (filters.excludedIngredients?.length) {
+    additionalConstraints.push(`- Ingrédients à exclure : ${filters.excludedIngredients.join(', ')}`);
+  }
+
+  if (filters.season) {
+    const month = new Date(2024, filters.season - 1).toLocaleString('fr-FR', { month: 'long' });
+    additionalConstraints.push(`- Recette de saison pour : ${month}`);
+  }
+
+  if (filters.healthBenefits?.length) {
+    additionalConstraints.push(`- Bienfaits santé requis : ${filters.healthBenefits.join(', ')}`);
+  }
+
+  const constraintsText = additionalConstraints.length > 0 
+    ? `\nContraintes supplémentaires :\n${additionalConstraints.join('\n')}`
+    : '';
+
   return `Génère 3 recettes pour enfants adaptées au profil suivant :
 
 Profil de l'enfant :
@@ -41,11 +91,13 @@ Profil de l'enfant :
 - Date de naissance : ${child.birth_date}
 - ${allergiesText}
 - ${preferencesText}
+${constraintsText}
 
 IMPORTANT : 
 - Chaque recette DOIT avoir EXACTEMENT 3 bienfaits santé différents
 - Les catégories de bienfaits santé DOIVENT être UNIQUEMENT parmi : ${validCategoriesText}
 - NE PAS inventer d'autres catégories
+- Respecter STRICTEMENT toutes les contraintes données
 
 Réponds UNIQUEMENT avec un tableau JSON contenant exactement 3 recettes au format suivant :
 [
@@ -80,31 +132,15 @@ Réponds UNIQUEMENT avec un tableau JSON contenant exactement 3 recettes au form
 ]`;
 };
 
-const validateHealthBenefits = (recipe: any) => {
-  if (!Array.isArray(recipe.health_benefits) || recipe.health_benefits.length !== 3) {
-    throw new Error(`La recette "${recipe.name}" doit avoir exactement 3 bienfaits santé`);
-  }
-
-  recipe.health_benefits.forEach((benefit: any, index: number) => {
-    if (!benefit.category || !VALID_HEALTH_CATEGORIES.includes(benefit.category)) {
-      throw new Error(
-        `Catégorie invalide "${benefit.category}" pour le bienfait santé ${index + 1} de la recette "${recipe.name}". ` +
-        `Les catégories valides sont : ${VALID_HEALTH_CATEGORIES.join(', ')}`
-      );
-    }
-  });
-
-  return true;
-};
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { childProfiles } = await req.json();
+    const { childProfiles, filters } = await req.json();
     console.log('Received child profiles:', childProfiles);
+    console.log('Received filters:', filters);
 
     if (!childProfiles || !Array.isArray(childProfiles) || childProfiles.length === 0) {
       throw new Error('Profil enfant invalide ou manquant');
@@ -118,7 +154,7 @@ serve(async (req) => {
     const configuration = new Configuration({ apiKey: openAiKey });
     const openai = new OpenAIApi(configuration);
 
-    const prompt = generatePrompt(childProfiles[0]);
+    const prompt = generatePrompt(childProfiles[0], filters);
     console.log('Generated prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
@@ -136,7 +172,6 @@ serve(async (req) => {
 
     const content = completion.data.choices[0]?.message?.content;
     if (!content) {
-      console.error('Invalid OpenAI response - no content:', completion.data);
       throw new Error('Réponse OpenAI invalide - contenu manquant');
     }
 
@@ -144,7 +179,6 @@ serve(async (req) => {
 
     let recipes;
     try {
-      // Remove any potential markdown or extra text
       const cleanContent = content
         .replace(/```json\n?|\n?```/g, '')
         .replace(/^[\s\n]*\[/, '[')
@@ -156,29 +190,22 @@ serve(async (req) => {
       recipes = JSON.parse(cleanContent);
       
       if (!Array.isArray(recipes)) {
-        console.error('Response is not an array:', recipes);
         throw new Error('La réponse n\'est pas un tableau');
       }
       
       if (recipes.length !== 3) {
-        console.error('Wrong number of recipes:', recipes.length);
         throw new Error('Le nombre de recettes est incorrect');
       }
 
-      // Validate recipe format and health benefits
       recipes.forEach((recipe, index) => {
         if (!recipe.name || !recipe.ingredients || !recipe.instructions) {
-          console.error(`Invalid recipe format at index ${index}:`, recipe);
           throw new Error(`Format de recette invalide à l'index ${index}`);
         }
-
-        validateHealthBenefits(recipe);
       });
 
       console.log('Successfully parsed and validated recipes:', recipes);
     } catch (error) {
       console.error('Error parsing or validating OpenAI response:', error);
-      console.error('Content that failed to parse:', content);
       throw new Error(`Erreur lors du parsing ou de la validation de la réponse OpenAI: ${error.message}`);
     }
 

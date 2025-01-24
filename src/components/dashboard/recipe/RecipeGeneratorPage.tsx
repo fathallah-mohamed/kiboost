@@ -5,7 +5,7 @@ import { useSession } from '@supabase/auth-helpers-react';
 import { BackToDashboard } from '../BackToDashboard';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Recipe, ChildProfile } from "../types";
+import { Recipe, ChildProfile, RecipeFilters } from "../types";
 import { MultiChildSelector } from './MultiChildSelector';
 import { RecipeFiltersSection } from './RecipeFiltersSection';
 import { RecipeList } from './RecipeList';
@@ -23,6 +23,19 @@ export const RecipeGeneratorPage = () => {
   const session = useSession();
   const navigate = useNavigate();
   const { generateRecipes } = useRecipeGeneration();
+
+  // États pour les filtres
+  const [mealType, setMealType] = useState<string>("all");
+  const [maxPrepTime, setMaxPrepTime] = useState(60);
+  const [difficulty, setDifficulty] = useState<string>("all");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({
+    dietaryPreferences: [],
+    excludedAllergens: [],
+    maxCost: 15,
+    healthBenefits: [],
+    season: 1
+  });
 
   // Fetch generated recipes from the database
   const { data: recipes = [], refetch: refetchRecipes } = useQuery({
@@ -74,8 +87,15 @@ export const RecipeGeneratorPage = () => {
 
     try {
       setLoading(true);
-      const generatedRecipes = await generateRecipes(selectedChildren[0]);
-      refetchRecipes();
+      const filters: RecipeFilters = {
+        ...advancedFilters,
+        mealType,
+        maxPrepTime,
+        difficulty,
+      };
+      
+      const generatedRecipes = await generateRecipes(selectedChildren[0], filters);
+      await refetchRecipes();
       toast.success("Recettes générées avec succès !");
     } catch (error) {
       console.error('Error generating recipes:', error);
@@ -124,16 +144,16 @@ export const RecipeGeneratorPage = () => {
             />
 
             <RecipeFiltersSection
-              mealType={"all"}
-              setMealType={() => {}}
-              maxPrepTime={60}
-              setMaxPrepTime={() => {}}
-              difficulty={"all"}
-              setDifficulty={() => {}}
-              showAdvancedFilters={false}
-              setShowAdvancedFilters={() => {}}
-              advancedFilters={{ dietaryPreferences: [], excludedAllergens: [], maxCost: 15, healthBenefits: [], season: 1 }}
-              setAdvancedFilters={() => {}}
+              mealType={mealType}
+              setMealType={setMealType}
+              maxPrepTime={maxPrepTime}
+              setMaxPrepTime={setMaxPrepTime}
+              difficulty={difficulty}
+              setDifficulty={setDifficulty}
+              showAdvancedFilters={showAdvancedFilters}
+              setShowAdvancedFilters={setShowAdvancedFilters}
+              advancedFilters={advancedFilters}
+              setAdvancedFilters={setAdvancedFilters}
             />
 
             <div className="flex justify-end">
