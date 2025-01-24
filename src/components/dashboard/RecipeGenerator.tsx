@@ -1,35 +1,28 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { 
-  ChefHat, Calendar, ShoppingCart, 
-  Check, AlertCircle, Sparkles, ArrowRight, Circle
-} from 'lucide-react';
+import { ChefHat, Filter } from 'lucide-react';
 import { BackToDashboard } from './BackToDashboard';
-import { toast } from 'sonner';
-import { ProgressSteps } from './sections/ProgressSteps';
-import { useRecipeGeneration } from './recipe/useRecipeGeneration';
-import { useSession } from '@supabase/auth-helpers-react';
 import { useNavigate } from 'react-router-dom';
+import { MultiChildSelector } from './recipe/MultiChildSelector';
+import { ChildProfile, RecipeFilters } from './types';
+import { RecipeFilters as BasicRecipeFilters } from './recipe/RecipeFilters';
+import { AdvancedFilters } from './recipe/AdvancedFilters';
 
 interface RecipeGeneratorProps {
   onSectionChange: (section: string) => void;
 }
 
 export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const session = useSession();
   const navigate = useNavigate();
-  const { generateRecipes, loading, error } = useRecipeGeneration();
-
-  const handleQuickPlan = () => {
-    console.log('Redirecting to recipes section...');
-    navigate('/dashboard/recipes');
-  };
+  const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [mealType, setMealType] = useState<'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack'>('all');
+  const [maxPrepTime, setMaxPrepTime] = useState(60);
+  const [difficulty, setDifficulty] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
+  const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({});
 
   const handleGenerateRecipes = () => {
-    console.log('Redirecting to recipe generation...');
     navigate('/dashboard/recipes');
   };
 
@@ -37,51 +30,62 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
     <div className="space-y-6 animate-fade-in">
       <BackToDashboard onBack={() => onSectionChange('categories')} />
 
-      <Card className="p-6 bg-gradient-to-r from-primary/10 to-accent/10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <Card className="p-6">
+        <div className="space-y-4">
           <div>
             <h2 className="text-2xl font-bold">
-              Bienvenue sur Kiboost 👋
+              Générateur de Recettes
             </h2>
             <p className="text-muted-foreground mt-2">
-              Suivez les étapes ci-dessous pour planifier des repas sains pour vos enfants.
+              Générez des recettes personnalisées adaptées à vos besoins
             </p>
           </div>
-          <Button 
-            onClick={handleQuickPlan}
-            className="whitespace-nowrap group hover:scale-105 transition-all duration-300"
-          >
-            <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
-            Planning express
-          </Button>
-        </div>
-      </Card>
 
-      <ProgressSteps onSectionChange={onSectionChange} />
+          <div className="space-y-6">
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Sélection des enfants</h3>
+              <MultiChildSelector
+                selectedChildren={selectedChildren}
+                onSelectChildren={setSelectedChildren}
+                mode="compact"
+              />
+            </Card>
 
-      <Card className="p-6 space-y-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-primary" />
-          Tâches prioritaires
-        </h3>
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Filtres de base</h3>
+              <BasicRecipeFilters
+                mealType={mealType}
+                setMealType={setMealType}
+                maxPrepTime={maxPrepTime}
+                setMaxPrepTime={setMaxPrepTime}
+                difficulty={difficulty}
+                setDifficulty={setDifficulty}
+              />
+            </Card>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 border-red-100 border">
-            <p className="text-sm">Vous n'avez pas encore planifié vos repas pour cette semaine</p>
+            <Button
+              variant="outline"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              {showAdvancedFilters ? "Masquer" : "Afficher"} les filtres avancés
+            </Button>
+
+            <AdvancedFilters
+              filters={advancedFilters}
+              onFiltersChange={setAdvancedFilters}
+              open={showAdvancedFilters}
+              onOpenChange={setShowAdvancedFilters}
+            />
+
             <Button 
               onClick={handleGenerateRecipes}
+              className="w-full"
+              size="lg"
             >
-              Générer maintenant
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded-lg bg-orange-50 border-orange-100 border">
-            <p className="text-sm">Votre liste de courses n'est pas à jour</p>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/dashboard/shopping')}
-            >
-              Mettre à jour
+              <ChefHat className="w-5 h-5 mr-2" />
+              Générer des recettes
             </Button>
           </div>
         </div>
