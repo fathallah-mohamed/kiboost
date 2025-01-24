@@ -1,97 +1,89 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { useRecipeGeneration } from './recipe/hooks/useRecipeGeneration';
-import { useRecipeSaving } from './recipe/hooks/useRecipeSaving';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { 
+  ChefHat, Calendar, ShoppingCart, 
+  Check, AlertCircle, Sparkles, ArrowRight, Circle
+} from 'lucide-react';
 import { BackToDashboard } from './BackToDashboard';
+import { toast } from 'sonner';
+import { ProgressSteps } from './sections/ProgressSteps';
+import { useRecipeGeneration } from './recipe/useRecipeGeneration';
+import { useSession } from '@supabase/auth-helpers-react';
 import { useNavigate } from 'react-router-dom';
-import { Recipe, ChildProfile, MealType, Difficulty, RecipeFilters } from './types';
-import { RecipeGeneratorContent } from './recipe/RecipeGeneratorContent';
-import { usePlannedRecipesFetching } from './recipe/hooks/usePlannedRecipesFetching';
 
-export const RecipeGenerator = () => {
-  const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [displayCount, setDisplayCount] = useState(6);
-  const [error, setError] = useState<string | null>(null);
+interface RecipeGeneratorProps {
+  onSectionChange: (section: string) => void;
+}
+
+export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const session = useSession();
   const navigate = useNavigate();
-  const { generateRecipes, loading } = useRecipeGeneration();
-  const { saveRecipe, saving } = useRecipeSaving();
-  const { plannedRecipes } = usePlannedRecipesFetching(selectedChildren);
+  const { generateRecipes, loading, error } = useRecipeGeneration();
 
-  // Filter states
-  const [mealType, setMealType] = useState<MealType | "all">("all");
-  const [maxPrepTime, setMaxPrepTime] = useState(60);
-  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({});
-
-  const handleGenerateRecipes = async () => {
-    try {
-      if (selectedChildren.length === 0) {
-        setError("Veuillez sélectionner au moins un enfant");
-        return;
-      }
-
-      const generatedRecipes = await generateRecipes(selectedChildren[0]);
-      if (generatedRecipes) {
-        setRecipes(generatedRecipes);
-        setError(null);
-      }
-    } catch (err) {
-      console.error('Error generating recipes:', err);
-      setError("Une erreur est survenue lors de la génération des recettes");
-    }
+  const handleQuickPlan = () => {
+    console.log('Redirecting to recipes section...');
+    navigate('/dashboard/recipes');
   };
 
-  const handleSaveRecipe = async (recipe: Recipe) => {
-    try {
-      await saveRecipe(recipe, selectedChildren);
-    } catch (err) {
-      console.error('Error saving recipe:', err);
-      setError("Une erreur est survenue lors de la sauvegarde de la recette");
-    }
-  };
-
-  const handleLoadMore = () => {
-    setDisplayCount(prev => prev + 6);
+  const handleGenerateRecipes = () => {
+    console.log('Redirecting to recipe generation...');
+    navigate('/dashboard/recipes');
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
-      <BackToDashboard onBack={() => navigate('/dashboard')} />
-      
-      <Card className="p-6">
-        <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
+      <BackToDashboard onBack={() => onSectionChange('categories')} />
+
+      <Card className="p-6 bg-gradient-to-r from-primary/10 to-accent/10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold">Générateur de Recettes</h2>
+            <h2 className="text-2xl font-bold">
+              Bienvenue sur Kiboost 👋
+            </h2>
             <p className="text-muted-foreground mt-2">
-              Générez des recettes personnalisées adaptées à vos besoins
+              Suivez les étapes ci-dessous pour planifier des repas sains pour vos enfants.
             </p>
           </div>
+          <Button 
+            onClick={handleQuickPlan}
+            className="whitespace-nowrap group hover:scale-105 transition-all duration-300"
+          >
+            <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
+            Planning express
+          </Button>
+        </div>
+      </Card>
 
-          <RecipeGeneratorContent
-            loading={loading}
-            saving={saving}
-            selectedChildren={selectedChildren}
-            setSelectedChildren={setSelectedChildren}
-            recipes={recipes}
-            displayCount={displayCount}
-            error={error}
-            plannedRecipes={plannedRecipes}
-            handleGenerateRecipes={handleGenerateRecipes}
-            handleSaveRecipe={handleSaveRecipe}
-            handleLoadMore={handleLoadMore}
-            mealType={mealType}
-            setMealType={setMealType}
-            maxPrepTime={maxPrepTime}
-            setMaxPrepTime={setMaxPrepTime}
-            difficulty={difficulty}
-            setDifficulty={setDifficulty}
-            showAdvancedFilters={showAdvancedFilters}
-            setShowAdvancedFilters={setShowAdvancedFilters}
-            advancedFilters={advancedFilters}
-            setAdvancedFilters={setAdvancedFilters}
-          />
+      <ProgressSteps onSectionChange={onSectionChange} />
+
+      <Card className="p-6 space-y-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-primary" />
+          Tâches prioritaires
+        </h3>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 border-red-100 border">
+            <p className="text-sm">Vous n'avez pas encore planifié vos repas pour cette semaine</p>
+            <Button 
+              onClick={handleGenerateRecipes}
+            >
+              Générer maintenant
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between p-4 rounded-lg bg-orange-50 border-orange-100 border">
+            <p className="text-sm">Votre liste de courses n'est pas à jour</p>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard/shopping')}
+            >
+              Mettre à jour
+            </Button>
+          </div>
         </div>
       </Card>
     </div>

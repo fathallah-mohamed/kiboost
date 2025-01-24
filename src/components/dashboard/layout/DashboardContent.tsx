@@ -31,17 +31,17 @@ export const DashboardContent = ({
       case 'categories':
         return <CategoriesGrid />;
       case 'recipes':
-        return <RecipeGenerator />;
+        return <RecipeGenerator onSectionChange={setActiveSection} />;
       case 'planner':
-        return <MealPlanner userId={session.user.id} />;
+        return <MealPlanner userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'view-planner':
-        return <WeeklyPlanViewer userId={session.user.id} />;
+        return <WeeklyPlanViewer userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'children':
         return <ChildrenProfiles userId={session.user.id} onSelectChild={() => {}} />;
       case 'shopping':
-        return <ShoppingList userId={session.user.id} />;
+        return <ShoppingList userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'favorites':
-        return <FavoriteRecipes />;
+        return <FavoriteRecipes onSectionChange={setActiveSection} />;
       default:
         return null;
     }
