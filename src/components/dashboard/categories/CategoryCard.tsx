@@ -32,7 +32,7 @@ export const CategoryCard = ({ category }: CategoryCardProps) => {
   const handleClick = () => {
     if (category.isActive) {
       if (category.id === 'recipes') {
-        navigate('/dashboard', { state: { section: 'recipes' } });
+        navigate('/dashboard', { state: { section: 'overview' } });
       } else if (category.route) {
         navigate(category.route);
       }

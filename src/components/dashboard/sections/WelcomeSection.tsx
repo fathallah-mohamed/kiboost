@@ -7,7 +7,6 @@ import { WeeklyOverview } from "./WeeklyOverview";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 interface WelcomeSectionProps {
   userId: string;
@@ -16,8 +15,6 @@ interface WelcomeSectionProps {
 
 export const WelcomeSection = ({ userId, onSectionChange }: WelcomeSectionProps) => {
   const [username, setUsername] = useState<string>("");
-  const navigate = useNavigate();
-  const [lastConnection, setLastConnection] = useState<Date | null>(null);
 
   useEffect(() => {
     const fetchUsername = async () => {
