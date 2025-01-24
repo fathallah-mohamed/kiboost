@@ -10,9 +10,9 @@ export const usePlannedRecipes = (
   viewMode: 'week' | 'month',
   selectedChildren: ChildProfile[]
 ) => {
+  const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe }>({});
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
-  const [loading, setLoading] = useState(true);
 
   const updateLocalPlannedRecipes = (date: string, recipe: Recipe) => {
     setPlannedRecipes(prev => ({
@@ -21,49 +21,59 @@ export const usePlannedRecipes = (
     }));
   };
 
+  const parseRecipeData = (recipeData: any): Recipe => {
+    return {
+      ...recipeData,
+      ingredients: Array.isArray(recipeData.ingredients) 
+        ? recipeData.ingredients 
+        : JSON.parse(typeof recipeData.ingredients === 'string' ? recipeData.ingredients : '[]'),
+      nutritional_info: typeof recipeData.nutritional_info === 'string'
+        ? JSON.parse(recipeData.nutritional_info)
+        : recipeData.nutritional_info,
+      health_benefits: typeof recipeData.health_benefits === 'string'
+        ? JSON.parse(recipeData.health_benefits)
+        : recipeData.health_benefits,
+      cooking_steps: typeof recipeData.cooking_steps === 'string'
+        ? JSON.parse(recipeData.cooking_steps)
+        : recipeData.cooking_steps || []
+    };
+  };
+
   const fetchPlannedRecipes = async () => {
+    setLoading(true);
     try {
-      let dates: string[] = [];
+      let startDate, endDate;
       
       if (viewMode === 'week') {
-        const startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
-        dates = Array.from({ length: 7 }, (_, i) => 
-          format(addDays(startDate, i), 'yyyy-MM-dd')
-        );
+        startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
+        endDate = addDays(startDate, 6);
       } else {
-        const start = startOfMonth(selectedDate);
-        const end = endOfMonth(selectedDate);
-        const daysInMonth = Array.from(
-          { length: end.getDate() },
-          (_, i) => format(addDays(start, i), 'yyyy-MM-dd')
-        );
-        dates = daysInMonth;
+        startDate = startOfMonth(selectedDate);
+        endDate = endOfMonth(selectedDate);
       }
 
       const query = supabase
         .from('meal_plans')
         .select('*, recipes(*)')
         .eq('profile_id', userId)
-        .in('date', dates);
+        .gte('date', format(startDate, 'yyyy-MM-dd'))
+        .lte('date', format(endDate, 'yyyy-MM-dd'));
 
-      if (selectedChildren.length === 1) {
-        query.eq('child_id', selectedChildren[0].id);
-      } else if (selectedChildren.length > 1) {
+      if (selectedChildren.length > 0) {
         query.in('child_id', selectedChildren.map(child => child.id));
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      const plannedRecipesByDate: { [key: string]: Recipe | null } = {};
-      dates.forEach(date => {
-        plannedRecipesByDate[date] = null;
-      });
-
+      const plannedRecipesByDate: { [key: string]: Recipe } = {};
+      
       data.forEach(plan => {
         if (plan.recipes) {
-          plannedRecipesByDate[plan.date] = plan.recipes as Recipe;
+          plannedRecipesByDate[plan.date] = parseRecipeData(plan.recipes);
         }
       });
 
@@ -71,9 +81,9 @@ export const usePlannedRecipes = (
     } catch (error) {
       console.error('Error fetching planned recipes:', error);
       toast({
-        variant: "destructive",
         title: "Erreur",
-        description: "Impossible de charger le planning.",
+        description: "Impossible de charger les recettes planifiées",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);

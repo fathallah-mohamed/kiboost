@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { BackToDashboard } from './BackToDashboard';
 import { RefreshCw, Plus, Trash2 } from 'lucide-react';
+import { Json } from '@/integrations/supabase/types';
 
 interface ShoppingListProps {
   userId: string;
@@ -144,25 +145,27 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
       });
 
       // Convert to shopping list items
-      const shoppingItems: ShoppingListItem[] = Object.entries(neededIngredients).map(([item, details]) => ({
-        item,
-        quantity: details.quantity,
-        unit: details.unit,
-        checked: false
-      }));
+      const shoppingItems: ShoppingListItem[] = Object.entries(neededIngredients)
+        .filter(([_, details]) => details.quantity > 0)
+        .map(([item, details]) => ({
+          item,
+          quantity: details.quantity,
+          unit: details.unit,
+          checked: false
+        }));
 
       // Update shopping list
       const { error: updateError } = await supabase
         .from('shopping_lists')
         .upsert({
           profile_id: userId,
-          items: JSON.stringify(shoppingItems)
+          items: shoppingItems as Json
         });
 
       if (updateError) throw updateError;
 
+      setItems(shoppingItems);
       toast.success("Liste de courses mise à jour avec succès");
-      fetchItems();
     } catch (error) {
       console.error('Error updating shopping list:', error);
       toast.error("Erreur lors de la mise à jour de la liste");
@@ -172,28 +175,26 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
   };
 
   const fetchItems = async () => {
-    const { data, error } = await supabase
-      .from('shopping_lists')
-      .select('*')
-      .eq('profile_id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('shopping_lists')
+        .select('*')
+        .eq('profile_id', userId)
+        .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching shopping list:', error);
-      return;
-    }
+      if (error) {
+        console.error('Error fetching shopping list:', error);
+        return;
+      }
 
-    if (data?.items) {
-      try {
-        const parsedItems = typeof data.items === 'string' 
-          ? JSON.parse(data.items) 
-          : data.items;
-        setItems(parsedItems);
-      } catch (e) {
-        console.error('Error parsing shopping list items:', e);
+      if (data?.items) {
+        const parsedItems = Array.isArray(data.items) ? data.items : [];
+        setItems(parsedItems as ShoppingListItem[]);
+      } else {
         setItems([]);
       }
-    } else {
+    } catch (e) {
+      console.error('Error parsing shopping list items:', e);
       setItems([]);
     }
   };
