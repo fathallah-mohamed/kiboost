@@ -4,6 +4,7 @@ import { useSession } from '@supabase/auth-helpers-react';
 import { BackToDashboard } from '../BackToDashboard';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Recipe, ChildProfile } from "../types";
 import { StepNavigation } from '../navigation/StepNavigation';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +17,7 @@ import { useEffect } from 'react';
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedChildren, setSelectedChildren] = useState([]);
+  const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const [displayCount, setDisplayCount] = useState(5);
   const [error, setError] = useState<string | null>(null);
   const session = useSession();
@@ -76,7 +77,7 @@ export const RecipeGeneratorPage = () => {
         cooking_steps: typeof recipe.cooking_steps === 'string'
           ? JSON.parse(recipe.cooking_steps)
           : recipe.cooking_steps || []
-      }));
+      })) as Recipe[];
     },
     enabled: !!session?.user?.id,
   });
@@ -115,7 +116,7 @@ export const RecipeGeneratorPage = () => {
     }
   };
 
-  const handleSaveRecipe = async (recipe) => {
+  const handleSaveRecipe = async (recipe: Recipe) => {
     try {
       setSaving(true);
       // Implement save recipe logic here
@@ -147,7 +148,7 @@ export const RecipeGeneratorPage = () => {
         />
 
         <ResultsSection
-          recipes={recipes}
+          recipes={recipes.slice(0, displayCount)}
           displayCount={displayCount}
           error={error}
           onSaveRecipe={handleSaveRecipe}

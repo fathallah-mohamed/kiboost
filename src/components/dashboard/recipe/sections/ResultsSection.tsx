@@ -24,7 +24,7 @@ export const ResultsSection = ({
   return (
     <>
       <RecipeList
-        recipes={recipes.slice(0, displayCount)}
+        recipes={recipes}
         error={error}
         plannedRecipes={{}}
         onSaveRecipe={onSaveRecipe}
