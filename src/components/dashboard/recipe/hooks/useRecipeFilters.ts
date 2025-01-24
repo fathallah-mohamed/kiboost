@@ -14,11 +14,11 @@ export const useRecipeFilters = () => {
     season: new Date().getMonth() + 1
   });
 
-  const getFilters = (): RecipeFilters => ({
+  const getFilters = (): RecipeFilters & { mealType: MealType | "all", difficulty: Difficulty | "all" } => ({
     ...advancedFilters,
-    mealType: mealType === "all" ? undefined : mealType,
+    mealType,
     maxPrepTime,
-    difficulty: difficulty === "all" ? undefined : difficulty,
+    difficulty,
   });
 
   return {
