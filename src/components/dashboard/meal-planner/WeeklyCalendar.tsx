@@ -3,11 +3,11 @@ import { Button } from '@/components/ui/button';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Recipe, ChildProfile } from '../types';
-import { RecipeCard } from '../recipe/recipe-card/RecipeCard';
-import { Trash2, Users } from 'lucide-react';
-import { RecipeHealthBenefits } from '../recipe/recipe-card/RecipeHealthBenefits';
+import { RecipeCard } from '../recipe/RecipeCard';
+import { Trash2, Users, User } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 
 interface WeeklyCalendarProps {
   selectedDate: Date;
@@ -56,6 +56,23 @@ export const WeeklyCalendar = ({
       .toUpperCase();
   };
 
+  const groupRecipesByDay = (date: string) => {
+    const recipeGroups: { [key: string]: string[] } = {};
+    
+    selectedChildren.forEach(child => {
+      const recipe = plannedRecipes[`${date}-${child.id}`];
+      if (recipe) {
+        const recipeId = recipe.id;
+        if (!recipeGroups[recipeId]) {
+          recipeGroups[recipeId] = [];
+        }
+        recipeGroups[recipeId].push(child.id);
+      }
+    });
+    
+    return recipeGroups;
+  };
+
   const days = getDaysToDisplay();
   const gridCols = viewMode === 'week' ? 'md:grid-cols-7' : 'md:grid-cols-7';
 
@@ -63,8 +80,8 @@ export const WeeklyCalendar = ({
     <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
       {days.map((day) => {
         const formattedDate = format(day, 'yyyy-MM-dd');
-        const recipe = plannedRecipes[formattedDate];
         const isCurrentMonth = isSameMonth(day, selectedDate);
+        const recipeGroups = groupRecipesByDay(formattedDate);
         
         return (
           <Card 
@@ -85,67 +102,66 @@ export const WeeklyCalendar = ({
               <div className="text-sm text-muted-foreground">
                 {format(day, 'd MMMM', { locale: fr })}
               </div>
-              
-              {selectedChildren.length > 0 && (
-                <div className="flex items-center justify-center gap-1 mt-2">
-                  {selectedChildren.length > 1 ? (
-                    <div className="flex items-center text-sm text-primary gap-1">
-                      <Users className="h-4 w-4" />
-                      <span>{selectedChildren.length} enfants</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6 bg-primary/10">
-                        <span className="text-xs font-medium">
-                          {getInitials(selectedChildren[0].name)}
-                        </span>
-                      </Avatar>
-                      <span className="text-sm text-primary">{selectedChildren[0].name}</span>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-            
-            {recipe && (
-              <div className="space-y-4">
-                <div className="relative">
-                  <RecipeCard recipe={recipe} compact />
-                  {!readOnly && onRemoveRecipe && selectedChildren.map(child => (
-                    <TooltipProvider key={child.id}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="absolute top-2 right-2 flex items-center gap-2 bg-white/90 p-1 rounded">
-                            <Avatar className="h-5 w-5 bg-primary/10">
-                              <span className="text-xs font-medium">
-                                {getInitials(child.name)}
-                              </span>
-                            </Avatar>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRemoveRecipe(formattedDate, child.id);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Retirer le repas pour {child.name}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                </div>
-                {recipe.health_benefits && (
-                  <RecipeHealthBenefits benefits={recipe.health_benefits} compact />
-                )}
-              </div>
-            )}
+
+            <div className="space-y-4">
+              {Object.entries(recipeGroups).map(([recipeId, childIds]) => {
+                const recipe = plannedRecipes[`${formattedDate}-${childIds[0]}`];
+                if (!recipe) return null;
+
+                return (
+                  <div key={recipeId} className="relative bg-background rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      {childIds.length === selectedChildren.length ? (
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-primary" />
+                          <span className="text-sm text-primary">Tous les enfants</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {childIds.map(childId => {
+                            const child = selectedChildren.find(c => c.id === childId);
+                            if (!child) return null;
+                            return (
+                              <TooltipProvider key={childId}>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Avatar className="h-6 w-6">
+                                      <span className="text-xs">{getInitials(child.name)}</span>
+                                    </Avatar>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{child.name}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {!readOnly && onRemoveRecipe && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 ml-auto text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            childIds.forEach(childId => {
+                              onRemoveRecipe(formattedDate, childId);
+                            });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <RecipeCard recipe={recipe} compact />
+                  </div>
+                );
+              })}
+            </div>
           </Card>
         );
       })}

@@ -1,7 +1,7 @@
 import { Recipe, ChildProfile } from '../types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Clock, Utensils, Users } from 'lucide-react';
+import { Clock, Utensils, Users, User } from 'lucide-react';
 import { useFavorites } from '../recipe/hooks/useFavorites';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
