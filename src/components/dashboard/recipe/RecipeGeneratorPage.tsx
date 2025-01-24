@@ -105,7 +105,10 @@ export const RecipeGeneratorPage = () => {
         throw new Error("Les informations de l'enfant sont incomplètes");
       }
 
-      await generateRecipes(selectedChild, filters.getFilters());
+      console.log("Generating recipes with filters:", filters.getFilters());
+      const generatedRecipes = await generateRecipes(selectedChild, filters.getFilters());
+      console.log("Generated recipes:", generatedRecipes);
+      
       await refetchRecipes();
       toast.success("Recettes générées avec succès !");
     } catch (error) {

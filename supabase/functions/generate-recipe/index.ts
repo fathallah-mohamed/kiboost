@@ -132,7 +132,7 @@ serve(async (req) => {
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 1.2, // Augmenté pour plus de créativité
+      temperature: 1.2,
       max_tokens: 2000,
     });
 
