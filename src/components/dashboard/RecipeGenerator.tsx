@@ -24,13 +24,13 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const { generateRecipes, loading, error } = useRecipeGeneration();
 
   const handleQuickPlan = () => {
-    console.log('Redirecting to recipes section...');
-    navigate('/dashboard/recipes');
+    console.log('Staying on recipes section...');
+    onSectionChange('recipes');
   };
 
   const handleGenerateRecipes = () => {
-    console.log('Redirecting to recipe generation...');
-    navigate('/dashboard/recipes');
+    console.log('Navigating to recipe generation page...');
+    navigate('/dashboard/generate');
   };
 
   return (

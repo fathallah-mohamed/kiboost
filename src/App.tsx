@@ -47,7 +47,7 @@ const AppRoutes = () => {
         <Route index element={<Navigate to="/dashboard/overview" />} />
         <Route path="overview" element={<Dashboard session={session} />} />
         <Route path="recipes" element={<RecipeGenerator onSectionChange={() => {}} />} />
-        <Route path="generate-recipes" element={<RecipeGeneratorPage />} />
+        <Route path="generate" element={<RecipeGeneratorPage />} />
         <Route path="planner" element={<MealPlanner userId={session?.user?.id || ''} onSectionChange={() => {}} />} />
         <Route path="shopping" element={<ShoppingList userId={session?.user?.id || ''} onSectionChange={() => {}} />} />
         <Route path="children" element={<ChildrenProfiles userId={session?.user?.id || ''} onSelectChild={() => {}} />} />
