@@ -53,7 +53,7 @@ export const useShoppingList = (userId: string) => {
         .from('shopping_lists')
         .upsert({ 
           profile_id: userId, 
-          items: updatedItems
+          items: updatedItems as unknown as Json
         });
 
       if (error) throw error;
@@ -77,7 +77,7 @@ export const useShoppingList = (userId: string) => {
         .from('shopping_lists')
         .upsert({ 
           profile_id: userId, 
-          items: updatedItems
+          items: updatedItems as unknown as Json
         });
 
       if (error) throw error;
@@ -103,7 +103,7 @@ export const useShoppingList = (userId: string) => {
         .from('shopping_lists')
         .upsert({ 
           profile_id: userId, 
-          items: updatedItems
+          items: updatedItems as unknown as Json
         });
 
       if (error) throw error;
