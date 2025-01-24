@@ -2,39 +2,12 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Configuration, OpenAIApi } from 'https://esm.sh/openai@3.2.1';
 
-interface ChildProfile {
-  id: string;
-  name: string;
-  birth_date: string;
-  allergies: string[];
-  preferences: string[];
-}
-
-interface RecipeFilters {
-  mealType?: string;
-  maxPrepTime?: number;
-  difficulty?: string;
-  dietaryPreferences?: string[];
-  excludedAllergens?: string[];
-  maxCost?: number;
-  healthBenefits?: string[];
-  season?: number;
-  includedIngredients?: string[];
-  excludedIngredients?: string[];
-}
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VALID_HEALTH_CATEGORIES = [
-  'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
-  'growth', 'mental', 'organs', 'beauty', 'physical',
-  'prevention', 'global'
-] as const;
-
-const generatePrompt = (child: ChildProfile, filters: RecipeFilters) => {
+const generatePrompt = (child: any, filters: any) => {
   const allergiesText = child.allergies?.length > 0 
     ? `Allergies à éviter : ${child.allergies.join(', ')}`
     : 'Aucune allergie connue';
@@ -43,110 +16,52 @@ const generatePrompt = (child: ChildProfile, filters: RecipeFilters) => {
     ? `Préférences alimentaires : ${child.preferences.join(', ')}`
     : 'Aucune préférence particulière';
 
-  const validCategoriesText = VALID_HEALTH_CATEGORIES.join(', ');
+  const validCategories = [
+    'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
+    'growth', 'mental', 'organs', 'beauty', 'physical',
+    'prevention', 'global'
+  ];
 
-  let additionalConstraints = [];
-  
+  let constraints = [];
   if (filters.mealType && filters.mealType !== 'all') {
-    additionalConstraints.push(`- Type de repas : ${filters.mealType}`);
+    constraints.push(`Type de repas : ${filters.mealType}`);
   }
-  
   if (filters.maxPrepTime) {
-    additionalConstraints.push(`- Temps de préparation maximum : ${filters.maxPrepTime} minutes`);
+    constraints.push(`Temps maximum : ${filters.maxPrepTime}min`);
   }
-  
   if (filters.difficulty && filters.difficulty !== 'all') {
-    additionalConstraints.push(`- Niveau de difficulté : ${filters.difficulty}`);
+    constraints.push(`Difficulté : ${filters.difficulty}`);
   }
-  
-  if (filters.maxCost) {
-    additionalConstraints.push(`- Coût maximum par portion : ${filters.maxCost}€`);
-  }
-
-  if (filters.includedIngredients?.length) {
-    additionalConstraints.push(`- Ingrédients à inclure : ${filters.includedIngredients.join(', ')}`);
-  }
-
-  if (filters.excludedIngredients?.length) {
-    additionalConstraints.push(`- Ingrédients à exclure : ${filters.excludedIngredients.join(', ')}`);
-  }
-
-  if (filters.season) {
-    const month = new Date(2024, filters.season - 1).toLocaleString('fr-FR', { month: 'long' });
-    additionalConstraints.push(`- Recette de saison pour : ${month}`);
-  }
-
-  if (filters.healthBenefits?.length) {
-    additionalConstraints.push(`- Bienfaits santé requis : ${filters.healthBenefits.join(', ')}`);
-  }
-
-  const constraintsText = additionalConstraints.length > 0 
-    ? `\nContraintes supplémentaires :\n${additionalConstraints.join('\n')}`
-    : '';
 
   const timeConstraint = filters.maxPrepTime && filters.maxPrepTime <= 15
-    ? `\nIMPORTANT: Les recettes DOIVENT être réalisables en ${filters.maxPrepTime} minutes maximum.
-       Suggestions de recettes rapides pour le petit-déjeuner:
-       - Smoothies et boissons
-       - Bowls de céréales ou muesli personnalisés
-       - Tartines et toasts avec différentes garnitures
-       - Yaourts et fromages blancs avec toppings
-       - Fruits frais préparés
-       - Pancakes express (version micro-ondes ou poêle)
-       - Overnight oats (préparation la veille)
-       - Wraps et sandwichs express`
+    ? `\nRecettes rapides suggérées : smoothies, bowls de céréales, tartines garnies, yaourts avec toppings, fruits préparés, pancakes express, overnight oats, wraps express`
     : '';
 
-  return `Génère 3 recettes pour enfants adaptées au profil suivant :
-
-Profil de l'enfant :
-- Nom : ${child.name}
-- Date de naissance : ${child.birth_date}
-- ${allergiesText}
-- ${preferencesText}
-${constraintsText}
+  return `Génère 3 recettes rapides pour enfant:
+Age: ${child.birth_date}
+${allergiesText}
+${preferencesText}
+${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
 ${timeConstraint}
 
-IMPORTANT : 
-- Chaque recette DOIT avoir EXACTEMENT 3 bienfaits santé différents
-- Les catégories de bienfaits santé DOIVENT être UNIQUEMENT parmi : ${validCategoriesText}
-- NE PAS inventer d'autres catégories
-- Respecter STRICTEMENT toutes les contraintes données
-- Pour les recettes rapides, privilégier des ingrédients prêts à l'emploi et des étapes simples
-- Inclure des astuces pour gagner du temps dans la préparation
-- Les temps de préparation doivent être RÉALISTES et tenir compte du temps total (préparation + cuisson)
+IMPORTANT:
+- 3 bienfaits santé par recette parmi: ${validCategories.join(', ')}
+- Temps réaliste incluant préparation + cuisson
+- Ingrédients simples et prêts à l'emploi
+- Étapes courtes et efficaces
 
-Réponds UNIQUEMENT avec un tableau JSON contenant exactement 3 recettes au format suivant :
-[
-  {
-    "name": "Nom de la recette",
-    "ingredients": [
-      {
-        "item": "Nom de l'ingrédient",
-        "quantity": "Quantité",
-        "unit": "Unité"
-      }
-    ],
-    "instructions": ["Étape 1", "Étape 2"],
-    "nutritional_info": {
-      "calories": 0,
-      "protein": 0,
-      "carbs": 0,
-      "fat": 0
-    },
-    "meal_type": "breakfast|lunch|dinner|snack",
-    "preparation_time": 30,
-    "difficulty": "easy|medium|hard",
-    "servings": 4,
-    "health_benefits": [
-      {
-        "icon": "brain|heart|etc",
-        "category": "cognitive|energy|immunity|etc",
-        "description": "Description du bénéfice"
-      }
-    ]
-  }
-]`;
+Format JSON uniquement:
+[{
+  "name": "Nom",
+  "ingredients": [{"item": "Ingrédient", "quantity": "Qté", "unit": "Unité"}],
+  "instructions": ["Étape 1", "Étape 2"],
+  "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
+  "meal_type": "breakfast|lunch|dinner|snack",
+  "preparation_time": 30,
+  "difficulty": "easy|medium|hard",
+  "servings": 4,
+  "health_benefits": [{"icon": "...", "category": "...", "description": "..."}]
+}]`;
 };
 
 serve(async (req) => {
@@ -156,98 +71,51 @@ serve(async (req) => {
 
   try {
     const { child, filters } = await req.json();
-    console.log('Received child profile:', child);
-    console.log('Received filters:', filters);
-
-    if (!child || !child.name || !child.birth_date) {
-      throw new Error('Profil enfant invalide ou manquant');
-    }
+    console.log('Generating recipes for:', { child, filters });
 
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAiKey) {
-      throw new Error('Clé API OpenAI manquante');
-    }
+    if (!openAiKey) throw new Error('OpenAI API key missing');
 
     const configuration = new Configuration({ apiKey: openAiKey });
     const openai = new OpenAIApi(configuration);
 
     const prompt = generatePrompt(child, filters);
-    console.log('Generated prompt:', prompt);
+    console.log('Using prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4',
+      model: 'gpt-4o-mini',  // Using the faster model
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants. Tu dois UNIQUEMENT répondre avec un tableau JSON valide contenant exactement 3 recettes. Chaque recette DOIT avoir EXACTEMENT 3 bienfaits santé différents. Ne réponds JAMAIS avec du texte avant ou après le JSON.' 
+          content: 'Tu es un chef spécialisé en recettes rapides pour enfants. Réponds uniquement en JSON.' 
         },
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 1000, // Reduced token count for faster response
     });
 
     const content = completion.data.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('Réponse OpenAI invalide - contenu manquant');
-    }
+    if (!content) throw new Error('Réponse OpenAI invalide');
 
-    console.log('Raw OpenAI response:', content);
-
-    let recipes;
-    try {
-      const cleanContent = content
-        .replace(/```json\n?|\n?```/g, '')
-        .replace(/^[\s\n]*\[/, '[')
-        .replace(/\][\s\n]*$/, ']')
-        .trim();
-
-      console.log('Cleaned content:', cleanContent);
-      
-      recipes = JSON.parse(cleanContent);
-      
-      if (!Array.isArray(recipes)) {
-        throw new Error('La réponse n\'est pas un tableau');
-      }
-      
-      if (recipes.length !== 3) {
-        throw new Error('Le nombre de recettes est incorrect');
-      }
-
-      recipes.forEach((recipe, index) => {
-        if (!recipe.name || !recipe.ingredients || !recipe.instructions) {
-          throw new Error(`Format de recette invalide à l'index ${index}`);
-        }
-      });
-
-      console.log('Successfully parsed and validated recipes:', recipes);
-    } catch (error) {
-      console.error('Error parsing or validating OpenAI response:', error);
-      throw new Error(`Erreur lors du parsing ou de la validation de la réponse OpenAI: ${error.message}`);
+    const recipes = JSON.parse(content.replace(/```json\n?|\n?```/g, '').trim());
+    
+    if (!Array.isArray(recipes) || recipes.length !== 3) {
+      throw new Error('Format de recettes invalide');
     }
 
     return new Response(
       JSON.stringify({ recipes }),
-      {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      },
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
 
   } catch (error) {
-    console.error('Error in generate-recipe function:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : 'Une erreur inconnue est survenue',
-      }),
-      {
+      JSON.stringify({ error: error.message }),
+      { 
         status: 500,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     );
   }
