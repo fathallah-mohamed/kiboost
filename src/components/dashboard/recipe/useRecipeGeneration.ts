@@ -67,7 +67,10 @@ export const useRecipeGeneration = () => {
             profile_id: userId,
             name: recipe.name,
             ingredients: recipe.ingredients,
-            instructions: recipe.instructions,
+            // Convert instructions array to string with numbered steps
+            instructions: recipe.instructions.map((instruction, index) => 
+              `${index + 1}. ${instruction}`
+            ).join('\n'),
             nutritional_info: recipe.nutritional_info,
             meal_type: recipe.meal_type,
             preparation_time: recipe.preparation_time,
@@ -95,10 +98,14 @@ export const useRecipeGeneration = () => {
             throw saveError;
           }
 
+          // Transform the saved recipe back to the expected Recipe type
           return {
             ...savedRecipe,
+            // Convert the instructions string back to array by splitting on newlines and removing the numbers
+            instructions: savedRecipe.instructions.split('\n').map(instruction => 
+              instruction.replace(/^\d+\.\s/, '')
+            ),
             ingredients: recipe.ingredients,
-            instructions: recipe.instructions,
             nutritional_info: recipe.nutritional_info,
             health_benefits: recipe.health_benefits || [],
             cooking_steps: []
