@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
-import { RecipeFilters, SpecialOccasion } from "../../types";
+import { RecipeFilters } from "../../types";
 import { HealthBenefitsFilter } from "./HealthBenefitsFilter";
 import { BudgetFilter } from "./BudgetFilter";
 import { SeasonalityFilter } from "./SeasonalityFilter";
@@ -12,6 +12,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface FilterContentProps {
   filters: RecipeFilters;
@@ -19,6 +21,8 @@ interface FilterContentProps {
 }
 
 export const FilterContent = ({ filters, onFiltersChange }: FilterContentProps) => {
+  const isMobile = useIsMobile();
+  
   const handleFilterChange = (key: keyof RecipeFilters, value: any) => {
     onFiltersChange({
       ...filters,
@@ -26,7 +30,7 @@ export const FilterContent = ({ filters, onFiltersChange }: FilterContentProps) 
     });
   };
 
-  return (
+  const content = (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
         <Filter className="w-5 h-5 text-primary" />
@@ -75,27 +79,27 @@ export const FilterContent = ({ filters, onFiltersChange }: FilterContentProps) 
             />
           </AccordionContent>
         </AccordionItem>
-
-        <AccordionItem value="occasions">
-          <AccordionTrigger>Occasions spéciales</AccordionTrigger>
-          <AccordionContent>
-            <SpecialOccasionsFilter
-              selectedOccasion={filters.specialOccasion}
-              onOccasionChange={(occasion) => handleFilterChange('specialOccasion', occasion)}
-            />
-          </AccordionContent>
-        </AccordionItem>
       </Accordion>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-4">
         <Button
           variant="outline"
           onClick={() => onFiltersChange({})}
-          className="mr-2"
+          className="w-full md:w-auto"
         >
           Réinitialiser les filtres
         </Button>
       </div>
     </div>
   );
+
+  if (isMobile) {
+    return (
+      <ScrollArea className="h-[calc(100vh-10rem)]">
+        {content}
+      </ScrollArea>
+    );
+  }
+
+  return content;
 };

@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { MealType, Difficulty, RecipeFilters } from "../../types";
 
 export const useRecipeFilters = () => {
-  const [mealType, setMealType] = useState<MealType | "all">("all");
-  const [maxPrepTime, setMaxPrepTime] = useState(60);
-  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
+  const [mealType, setMealType] = useState<MealType | "all">("breakfast");
+  const [maxPrepTime, setMaxPrepTime] = useState(15);
+  const [difficulty, setDifficulty] = useState<Difficulty | "all">("easy");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({
     dietaryPreferences: [],
     excludedAllergens: [],
     maxCost: 15,
     healthBenefits: [],
-    season: 1
+    season: new Date().getMonth() + 1
   });
 
   const getFilters = (): RecipeFilters => ({

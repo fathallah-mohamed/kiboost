@@ -1,8 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Clock, ChevronUp, ChevronDown } from "lucide-react";
+import { Clock, Utensils, ChevronUp, ChevronDown } from "lucide-react";
 import { MealType, Difficulty } from "../types";
 import { useState } from "react";
 
@@ -16,12 +15,12 @@ interface RecipeFiltersProps {
 }
 
 const timeOptions = [
-  { value: 15, label: "15 minutes" },
-  { value: 30, label: "30 minutes" },
-  { value: 45, label: "45 minutes" },
-  { value: 60, label: "1 heure" },
-  { value: 90, label: "1h30" },
-  { value: 120, label: "2 heures" },
+  { value: 15, label: "<15 minutes" },
+  { value: 30, label: "15-30 minutes" },
+  { value: 45, label: "30-45 minutes" },
+  { value: 60, label: "45-60 minutes" },
+  { value: 90, label: "1h-1h30" },
+  { value: 120, label: ">1h30" },
 ];
 
 export const RecipeFilters = ({
@@ -42,11 +41,8 @@ export const RecipeFilters = ({
           value={mealType} 
           onValueChange={(value: MealType | "all") => setMealType(value)}
           className="grid grid-cols-2 gap-2"
+          defaultValue="breakfast"
         >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="all" id="all" />
-            <Label htmlFor="all">Tous</Label>
-          </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="breakfast" id="breakfast" />
             <Label htmlFor="breakfast">Petit-déjeuner</Label>
@@ -68,41 +64,18 @@ export const RecipeFilters = ({
 
       <div className="space-y-2">
         <Label>Temps de préparation</Label>
-        <div className="relative">
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            onClick={() => setShowTimeOptions(!showTimeOptions)}
-          >
-            <span className="flex items-center">
-              <Clock className="w-4 h-4 mr-2" />
-              {maxPrepTime} minutes
-            </span>
-            {showTimeOptions ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-          </Button>
-          {showTimeOptions && (
-            <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg">
-              <div className="p-2 grid grid-cols-2 gap-1">
-                {timeOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => {
-                      setMaxPrepTime(option.value);
-                      setShowTimeOptions(false);
-                    }}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="grid grid-cols-2 gap-2">
+          {timeOptions.map((option) => (
+            <Button
+              key={option.value}
+              variant={maxPrepTime === option.value ? "default" : "outline"}
+              onClick={() => setMaxPrepTime(option.value)}
+              className="w-full justify-start gap-2"
+            >
+              <Clock className="w-4 h-4" />
+              {option.label}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -112,11 +85,8 @@ export const RecipeFilters = ({
           value={difficulty} 
           onValueChange={(value: Difficulty | "all") => setDifficulty(value)}
           className="grid grid-cols-2 gap-2"
+          defaultValue="easy"
         >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="all" id="diff-all" />
-            <Label htmlFor="diff-all">Toutes</Label>
-          </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="easy" id="easy" />
             <Label htmlFor="easy">Facile</Label>
