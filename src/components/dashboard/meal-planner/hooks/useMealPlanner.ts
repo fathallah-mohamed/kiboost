@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useRecipes } from './hooks/useRecipes';
-import { usePlannedRecipes } from './hooks/usePlannedRecipes';
-import { useRecipePlanning } from './hooks/useRecipePlanning';
+import { useRecipes } from '../hooks/useRecipes';
+import { usePlannedRecipes } from '../hooks/usePlannedRecipes';
+import { useRecipePlanning } from '../hooks/useRecipePlanning';
 import { Recipe, ChildProfile } from '../../types';
 import { format } from 'date-fns';
 
