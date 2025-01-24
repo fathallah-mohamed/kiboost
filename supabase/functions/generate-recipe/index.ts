@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const generatePrompt = (child: any, filters: any) => {
+const generatePrompt = (child: any, filters: any, generatedRecipes: any[] = []) => {
   const allergiesText = child.allergies?.length > 0 
     ? `Allergies à éviter : ${child.allergies.join(', ')}`
     : 'Aucune allergie connue';
@@ -33,23 +33,8 @@ const generatePrompt = (child: any, filters: any) => {
     constraints.push(`Difficulté : ${filters.difficulty}`);
   }
 
-  const mealSuggestions = filters.mealType === 'breakfast' && filters.maxPrepTime <= 15
-    ? `\nSuggestions de petit-déjeuner rapide (choisis-en 3 différentes):
-    - Porridge express aux fruits
-    - Pancakes à la banane
-    - Overnight oats
-    - Smoothie bowl
-    - Toast à l'avocat
-    - Yaourt parfait aux fruits
-    - Wrap petit-déjeuner
-    - Muffin anglais garni
-    - Bol de quinoa sucré
-    - Crêpes express
-    - Sandwich petit-déjeuner
-    - Chia pudding
-    - Granola maison express
-    - Gaufres express
-    - Bowl de fromage blanc aux fruits`
+  const excludeRecipes = generatedRecipes.length
+    ? `Exclure toute recette ayant des ingrédients, étapes ou noms similaires à : ${generatedRecipes.map(r => r.name).join(', ')}`
     : '';
 
   return `Génère 3 recettes DIFFÉRENTES et CRÉATIVES pour enfant:
@@ -57,14 +42,15 @@ Age: ${child.birth_date}
 ${allergiesText}
 ${preferencesText}
 ${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
-${mealSuggestions}
+${excludeRecipes}
 
 IMPORTANT:
-- 3 bienfaits santé par recette parmi: ${validCategories.join(', ')}
-- Temps réaliste incluant préparation + cuisson
-- Ingrédients simples et prêts à l'emploi
-- Étapes courtes et efficaces
-- CHAQUE recette doit être DIFFÉRENTE des autres
+- 3 bienfaits santé PARFAITEMENT distincts parmi: ${validCategories.join(', ')} dans CHAQUE recette.
+- Varies les ingrédients et évite la répétition (ex. : différents légumes ou sources de protéines entre recettes).
+- Temps réaliste incluant préparation + cuisson.
+- Utilise des ingrédients courants et accessibles.
+- Étapes claires et concises, mais VARIÉES dans leur style d'écriture.
+- CHAQUE recette doit être UNIQUE (pas de noms, ingrédients, ou structures similaires).
 
 FORMAT JSON REQUIS (respecte EXACTEMENT ce format):
 {
