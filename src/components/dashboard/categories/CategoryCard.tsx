@@ -8,10 +8,10 @@ import {
   GraduationCap, MapPin, Heart, Plane,
   LucideIcon 
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface CategoryCardProps {
   category: Category;
-  onSectionChange?: (section: string) => void;
 }
 
 const iconMap: Record<string, LucideIcon> = {
@@ -25,15 +25,17 @@ const iconMap: Record<string, LucideIcon> = {
   Plane
 };
 
-export const CategoryCard = ({ category, onSectionChange }: CategoryCardProps) => {
+export const CategoryCard = ({ category }: CategoryCardProps) => {
   const Icon = iconMap[category.icon as keyof typeof iconMap];
+  const navigate = useNavigate();
 
   const handleClick = () => {
     if (category.isActive) {
       if (category.id === 'recipes') {
-        onSectionChange?.('recipes');
+        navigate('/dashboard/generate-recipes');
       } else if (category.route) {
-        // Handle other routes when implemented
+        navigate(`/dashboard/${category.route}`);
+      } else {
         toast.info(category.comingSoonMessage || "Cette fonctionnalité sera bientôt disponible !");
       }
     } else {
