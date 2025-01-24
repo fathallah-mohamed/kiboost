@@ -15,6 +15,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const VALID_HEALTH_CATEGORIES = [
+  'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
+  'growth', 'mental', 'organs', 'beauty', 'physical',
+  'prevention', 'global'
+] as const;
+
+type ValidHealthCategory = typeof VALID_HEALTH_CATEGORIES[number];
+
 const generatePrompt = (child: ChildProfile) => {
   const allergiesText = child.allergies?.length > 0 
     ? `Allergies à éviter : ${child.allergies.join(', ')}`
@@ -24,6 +32,8 @@ const generatePrompt = (child: ChildProfile) => {
     ? `Préférences alimentaires : ${child.preferences.join(', ')}`
     : 'Aucune préférence particulière';
 
+  const validCategoriesText = VALID_HEALTH_CATEGORIES.join(', ');
+
   return `Génère 3 recettes pour enfants adaptées au profil suivant :
 
 Profil de l'enfant :
@@ -32,7 +42,10 @@ Profil de l'enfant :
 - ${allergiesText}
 - ${preferencesText}
 
-IMPORTANT : Chaque recette DOIT avoir EXACTEMENT 3 bienfaits santé différents.
+IMPORTANT : 
+- Chaque recette DOIT avoir EXACTEMENT 3 bienfaits santé différents
+- Les catégories de bienfaits santé DOIVENT être UNIQUEMENT parmi : ${validCategoriesText}
+- NE PAS inventer d'autres catégories
 
 Réponds UNIQUEMENT avec un tableau JSON contenant exactement 3 recettes au format suivant :
 [
@@ -61,20 +74,27 @@ Réponds UNIQUEMENT avec un tableau JSON contenant exactement 3 recettes au form
         "icon": "brain|heart|etc",
         "category": "cognitive|energy|immunity|etc",
         "description": "Description du bénéfice"
-      },
-      {
-        "icon": "brain|heart|etc",
-        "category": "cognitive|energy|immunity|etc",
-        "description": "Description du bénéfice"
-      },
-      {
-        "icon": "brain|heart|etc",
-        "category": "cognitive|energy|immunity|etc",
-        "description": "Description du bénéfice"
       }
     ]
   }
 ]`;
+};
+
+const validateHealthBenefits = (recipe: any) => {
+  if (!Array.isArray(recipe.health_benefits) || recipe.health_benefits.length !== 3) {
+    throw new Error(`La recette "${recipe.name}" doit avoir exactement 3 bienfaits santé`);
+  }
+
+  recipe.health_benefits.forEach((benefit: any, index: number) => {
+    if (!benefit.category || !VALID_HEALTH_CATEGORIES.includes(benefit.category)) {
+      throw new Error(
+        `Catégorie invalide "${benefit.category}" pour le bienfait santé ${index + 1} de la recette "${recipe.name}". ` +
+        `Les catégories valides sont : ${VALID_HEALTH_CATEGORIES.join(', ')}`
+      );
+    }
+  });
+
+  return true;
 };
 
 serve(async (req) => {
@@ -102,7 +122,7 @@ serve(async (req) => {
     console.log('Generated prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o',
+      model: 'gpt-4',
       messages: [
         { 
           role: 'system', 
@@ -145,24 +165,21 @@ serve(async (req) => {
         throw new Error('Le nombre de recettes est incorrect');
       }
 
-      // Validate recipe format and health benefits count
+      // Validate recipe format and health benefits
       recipes.forEach((recipe, index) => {
         if (!recipe.name || !recipe.ingredients || !recipe.instructions) {
           console.error(`Invalid recipe format at index ${index}:`, recipe);
           throw new Error(`Format de recette invalide à l'index ${index}`);
         }
 
-        if (!Array.isArray(recipe.health_benefits) || recipe.health_benefits.length !== 3) {
-          console.error(`Recipe at index ${index} does not have exactly 3 health benefits:`, recipe);
-          throw new Error(`La recette à l'index ${index} doit avoir exactement 3 bienfaits santé`);
-        }
+        validateHealthBenefits(recipe);
       });
 
-      console.log('Successfully parsed recipes:', recipes);
+      console.log('Successfully parsed and validated recipes:', recipes);
     } catch (error) {
-      console.error('Error parsing OpenAI response:', error);
+      console.error('Error parsing or validating OpenAI response:', error);
       console.error('Content that failed to parse:', content);
-      throw new Error(`Erreur lors du parsing de la réponse OpenAI: ${error.message}`);
+      throw new Error(`Erreur lors du parsing ou de la validation de la réponse OpenAI: ${error.message}`);
     }
 
     return new Response(
