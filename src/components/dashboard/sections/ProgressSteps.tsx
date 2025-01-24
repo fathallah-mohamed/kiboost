@@ -2,16 +2,17 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { 
-  CheckCircle, 
-  Circle,
-  User,
+import {
   ChefHat,
   Calendar,
   ShoppingCart,
   Check,
+  User,
   ArrowRight,
   Lock,
+  CheckCircle,
+  Circle,
+  AlertTriangle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -33,7 +34,7 @@ interface Step {
   route: string;
   description: string;
   feedback: string;
-  requiresPrevious?: boolean;
+  warning?: string;
 }
 
 export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
@@ -60,6 +61,14 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
         .eq('profile_id', session.session.user.id);
       setHasChildren(children && children.length > 0);
 
+      // Check for generated recipes
+      const { data: recipes } = await supabase
+        .from('recipes')
+        .select('id')
+        .eq('profile_id', session.session.user.id)
+        .eq('is_generated', true);
+      setHasRecipes(recipes && recipes.length > 0);
+
       // Check for meal plans
       const { data: mealPlans } = await supabase
         .from('meal_plans')
@@ -76,10 +85,12 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
 
       // Update current step based on progress
       if (hasChildren) setCurrentStep(prev => Math.max(prev, 2));
-      if (hasMealPlans) setCurrentStep(prev => Math.max(prev, 3));
-      if (hasShoppingList) setCurrentStep(prev => Math.max(prev, 4));
+      if (hasRecipes) setCurrentStep(prev => Math.max(prev, 3));
+      if (hasMealPlans) setCurrentStep(prev => Math.max(prev, 4));
+      if (hasShoppingList) setCurrentStep(prev => Math.max(prev, 5));
     } catch (error) {
       console.error('Error checking completed steps:', error);
+      toast.error("Erreur lors de la vérification des étapes");
     }
   };
   
@@ -111,7 +122,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       label: "Générer des recettes",
       icon: ChefHat,
       status: getStepStatus(2),
-      action: "Générer maintenant",
+      action: hasRecipes ? "Voir les recettes" : "Générer maintenant",
       route: "recipes",
       description: "Créez des recettes adaptées à vos enfants",
       feedback: "Recettes générées avec succès !",
@@ -124,8 +135,8 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       action: "Commencer à planifier",
       route: "planner",
       description: "Organisez les repas de la semaine",
-      feedback: "Planning de la semaine complété !",
-      requiresPrevious: true,
+      feedback: "Planning des repas créé !",
+      warning: "Générez d'abord des recettes",
     },
     {
       id: "shopping",
@@ -136,7 +147,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       route: "shopping",
       description: "Préparez votre liste de courses",
       feedback: "Liste de courses générée !",
-      requiresPrevious: true,
+      warning: "Planifiez d'abord vos repas",
     },
     {
       id: "validate",
@@ -146,9 +157,9 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       action: "Finaliser",
       route: "view-planner",
       description: "Finalisez votre planning hebdomadaire",
-      feedback: "Planning validé, bonne semaine !",
-      requiresPrevious: true,
-    }
+      feedback: "Planning validé !",
+      warning: "Complétez d'abord les étapes précédentes",
+    },
   ];
 
   const getProgress = () => {
