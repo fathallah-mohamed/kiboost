@@ -21,28 +21,14 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const session = useSession();
   const { generateRecipes, loading, error } = useRecipeGeneration();
 
-  const handleQuickPlan = async () => {
+  const handleQuickPlan = () => {
     if (!session?.user) {
-      toast.error("Vous devez être connecté pour générer des recettes");
+      toast.error("Vous devez être connecté pour accéder à la génération de recettes");
       return;
     }
-
-    try {
-      console.log('Starting quick plan generation...');
-      await generateRecipes({
-        id: "default",
-        name: "Enfant par défaut",
-        birth_date: new Date().toISOString(),
-        allergies: [],
-        preferences: []
-      });
-
-      toast.success("Vos recettes ont été générées avec succès !");
-      onSectionChange('planner');
-    } catch (err) {
-      console.error('Error in handleQuickPlan:', err);
-      toast.error("Une erreur est survenue lors de la génération des recettes");
-    }
+    
+    console.log('Redirecting to recipes section...');
+    onSectionChange('recipes');
   };
 
   return (
@@ -61,15 +47,11 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
           </div>
           <Button 
             onClick={handleQuickPlan}
-            disabled={loading || !session?.user}
+            disabled={!session?.user}
             className="whitespace-nowrap group hover:scale-105 transition-all duration-300"
           >
-            {loading ? (
-              <Circle className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
-            )}
-            Planning express
+            <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
+            Générer des recettes
           </Button>
         </div>
       </Card>
