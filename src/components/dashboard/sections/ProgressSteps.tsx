@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -16,8 +16,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ProgressStepsProps {
   onSectionChange: (section: string) => void;
@@ -121,11 +119,9 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
             {index < steps.length - 1 && (
               <div className="absolute left-[1.4rem] top-[3rem] bottom-[-1rem] w-0.5 bg-gray-200" />
             )}
-            <div className={cn(
-              "flex items-center justify-between p-4 rounded-lg border animate-fade-in hover:shadow-md transition-all",
-              index < currentStep ? "bg-green-50" : "bg-white",
-              index === currentStep ? "bg-blue-50" : ""
-            )}>
+            <div className={`flex items-center justify-between p-4 rounded-lg border animate-fade-in hover:shadow-md transition-all ${
+              index < currentStep ? "bg-green-50" : "bg-white"
+            } ${index === currentStep ? "bg-blue-50" : ""}`}>
               <div className="flex items-center gap-4">
                 <step.icon className="w-6 h-6" />
                 <div>

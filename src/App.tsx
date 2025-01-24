@@ -12,6 +12,10 @@ import { useSession } from "@supabase/auth-helpers-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { RecipeGenerator } from "./components/dashboard/RecipeGenerator";
+import { MealPlanner } from "./components/dashboard/MealPlanner";
+import { ShoppingList } from "./components/dashboard/ShoppingList";
+import { ChildrenProfiles } from "./components/dashboard/ChildrenProfiles";
+import { FavoriteRecipes } from "./components/dashboard/favorites/FavoriteRecipes";
 
 const queryClient = new QueryClient();
 
@@ -38,8 +42,14 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/login" element={session ? <Navigate to="/dashboard" /> : <Auth />} />
       <Route path="/signup" element={session ? <Navigate to="/dashboard" /> : <Auth />} />
-      <Route path="/dashboard/*" element={session ? <Dashboard session={session} /> : <Navigate to="/login" />}>
+      <Route path="/dashboard" element={session ? <Dashboard session={session} /> : <Navigate to="/login" />}>
+        <Route index element={<Navigate to="/dashboard/overview" />} />
+        <Route path="overview" element={<Dashboard session={session} />} />
         <Route path="recipes" element={<RecipeGenerator onSectionChange={() => {}} />} />
+        <Route path="planner" element={<MealPlanner userId={session?.user?.id || ''} onSectionChange={() => {}} />} />
+        <Route path="shopping" element={<ShoppingList userId={session?.user?.id || ''} onSectionChange={() => {}} />} />
+        <Route path="children" element={<ChildrenProfiles userId={session?.user?.id || ''} onSelectChild={() => {}} />} />
+        <Route path="favorites" element={<FavoriteRecipes onSectionChange={() => {}} />} />
       </Route>
     </Routes>
   );
