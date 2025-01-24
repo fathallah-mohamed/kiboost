@@ -34,6 +34,15 @@ const generatePrompt = (child: any, filters: any) => {
   if (filters.difficulty && filters.difficulty !== 'all') {
     constraints.push(`Difficulté : ${filters.difficulty}`);
   }
+  if (filters.maxCost) {
+    constraints.push(`Coût maximum par portion : ${filters.maxCost}€`);
+  }
+  if (filters.healthBenefits?.length > 0) {
+    constraints.push(`Bienfaits santé souhaités : ${filters.healthBenefits.join(', ')}`);
+  }
+  if (filters.season) {
+    constraints.push(`Saison : ${filters.season}`);
+  }
 
   return `Retourne UNIQUEMENT un objet JSON valide (sans formatage markdown) contenant 3 recettes UNIQUES et TRÈS DIFFÉRENTES les unes des autres pour petit-déjeuner:
 Age: ${child.birth_date}

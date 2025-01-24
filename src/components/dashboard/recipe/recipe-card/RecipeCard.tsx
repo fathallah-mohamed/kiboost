@@ -8,18 +8,20 @@ import {
 } from "lucide-react";
 import { RecipeRating } from "../RecipeRating";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RecipeHealthBenefits } from "./RecipeHealthBenefits";
+import { cn } from "@/lib/utils";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
+  isNew?: boolean;
   onAdd?: (recipe: Recipe) => void;
   compact?: boolean;
 }
 
-export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, isNew, onAdd, compact }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const { toast } = useToast();
@@ -39,8 +41,16 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
 
   if (compact) {
     return (
-      <div className="p-4 border rounded-lg">
+      <div className={cn(
+        "p-4 border rounded-lg transition-all duration-500",
+        isNew && "bg-gradient-to-r from-purple-50 to-blue-50 border-primary shadow-lg"
+      )}>
         <h4 className="font-medium">{recipe.name}</h4>
+        {isNew && (
+          <span className="inline-block px-2 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full mb-2">
+            Nouvelle recette
+          </span>
+        )}
         <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
           <span className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
@@ -61,11 +71,21 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={cn(
+      "overflow-hidden transition-all duration-500",
+      isNew && "bg-gradient-to-r from-purple-50 to-blue-50 border-primary shadow-lg"
+    )}>
       <div className="p-6">
         <div className="space-y-4">
           <div className="flex justify-between items-start">
-            <h3 className="text-2xl font-bold text-primary">{recipe.name}</h3>
+            <div>
+              <h3 className="text-2xl font-bold text-primary">{recipe.name}</h3>
+              {isNew && (
+                <span className="inline-block px-2 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full mt-1">
+                  Nouvelle recette
+                </span>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={() => setIsFavorite(!isFavorite)}>
                 <Heart className="w-4 h-4" fill={isFavorite ? "currentColor" : "none"} />
