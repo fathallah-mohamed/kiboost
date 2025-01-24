@@ -28,7 +28,7 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
 
   const handleGenerateRecipes = () => {
     console.log('Redirecting to recipe generation...');
-    onSectionChange('recipes');
+    onSectionChange('planner');
   };
 
   return (
