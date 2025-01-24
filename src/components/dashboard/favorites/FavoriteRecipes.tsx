@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Recipe, MealType, Difficulty } from '../types';
+import { Recipe } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import { RecipeCard } from '../recipe/RecipeCard';
 import { useToast } from '@/hooks/use-toast';
@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { useFavorites } from '../recipe/hooks/useFavorites';
 
 interface FavoriteRecipesProps {
-  onSectionChange: (section: string) => void;
+  onSectionChange?: (section: string) => void;
 }
 
 export const FavoriteRecipes = ({ onSectionChange }: FavoriteRecipesProps) => {

@@ -3,39 +3,12 @@ import { Recipe, ChildProfile } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface RecipeResponse {
-  name: string;
-  ingredients: Array<{
-    item: string;
-    quantity: string;
-    unit: string;
-  }>;
-  instructions: string[];
-  nutritional_info: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  meal_type: string;
-  preparation_time: number;
-  difficulty: string;
-  servings: number;
-  health_benefits?: Array<{
-    icon: string;
-    category: string;
-    description: string;
-  }>;
-}
-
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const generateRecipes = async (child: ChildProfile) => {
+  const generateRecipes = async (child: ChildProfile): Promise<Recipe[] | null> => {
     try {
       setLoading(true);
-      setError(null);
       
       const { data: generatedRecipes, error: functionError } = await supabase.functions.invoke('generate-recipe', {
         body: { childProfiles: [child] }
@@ -57,15 +30,13 @@ export const useRecipeGeneration = () => {
         throw new Error('Utilisateur non connecté');
       }
 
-      const savedRecipes = await Promise.all(
-        generatedRecipes.map(async (recipe: RecipeResponse) => {
+      const recipes = await Promise.all(
+        generatedRecipes.map(async (recipe: any) => {
           const recipeData = {
             profile_id: userId,
             name: recipe.name,
             ingredients: recipe.ingredients,
-            instructions: recipe.instructions.map((instruction, index) => 
-              `${index + 1}. ${instruction}`
-            ).join('\n'),
+            instructions: recipe.instructions,
             nutritional_info: recipe.nutritional_info,
             meal_type: recipe.meal_type,
             preparation_time: recipe.preparation_time,
@@ -73,13 +44,13 @@ export const useRecipeGeneration = () => {
             servings: recipe.servings,
             is_generated: true,
             health_benefits: recipe.health_benefits || [],
-            cooking_steps: [],
-            min_age: 0,
-            max_age: 18,
-            dietary_preferences: [],
-            allergens: [],
-            cost_estimate: 0,
-            seasonal_months: [1,2,3,4,5,6,7,8,9,10,11,12]
+            cooking_steps: recipe.cooking_steps || [],
+            min_age: recipe.min_age || 0,
+            max_age: recipe.max_age || 18,
+            dietary_preferences: recipe.dietary_preferences || [],
+            allergens: recipe.allergens || [],
+            cost_estimate: recipe.cost_estimate || 0,
+            seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12]
           };
 
           const { data: savedRecipe, error: saveError } = await supabase
@@ -93,25 +64,17 @@ export const useRecipeGeneration = () => {
             throw saveError;
           }
 
-          return {
-            ...savedRecipe,
-            instructions: savedRecipe.instructions.split('\n').map(instruction => 
-              instruction.replace(/^\d+\.\s/, '')
-            ),
-            ingredients: recipe.ingredients,
-            nutritional_info: recipe.nutritional_info,
-            health_benefits: recipe.health_benefits || [],
-            cooking_steps: []
-          } as Recipe;
+          return savedRecipe as Recipe;
         })
       );
 
-      return savedRecipes;
+      toast.success('Recettes générées avec succès !');
+      return recipes;
 
     } catch (err) {
       console.error('Error generating recipes:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
-      throw err;
+      toast.error("Une erreur est survenue lors de la génération des recettes");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -119,7 +82,6 @@ export const useRecipeGeneration = () => {
 
   return {
     generateRecipes,
-    loading,
-    error
+    loading
   };
 };
