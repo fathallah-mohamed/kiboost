@@ -26,6 +26,7 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     loading,
     planningRecipe,
     planRecipe,
+    removeRecipe,
     viewMode,
     setViewMode
   } = useMealPlanner(userId, selectedChildren);
@@ -65,6 +66,7 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
             plannedRecipes={plannedRecipes}
             viewMode={viewMode}
             selectedChildren={selectedChildren}
+            onRemoveRecipe={removeRecipe}
           />
         </Card>
 

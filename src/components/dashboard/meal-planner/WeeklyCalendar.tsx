@@ -4,7 +4,7 @@ import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth, ad
 import { fr } from 'date-fns/locale';
 import { Recipe, ChildProfile } from '../types';
 import { RecipeCard } from '../recipe/recipe-card/RecipeCard';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { RecipeHealthBenefits } from '../recipe/recipe-card/RecipeHealthBenefits';
 
 interface WeeklyCalendarProps {
@@ -14,6 +14,7 @@ interface WeeklyCalendarProps {
   viewMode: 'week' | 'month';
   selectedChildren: ChildProfile[];
   readOnly?: boolean;
+  onRemoveRecipe?: (date: string, childId: string) => void;
 }
 
 export const WeeklyCalendar = ({ 
@@ -22,7 +23,8 @@ export const WeeklyCalendar = ({
   plannedRecipes, 
   viewMode,
   selectedChildren,
-  readOnly = false
+  readOnly = false,
+  onRemoveRecipe
 }: WeeklyCalendarProps) => {
   const getDaysToDisplay = () => {
     if (viewMode === 'week') {
@@ -123,7 +125,23 @@ export const WeeklyCalendar = ({
               
               {recipe && (
                 <div className="mt-2 space-y-2">
-                  <RecipeCard recipe={recipe} compact />
+                  <div className="flex justify-between items-start">
+                    <RecipeCard recipe={recipe} compact />
+                    {!readOnly && onRemoveRecipe && selectedChildren.map(child => (
+                      <Button
+                        key={child.id}
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveRecipe(formattedDate, child.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ))}
+                  </div>
                   {recipe.health_benefits && (
                     <RecipeHealthBenefits benefits={recipe.health_benefits} compact />
                   )}

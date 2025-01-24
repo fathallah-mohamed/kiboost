@@ -105,8 +105,36 @@ export const useRecipePlanning = () => {
     }
   };
 
+  const removePlannedRecipe = async (date: string, childId: string, userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('meal_plans')
+        .delete()
+        .match({
+          profile_id: userId,
+          date: date,
+          child_id: childId
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Recette supprimée", {
+        description: "La recette a été retirée du planificateur"
+      });
+
+    } catch (error: any) {
+      console.error('Error removing planned recipe:', error);
+      toast.error("Erreur lors de la suppression", {
+        description: error.message || "Une erreur est survenue lors de la suppression de la recette"
+      });
+    }
+  };
+
   return {
     planRecipe,
+    removePlannedRecipe,
     saving
   };
 };
