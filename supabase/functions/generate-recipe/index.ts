@@ -132,7 +132,7 @@ serve(async (req) => {
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 1.0, // Augmenté pour plus de créativité
+      temperature: 1.2, // Augmenté pour plus de créativité
       max_tokens: 2000,
     });
 
@@ -176,8 +176,11 @@ serve(async (req) => {
         }
       });
 
+      // Mélanger les recettes de manière aléatoire
+      const shuffledRecipes = recipes.sort(() => Math.random() - 0.5);
+
       return new Response(
-        JSON.stringify({ recipes }),
+        JSON.stringify({ recipes: shuffledRecipes }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
 
