@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useRecipeGeneration } from './useRecipeGeneration';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -10,12 +10,14 @@ import { MultiChildSelector } from './MultiChildSelector';
 import { RecipeFiltersSection } from './RecipeFiltersSection';
 import { RecipeList } from './RecipeList';
 import { LoadMoreButton } from './LoadMoreButton';
+import { StepNavigation } from '../navigation/StepNavigation';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [displayCount, setDisplayCount] = useState(5);
   const [error, setError] = useState<string | null>(null);
   const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
@@ -28,12 +30,35 @@ export const RecipeGeneratorPage = () => {
     excludedAllergens: [],
     maxCost: 15,
     healthBenefits: [],
-    season: 1, // Changé de seasonalMonths à season
+    season: 1,
   });
 
   const session = useSession();
   const navigate = useNavigate();
   const { generateRecipes } = useRecipeGeneration();
+
+  // Fetch generated recipes from the database
+  const { data: recipes = [], refetch: refetchRecipes } = useQuery({
+    queryKey: ['generated-recipes', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('recipes')
+        .select('*')
+        .eq('profile_id', session.user.id)
+        .eq('is_generated', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching recipes:', error);
+        throw error;
+      }
+
+      return data as Recipe[];
+    },
+    enabled: !!session?.user?.id,
+  });
 
   const handleGenerateRecipes = async () => {
     if (selectedChildren.length === 0) {
@@ -44,7 +69,7 @@ export const RecipeGeneratorPage = () => {
     try {
       setLoading(true);
       const generatedRecipes = await generateRecipes(selectedChildren[0]);
-      setRecipes(generatedRecipes);
+      refetchRecipes();
       toast.success("Recettes générées avec succès !");
     } catch (error) {
       console.error('Error generating recipes:', error);
@@ -133,6 +158,17 @@ export const RecipeGeneratorPage = () => {
             />
           </>
         )}
+
+        <StepNavigation
+          previousStep={{
+            label: "Profils enfants",
+            route: "/dashboard/children"
+          }}
+          nextStep={{
+            label: "Planifier les repas",
+            route: "/dashboard/planner"
+          }}
+        />
       </div>
     </div>
   );

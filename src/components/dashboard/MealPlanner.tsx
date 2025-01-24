@@ -8,6 +8,7 @@ import { CalendarDays, CalendarRange } from "lucide-react";
 import { MultiChildSelector } from './recipe/MultiChildSelector';
 import { ChildProfile } from './types';
 import { BackToDashboard } from './BackToDashboard';
+import { StepNavigation } from './navigation/StepNavigation';
 
 interface MealPlannerProps {
   userId: string;
@@ -72,6 +73,17 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
           loading={loading}
           planningRecipe={planningRecipe}
           onPlanRecipe={(recipe) => planRecipe(recipe, selectedChildren)}
+        />
+
+        <StepNavigation
+          previousStep={{
+            label: "Retour aux recettes",
+            route: "/dashboard/generate-recipes"
+          }}
+          nextStep={{
+            label: "Liste de courses",
+            route: "/dashboard/shopping"
+          }}
         />
       </div>
     </div>
