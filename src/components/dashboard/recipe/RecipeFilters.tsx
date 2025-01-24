@@ -24,7 +24,7 @@ export const RecipeFilters = ({
     <div className="grid gap-4 md:grid-cols-3">
       <div className="space-y-2">
         <Label>Type de repas</Label>
-        <Select value={mealType} onValueChange={setMealType}>
+        <Select value={mealType} onValueChange={(value: MealType | "all") => setMealType(value)}>
           <SelectTrigger>
             <SelectValue placeholder="Sélectionner un type" />
           </SelectTrigger>
@@ -42,16 +42,17 @@ export const RecipeFilters = ({
         <Label>Temps de préparation maximum ({maxPrepTime} min)</Label>
         <Slider
           value={[maxPrepTime]}
-          onValueChange={([value]) => setMaxPrepTime(value)}
+          onValueChange={(values) => setMaxPrepTime(values[0])}
           min={10}
           max={120}
           step={5}
+          className="py-4"
         />
       </div>
 
       <div className="space-y-2">
         <Label>Difficulté</Label>
-        <Select value={difficulty} onValueChange={setDifficulty}>
+        <Select value={difficulty} onValueChange={(value: Difficulty | "all") => setDifficulty(value)}>
           <SelectTrigger>
             <SelectValue placeholder="Sélectionner une difficulté" />
           </SelectTrigger>

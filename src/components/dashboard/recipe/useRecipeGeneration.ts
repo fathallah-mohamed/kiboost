@@ -12,6 +12,8 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
       
+      console.log('Generating recipes with filters:', filters);
+      
       const { data: existingRecipes } = await supabase
         .from('recipes')
         .select('name')
