@@ -1,61 +1,40 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Recipe, ChildProfile } from '../../types';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const useRecipeSaving = () => {
   const [saving, setSaving] = useState(false);
 
   const saveRecipe = async (recipe: Recipe, selectedChildren: ChildProfile[]) => {
-    if (!recipe?.id) {
-      toast.error("Erreur: ID de recette manquant");
-      return null;
-    }
-
-    if (selectedChildren.length === 0) {
-      toast.error("Veuillez sélectionner au moins un enfant");
-      return null;
-    }
-
-    setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Non authentifié");
-      }
+      setSaving(true);
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) throw new Error('User not authenticated');
 
-      const today = new Date();
-      const formattedDate = today.toISOString().split('T')[0];
+      const { error } = await supabase
+        .from('meal_plans')
+        .insert({
+          profile_id: session.session.user.id,
+          recipe_id: recipe.id,
+          date: new Date().toISOString().split('T')[0],
+          child_id: selectedChildren[0]?.id
+        });
 
-      // Créer les entrées dans meal_plans pour chaque enfant
-      for (const child of selectedChildren) {
-        const { error: planError } = await supabase
-          .from('meal_plans')
-          .insert({
-            profile_id: session.user.id,
-            recipe_id: recipe.id,
-            child_id: child.id,
-            date: formattedDate,
-            meal_time: recipe.meal_type || 'dinner'
-          });
+      if (error) throw error;
 
-        if (planError) {
-          console.error('Error details:', planError);
-          throw planError;
-        }
-      }
-
-      toast.success("Recette planifiée !", {
-        description: `${recipe.name} a été planifiée pour ${selectedChildren.length} enfant(s)`,
+      toast({
+        title: "Recette planifiée",
+        description: "La recette a été ajoutée à votre planning.",
       });
-
-      return recipe;
     } catch (error) {
       console.error('Error saving recipe:', error);
-      toast.error("Erreur lors de la planification", {
-        description: "Une erreur est survenue lors de la planification de la recette.",
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de sauvegarder la recette.",
       });
-      return null;
+      throw error;
     } finally {
       setSaving(false);
     }
