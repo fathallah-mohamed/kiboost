@@ -24,7 +24,7 @@ const generatePrompt = (child: ChildProfile) => {
     ? `Préférences alimentaires : ${child.preferences.join(', ')}`
     : 'Aucune préférence particulière';
 
-  return `Génère 3 recettes pour enfants avec les caractéristiques suivantes :
+  return `Génère 3 recettes pour enfants adaptées au profil suivant :
 
 Profil de l'enfant :
 - Nom : ${child.name}
@@ -32,18 +32,37 @@ Profil de l'enfant :
 - ${allergiesText}
 - ${preferencesText}
 
-Format de réponse souhaité : un tableau JSON de recettes avec les champs suivants :
-- name: string (nom de la recette)
-- ingredients: array of { item: string, quantity: string, unit: string }
-- instructions: array of string (étapes de préparation)
-- nutritional_info: { calories: number, protein: number, carbs: number, fat: number }
-- meal_type: string ('breakfast', 'lunch', 'dinner', 'snack')
-- preparation_time: number (en minutes)
-- difficulty: string ('easy', 'medium', 'hard')
-- servings: number
-- health_benefits: array of { icon: string, category: string, description: string }
+Format de réponse requis : un tableau JSON contenant des objets avec les champs suivants :
+{
+  "name": "Nom de la recette",
+  "ingredients": [
+    {
+      "item": "Nom de l'ingrédient",
+      "quantity": "Quantité",
+      "unit": "Unité"
+    }
+  ],
+  "instructions": ["Étape 1", "Étape 2", "..."],
+  "nutritional_info": {
+    "calories": 0,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 0
+  },
+  "meal_type": "breakfast|lunch|dinner|snack",
+  "preparation_time": 30,
+  "difficulty": "easy|medium|hard",
+  "servings": 4,
+  "health_benefits": [
+    {
+      "icon": "brain|heart|etc",
+      "category": "cognitive|energy|etc",
+      "description": "Description du bénéfice"
+    }
+  ]
+}
 
-Assure-toi que la réponse est un tableau JSON valide.`;
+IMPORTANT: La réponse doit être un tableau JSON valide contenant exactement 3 recettes.`;
 };
 
 serve(async (req) => {
@@ -73,7 +92,10 @@ serve(async (req) => {
     const completion = await openai.createChatCompletion({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants. Réponds uniquement avec un tableau JSON valide.' },
+        { 
+          role: 'system', 
+          content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants. Tu dois TOUJOURS répondre avec un tableau JSON valide contenant exactement 3 recettes, en suivant strictement le format demandé.' 
+        },
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
@@ -82,22 +104,41 @@ serve(async (req) => {
 
     const content = completion.data.choices[0]?.message?.content;
     if (!content) {
-      console.error('Invalid OpenAI response:', completion.data);
-      throw new Error('Réponse OpenAI invalide');
+      console.error('Invalid OpenAI response - no content:', completion.data);
+      throw new Error('Réponse OpenAI invalide - contenu manquant');
     }
 
     console.log('Raw OpenAI response:', content);
 
     let recipes;
     try {
-      recipes = JSON.parse(content);
+      // Attempt to clean the response if it contains markdown backticks
+      const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      recipes = JSON.parse(cleanContent);
+      
       if (!Array.isArray(recipes)) {
+        console.error('Response is not an array:', recipes);
         throw new Error('La réponse n\'est pas un tableau');
       }
-      console.log('Parsed recipes:', recipes);
+      
+      if (recipes.length !== 3) {
+        console.error('Wrong number of recipes:', recipes.length);
+        throw new Error('Le nombre de recettes est incorrect');
+      }
+
+      // Validate recipe format
+      recipes.forEach((recipe, index) => {
+        if (!recipe.name || !recipe.ingredients || !recipe.instructions) {
+          console.error(`Invalid recipe format at index ${index}:`, recipe);
+          throw new Error(`Format de recette invalide à l'index ${index}`);
+        }
+      });
+
+      console.log('Successfully parsed recipes:', recipes);
     } catch (error) {
-      console.error('Error parsing OpenAI response:', error, 'Content:', content);
-      throw new Error('Erreur lors du parsing de la réponse OpenAI');
+      console.error('Error parsing OpenAI response:', error);
+      console.error('Content that failed to parse:', content);
+      throw new Error(`Erreur lors du parsing de la réponse OpenAI: ${error.message}`);
     }
 
     return new Response(
