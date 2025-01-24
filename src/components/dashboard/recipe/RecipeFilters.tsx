@@ -1,39 +1,33 @@
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Clock, Utensils, ChevronUp, ChevronDown, Mountain } from "lucide-react";
+import { Clock, ChefHat, Gauge } from "lucide-react";
 import { MealType, Difficulty } from "../types";
-import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface RecipeFiltersProps {
   mealType: MealType | "all";
-  setMealType: (value: MealType | "all") => void;
+  setMealType: (type: MealType | "all") => void;
   maxPrepTime: number;
-  setMaxPrepTime: (value: number) => void;
+  setMaxPrepTime: (time: number) => void;
   difficulty: Difficulty | "all";
-  setDifficulty: (value: Difficulty | "all") => void;
+  setDifficulty: (difficulty: Difficulty | "all") => void;
 }
 
-const timeOptions = [
-  { value: 15, label: "<15 minutes" },
-  { value: 30, label: "15-30 minutes" },
-  { value: 45, label: "30-45 minutes" },
-  { value: 60, label: "45-60 minutes" },
-  { value: 90, label: "1h-1h30" },
-  { value: 120, label: ">1h30" },
+const mealTypes: { value: MealType | "all"; label: string; icon: JSX.Element }[] = [
+  { value: "all", label: "Tous", icon: <ChefHat className="w-4 h-4" /> },
+  { value: "breakfast", label: "Petit-déjeuner", icon: <ChefHat className="w-4 h-4" /> },
+  { value: "lunch", label: "Déjeuner", icon: <ChefHat className="w-4 h-4" /> },
+  { value: "dinner", label: "Dîner", icon: <ChefHat className="w-4 h-4" /> },
+  { value: "snack", label: "Goûter", icon: <ChefHat className="w-4 h-4" /> },
 ];
 
-const mealTypeOptions = [
-  { value: "breakfast", label: "Petit-déjeuner", icon: <Utensils className="w-4 h-4" /> },
-  { value: "lunch", label: "Déjeuner", icon: <Utensils className="w-4 h-4" /> },
-  { value: "dinner", label: "Dîner", icon: <Utensils className="w-4 h-4" /> },
-  { value: "snack", label: "Collation", icon: <Utensils className="w-4 h-4" /> },
+const difficulties: { value: Difficulty | "all"; label: string; icon: JSX.Element }[] = [
+  { value: "all", label: "Toutes", icon: <Gauge className="w-4 h-4" /> },
+  { value: "easy", label: "Facile", icon: <Gauge className="w-4 h-4" /> },
+  { value: "medium", label: "Moyen", icon: <Gauge className="w-4 h-4" /> },
+  { value: "hard", label: "Difficile", icon: <Gauge className="w-4 h-4" /> },
 ];
 
-const difficultyOptions = [
-  { value: "easy", label: "Facile", icon: <ChevronDown className="w-4 h-4" /> },
-  { value: "medium", label: "Moyen", icon: <Mountain className="w-4 h-4" /> },
-  { value: "hard", label: "Difficile", icon: <ChevronUp className="w-4 h-4" /> },
-];
+const prepTimes = [15, 30, 45, 60];
 
 export const RecipeFilters = ({
   mealType,
@@ -44,53 +38,65 @@ export const RecipeFilters = ({
   setDifficulty,
 }: RecipeFiltersProps) => {
   return (
-    <div className="grid gap-6 md:grid-cols-3">
+    <div className="space-y-6">
       <div className="space-y-2">
-        <Label>Type de repas</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {mealTypeOptions.map((option) => (
+        <label className="text-sm font-medium flex items-center gap-2">
+          <ChefHat className="w-4 h-4" />
+          Type de repas
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {mealTypes.map((type) => (
             <Button
-              key={option.value}
-              variant={mealType === option.value ? "default" : "outline"}
-              onClick={() => setMealType(option.value as MealType)}
-              className="w-full justify-start gap-2"
+              key={type.value}
+              variant={mealType === type.value ? "default" : "outline"}
+              onClick={() => setMealType(type.value)}
+              className="flex items-center gap-2"
             >
-              {option.icon}
-              {option.label}
+              {type.icon}
+              {type.label}
             </Button>
           ))}
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>Temps de préparation</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {timeOptions.map((option) => (
+        <label className="text-sm font-medium flex items-center gap-2">
+          <Clock className="w-4 h-4" />
+          Temps de préparation maximum
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {prepTimes.map((time) => (
             <Button
-              key={option.value}
-              variant={maxPrepTime === option.value ? "default" : "outline"}
-              onClick={() => setMaxPrepTime(option.value)}
-              className="w-full justify-start gap-2"
+              key={time}
+              variant={maxPrepTime === time ? "default" : "outline"}
+              onClick={() => setMaxPrepTime(time)}
+              className={cn(
+                "flex items-center gap-2",
+                maxPrepTime === time && "bg-primary text-primary-foreground"
+              )}
             >
               <Clock className="w-4 h-4" />
-              {option.label}
+              {time} min
             </Button>
           ))}
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>Difficulté</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {difficultyOptions.map((option) => (
+        <label className="text-sm font-medium flex items-center gap-2">
+          <Gauge className="w-4 h-4" />
+          Difficulté
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {difficulties.map((diff) => (
             <Button
-              key={option.value}
-              variant={difficulty === option.value ? "default" : "outline"}
-              onClick={() => setDifficulty(option.value as Difficulty)}
-              className="w-full justify-start gap-2"
+              key={diff.value}
+              variant={difficulty === diff.value ? "default" : "outline"}
+              onClick={() => setDifficulty(diff.value)}
+              className="flex items-center gap-2"
             >
-              {option.icon}
-              {option.label}
+              {diff.icon}
+              {diff.label}
             </Button>
           ))}
         </div>

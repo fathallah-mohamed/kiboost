@@ -1,24 +1,18 @@
 import { useState } from 'react';
-import { FilterMealType, FilterDifficulty, RecipeFilters } from "../../types";
+import { MealType, Difficulty, RecipeFilters } from '../../types';
 
 export const useRecipeFilters = () => {
-  const [mealType, setMealType] = useState<FilterMealType>("breakfast");
-  const [maxPrepTime, setMaxPrepTime] = useState(15);
-  const [difficulty, setDifficulty] = useState<FilterDifficulty>("easy");
+  const [mealType, setMealType] = useState<MealType | "all">("all");
+  const [maxPrepTime, setMaxPrepTime] = useState(30);
+  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({
-    dietaryPreferences: [],
-    excludedAllergens: [],
-    maxCost: 15,
-    healthBenefits: [],
-    season: new Date().getMonth() + 1
-  });
+  const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({});
 
-  const getFilters = (): RecipeFilters => ({
-    ...advancedFilters,
+  const getFilters = () => ({
     mealType,
     maxPrepTime,
     difficulty,
+    ...advancedFilters
   });
 
   return {
@@ -32,6 +26,6 @@ export const useRecipeFilters = () => {
     setShowAdvancedFilters,
     advancedFilters,
     setAdvancedFilters,
-    getFilters,
+    getFilters
   };
 };

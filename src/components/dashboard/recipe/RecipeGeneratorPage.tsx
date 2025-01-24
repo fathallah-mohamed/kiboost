@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useRecipeFilters } from './hooks/useRecipeFilters';
 import { GenerationSection } from './sections/GenerationSection';
 import { ResultsSection } from './sections/ResultsSection';
+import { useInView } from 'react-intersection-observer';
+import { useEffect } from 'react';
 
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
@@ -22,18 +24,34 @@ export const RecipeGeneratorPage = () => {
   const navigate = useNavigate();
   const { generateRecipes } = useRecipeGeneration();
   const filters = useRecipeFilters();
+  const { ref: loadMoreRef, inView } = useInView();
 
   const { data: recipes = [], refetch: refetchRecipes } = useQuery({
-    queryKey: ['generated-recipes', session?.user?.id],
+    queryKey: ['generated-recipes', session?.user?.id, filters.getFilters()],
     queryFn: async () => {
       if (!session?.user?.id) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('recipes')
         .select('*')
         .eq('profile_id', session.user.id)
         .eq('is_generated', true)
         .order('created_at', { ascending: false });
+
+      // Appliquer les filtres
+      if (filters.mealType && filters.mealType !== 'all') {
+        query = query.eq('meal_type', filters.mealType);
+      }
+      
+      if (filters.maxPrepTime) {
+        query = query.lte('preparation_time', filters.maxPrepTime);
+      }
+
+      if (filters.difficulty && filters.difficulty !== 'all') {
+        query = query.eq('difficulty', filters.difficulty);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching recipes:', error);
@@ -64,6 +82,12 @@ export const RecipeGeneratorPage = () => {
     enabled: !!session?.user?.id,
   });
 
+  useEffect(() => {
+    if (inView) {
+      setDisplayCount(prev => Math.min(prev + 5, recipes.length));
+    }
+  }, [inView, recipes.length]);
+
   const handleGenerateRecipes = async () => {
     if (!selectedChildren.length) {
       toast.error("Veuillez sélectionner au moins un enfant");
@@ -75,7 +99,6 @@ export const RecipeGeneratorPage = () => {
       setError(null);
       const selectedChild = selectedChildren[0];
       
-      // Make sure we have all required fields
       if (!selectedChild.name || !selectedChild.birth_date) {
         throw new Error("Les informations de l'enfant sont incomplètes");
       }
@@ -106,9 +129,7 @@ export const RecipeGeneratorPage = () => {
     }
   };
 
-  const handleLoadMore = () => {
-    setDisplayCount(prev => prev + 5);
-  };
+  const filteredRecipes = recipes.slice(0, displayCount);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -125,12 +146,14 @@ export const RecipeGeneratorPage = () => {
         />
 
         <ResultsSection
-          recipes={recipes}
-          displayCount={displayCount}
+          recipes={filteredRecipes}
           error={error}
           onSaveRecipe={handleSaveRecipe}
-          onLoadMore={handleLoadMore}
         />
+
+        {displayCount < recipes.length && (
+          <div ref={loadMoreRef} className="h-10" />
+        )}
 
         <StepNavigation
           previousStep={{
