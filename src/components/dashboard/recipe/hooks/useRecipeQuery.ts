@@ -2,6 +2,22 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe, MealType, RecipeFilters } from "../../types";
 
+const removeDuplicateRecipes = (recipes: Recipe[]) => {
+  const seen = new Set();
+  return recipes.filter(recipe => {
+    const normalizedName = recipe.name.toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+    
+    if (seen.has(normalizedName)) {
+      return false;
+    }
+    seen.add(normalizedName);
+    return true;
+  });
+};
+
 export const useRecipeQuery = (userId: string | undefined, filters: RecipeFilters) => {
   return useQuery({
     queryKey: ['generated-recipes', userId, filters],
@@ -33,7 +49,7 @@ export const useRecipeQuery = (userId: string | undefined, filters: RecipeFilter
         throw error;
       }
 
-      return data.map(recipe => ({
+      const parsedRecipes = data.map(recipe => ({
         ...recipe,
         meal_type: recipe.meal_type as MealType,
         ingredients: typeof recipe.ingredients === 'string' 
@@ -54,6 +70,9 @@ export const useRecipeQuery = (userId: string | undefined, filters: RecipeFilter
           ? JSON.parse(recipe.cooking_steps)
           : recipe.cooking_steps || []
       })) as Recipe[];
+
+      // Remove any duplicate recipes before returning
+      return removeDuplicateRecipes(parsedRecipes);
     },
     enabled: !!userId,
   });
