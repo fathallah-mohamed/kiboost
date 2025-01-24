@@ -138,11 +138,11 @@ serve(async (req) => {
   }
 
   try {
-    const { childProfiles, filters } = await req.json();
-    console.log('Received child profiles:', childProfiles);
+    const { child, filters } = await req.json();
+    console.log('Received child profile:', child);
     console.log('Received filters:', filters);
 
-    if (!childProfiles || !Array.isArray(childProfiles) || childProfiles.length === 0) {
+    if (!child || !child.name || !child.birth_date) {
       throw new Error('Profil enfant invalide ou manquant');
     }
 
@@ -154,7 +154,7 @@ serve(async (req) => {
     const configuration = new Configuration({ apiKey: openAiKey });
     const openai = new OpenAIApi(configuration);
 
-    const prompt = generatePrompt(childProfiles[0], filters);
+    const prompt = generatePrompt(child, filters);
     console.log('Generated prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
@@ -210,7 +210,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify(recipes),
+      JSON.stringify({ recipes }),
       {
         headers: {
           ...corsHeaders,

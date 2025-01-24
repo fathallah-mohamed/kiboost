@@ -32,7 +32,7 @@ export const useRecipeGeneration = () => {
           body: { 
             child: {
               ...child,
-              profile_id: child.id // Use child.id as profile_id
+              id: child.id
             },
             filters
           }
