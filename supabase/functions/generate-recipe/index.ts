@@ -141,18 +141,9 @@ serve(async (req) => {
 
     console.log('Raw OpenAI response:', content);
 
-    // Nettoyage strict du JSON
-    const cleanedContent = content
-      .replace(/```json\n?|\n?```/g, '')
-      .replace(/[\u0000-\u001F]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .replace(/'/g, '"') // Remplacer les guillemets simples par des doubles
-      .trim();
-
-    console.log('Cleaned content:', cleanedContent);
-
     try {
-      const parsedContent = JSON.parse(cleanedContent);
+      // First attempt to parse the raw content
+      const parsedContent = JSON.parse(content);
       
       if (!parsedContent.recipes || !Array.isArray(parsedContent.recipes)) {
         throw new Error('Format de réponse invalide: la propriété "recipes" est manquante ou n\'est pas un tableau');
@@ -187,7 +178,7 @@ serve(async (req) => {
       );
 
     } catch (parseError) {
-      console.error('JSON parsing error:', parseError, '\nContent:', cleanedContent);
+      console.error('JSON parsing error:', parseError, '\nContent:', content);
       throw new Error(`Erreur de parsing JSON: ${parseError.message}`);
     }
 
