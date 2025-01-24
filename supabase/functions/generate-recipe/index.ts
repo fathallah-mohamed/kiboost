@@ -32,6 +32,8 @@ Profil de l'enfant :
 - ${allergiesText}
 - ${preferencesText}
 
+IMPORTANT : Chaque recette DOIT avoir EXACTEMENT 3 bienfaits santé différents.
+
 Réponds UNIQUEMENT avec un tableau JSON contenant exactement 3 recettes au format suivant :
 [
   {
@@ -57,7 +59,17 @@ Réponds UNIQUEMENT avec un tableau JSON contenant exactement 3 recettes au form
     "health_benefits": [
       {
         "icon": "brain|heart|etc",
-        "category": "cognitive|energy|etc",
+        "category": "cognitive|energy|immunity|etc",
+        "description": "Description du bénéfice"
+      },
+      {
+        "icon": "brain|heart|etc",
+        "category": "cognitive|energy|immunity|etc",
+        "description": "Description du bénéfice"
+      },
+      {
+        "icon": "brain|heart|etc",
+        "category": "cognitive|energy|immunity|etc",
         "description": "Description du bénéfice"
       }
     ]
@@ -94,7 +106,7 @@ serve(async (req) => {
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants. Tu dois UNIQUEMENT répondre avec un tableau JSON valide contenant exactement 3 recettes. Ne réponds JAMAIS avec du texte avant ou après le JSON.' 
+          content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants. Tu dois UNIQUEMENT répondre avec un tableau JSON valide contenant exactement 3 recettes. Chaque recette DOIT avoir EXACTEMENT 3 bienfaits santé différents. Ne réponds JAMAIS avec du texte avant ou après le JSON.' 
         },
         { role: 'user', content: prompt }
       ],
@@ -133,11 +145,16 @@ serve(async (req) => {
         throw new Error('Le nombre de recettes est incorrect');
       }
 
-      // Validate recipe format
+      // Validate recipe format and health benefits count
       recipes.forEach((recipe, index) => {
         if (!recipe.name || !recipe.ingredients || !recipe.instructions) {
           console.error(`Invalid recipe format at index ${index}:`, recipe);
           throw new Error(`Format de recette invalide à l'index ${index}`);
+        }
+
+        if (!Array.isArray(recipe.health_benefits) || recipe.health_benefits.length !== 3) {
+          console.error(`Recipe at index ${index} does not have exactly 3 health benefits:`, recipe);
+          throw new Error(`La recette à l'index ${index} doit avoir exactement 3 bienfaits santé`);
         }
       });
 
