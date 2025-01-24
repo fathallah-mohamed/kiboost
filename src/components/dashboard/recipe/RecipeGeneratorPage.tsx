@@ -21,6 +21,7 @@ export const RecipeGeneratorPage = () => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const [displayCount, setDisplayCount] = useState(10);
   const [error, setError] = useState<string | null>(null);
+  const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
   const session = useSession();
   const navigate = useNavigate();
   const { generateRecipes } = useRecipeGeneration();
@@ -78,8 +79,7 @@ export const RecipeGeneratorPage = () => {
           : recipe.cooking_steps || []
       })) as Recipe[];
 
-      // Mélanger les recettes de manière aléatoire pour plus de variété
-      return transformedRecipes.sort(() => Math.random() - 0.5);
+      return transformedRecipes;
     },
     enabled: !!session?.user?.id,
   });
@@ -106,11 +106,16 @@ export const RecipeGeneratorPage = () => {
       }
 
       console.log("Generating recipes with filters:", filters.getFilters());
-      const generatedRecipes = await generateRecipes(selectedChild, filters.getFilters());
-      console.log("Generated recipes:", generatedRecipes);
+      const newRecipes = await generateRecipes(selectedChild, filters.getFilters());
+      console.log("Generated recipes:", newRecipes);
       
-      await refetchRecipes();
-      toast.success("Recettes générées avec succès !");
+      if (newRecipes && Array.isArray(newRecipes) && newRecipes.length > 0) {
+        setGeneratedRecipes(newRecipes);
+        await refetchRecipes();
+        toast.success("Recettes générées avec succès !");
+      } else {
+        throw new Error("Aucune recette n'a été générée");
+      }
     } catch (error) {
       console.error('Error generating recipes:', error);
       const errorMessage = error instanceof Error ? error.message : "Une erreur est survenue lors de la génération des recettes";
@@ -124,8 +129,18 @@ export const RecipeGeneratorPage = () => {
   const handleSaveRecipe = async (recipe: Recipe) => {
     try {
       setSaving(true);
-      // Implement save recipe logic here
+      const { error } = await supabase
+        .from('recipes')
+        .insert({
+          ...recipe,
+          profile_id: session?.user?.id,
+          is_generated: true
+        });
+
+      if (error) throw error;
+      
       toast.success("Recette sauvegardée avec succès !");
+      await refetchRecipes();
     } catch (error) {
       console.error('Error saving recipe:', error);
       toast.error("Une erreur est survenue lors de la sauvegarde de la recette");
@@ -137,6 +152,8 @@ export const RecipeGeneratorPage = () => {
   const handleLoadMore = () => {
     setDisplayCount(prev => Math.min(prev + 5, recipes.length));
   };
+
+  const allRecipes = [...generatedRecipes, ...recipes];
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -155,14 +172,14 @@ export const RecipeGeneratorPage = () => {
         />
 
         <ResultsSection
-          recipes={recipes.slice(0, displayCount)}
+          recipes={allRecipes.slice(0, displayCount)}
           displayCount={displayCount}
           error={error}
           onSaveRecipe={handleSaveRecipe}
           onLoadMore={handleLoadMore}
         />
 
-        {displayCount < recipes.length && (
+        {displayCount < allRecipes.length && (
           <div ref={loadMoreRef} className="h-10" />
         )}
 
