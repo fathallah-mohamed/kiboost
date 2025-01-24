@@ -7,34 +7,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validation des catégories de bienfaits santé
+const validHealthCategories = new Set([
+  'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
+  'growth', 'mental', 'organs', 'beauty', 'physical',
+  'prevention', 'global'
+]);
+
+// Fonction pour générer un prompt optimisé
 const generatePrompt = (child: any, filters: any, generatedRecipes: any[] = []) => {
-  const allergiesText = child.allergies?.length > 0 
+  // Construction efficace des textes avec template literals
+  const allergiesText = child.allergies?.length 
     ? `Allergies à éviter : ${child.allergies.join(', ')}`
     : 'Aucune allergie connue';
-    
-  const preferencesText = child.preferences?.length > 0
+  
+  const preferencesText = child.preferences?.length 
     ? `Préférences alimentaires : ${child.preferences.join(', ')}`
     : 'Aucune préférence particulière';
 
-  const validCategories = [
-    'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
-    'growth', 'mental', 'organs', 'beauty', 'physical',
-    'prevention', 'global'
-  ];
+  // Construction optimisée des contraintes
+  const constraints = [
+    filters.mealType !== 'all' && `Type de repas : ${filters.mealType}`,
+    filters.maxPrepTime && `Temps maximum : ${filters.maxPrepTime}min`,
+    filters.difficulty !== 'all' && `Difficulté : ${filters.difficulty}`
+  ].filter(Boolean);
 
-  let constraints = [];
-  if (filters.mealType && filters.mealType !== 'all') {
-    constraints.push(`Type de repas : ${filters.mealType}`);
-  }
-  if (filters.maxPrepTime) {
-    constraints.push(`Temps maximum : ${filters.maxPrepTime}min`);
-  }
-  if (filters.difficulty && filters.difficulty !== 'all') {
-    constraints.push(`Difficulté : ${filters.difficulty}`);
-  }
-
+  // Exclusion des recettes déjà générées
   const excludeRecipes = generatedRecipes.length
-    ? `Exclure toute recette ayant des ingrédients, étapes ou noms similaires à : ${generatedRecipes.map(r => r.name).join(', ')}`
+    ? `Exclure ces recettes : ${generatedRecipes.map(r => r.name).join(', ')}`
     : '';
 
   return `Génère 3 recettes DIFFÉRENTES et CRÉATIVES pour enfant:
@@ -45,54 +45,57 @@ ${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
 ${excludeRecipes}
 
 IMPORTANT:
-- 3 bienfaits santé PARFAITEMENT distincts parmi: ${validCategories.join(', ')} dans CHAQUE recette.
-- Varies les ingrédients et évite la répétition (ex. : différents légumes ou sources de protéines entre recettes).
-- Temps réaliste incluant préparation + cuisson.
-- Utilise des ingrédients courants et accessibles.
-- Étapes claires et concises, mais VARIÉES dans leur style d'écriture.
-- CHAQUE recette doit être UNIQUE (pas de noms, ingrédients, ou structures similaires).
+- 3 bienfaits santé PARFAITEMENT distincts parmi: ${[...validHealthCategories].join(', ')} dans CHAQUE recette.
+- Varies les ingrédients entre les recettes.
+- Temps réaliste (préparation + cuisson).
+- Ingrédients courants uniquement.
+- Instructions claires et concises.
+- Recettes UNIQUES (noms et ingrédients différents).
 
-FORMAT JSON REQUIS (respecte EXACTEMENT ce format):
+FORMAT JSON STRICT:
 {
   "recipes": [
     {
-      "name": "Nom de la recette",
-      "ingredients": [
-        {
-          "item": "Ingrédient",
-          "quantity": "Quantité",
-          "unit": "Unité"
-        }
-      ],
-      "instructions": [
-        "Étape 1",
-        "Étape 2"
-      ],
-      "nutritional_info": {
-        "calories": 0,
-        "protein": 0,
-        "carbs": 0,
-        "fat": 0
-      },
-      "meal_type": "breakfast",
-      "preparation_time": 15,
-      "difficulty": "easy",
-      "servings": 4,
-      "health_benefits": [
-        {
-          "icon": "brain",
-          "category": "cognitive",
-          "description": "Description du bienfait"
-        }
-      ]
+      "name": "string",
+      "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
+      "instructions": ["string"],
+      "nutritional_info": {"calories": number, "protein": number, "carbs": number, "fat": number},
+      "meal_type": "breakfast|lunch|dinner|snack",
+      "preparation_time": number,
+      "difficulty": "easy|medium|hard",
+      "servings": number,
+      "health_benefits": [{"icon": "string", "category": "string", "description": "string"}]
     }
   ]
 }`;
 };
 
+// Fonction de nettoyage JSON optimisée
+const cleanJsonContent = (content: string): string => {
+  return content
+    .replace(/```json\n?|\n?```/g, '')
+    .replace(/[\u0000-\u001F]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+// Validation rapide de la structure des recettes
+const validateRecipe = (recipe: any): boolean => {
+  const requiredFields = [
+    'name', 'ingredients', 'instructions', 'nutritional_info',
+    'meal_type', 'preparation_time', 'difficulty', 'servings', 'health_benefits'
+  ];
+  
+  return requiredFields.every(field => recipe[field] !== undefined) &&
+    Array.isArray(recipe.ingredients) &&
+    Array.isArray(recipe.instructions) &&
+    Array.isArray(recipe.health_benefits) &&
+    recipe.health_benefits.length === 3;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -106,74 +109,54 @@ serve(async (req) => {
     const openai = new OpenAIApi(configuration);
 
     const prompt = generatePrompt(child, filters);
-    console.log('Using prompt:', prompt);
+    console.log('Using optimized prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
       model: 'gpt-4o-mini',
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef créatif spécialisé en recettes rapides pour enfants. Tu dois générer UNIQUEMENT un objet JSON valide avec une propriété "recipes" contenant un tableau de recettes. Pas de texte avant ou après, uniquement du JSON.' 
+          content: 'Tu es un chef expert en recettes pour enfants. Génère UNIQUEMENT du JSON valide.' 
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.9,
+      temperature: 0.8,
       max_tokens: 2000,
+      presence_penalty: 0.6,
+      frequency_penalty: 0.8
     });
 
     const content = completion.data.choices[0]?.message?.content;
     if (!content) throw new Error('Réponse OpenAI invalide');
 
     console.log('Raw OpenAI response:', content);
-
-    // Nettoyage strict du JSON
-    const cleanedContent = content
-      .replace(/```json\n?|\n?```/g, '')
-      .replace(/[\u0000-\u001F]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
+    const cleanedContent = cleanJsonContent(content);
     console.log('Cleaned content:', cleanedContent);
 
-    try {
-      const parsedContent = JSON.parse(cleanedContent);
-      
-      if (!parsedContent.recipes || !Array.isArray(parsedContent.recipes)) {
-        throw new Error('Format de réponse invalide: la propriété "recipes" est manquante ou n\'est pas un tableau');
-      }
-
-      const recipes = parsedContent.recipes;
-
-      // Vérifier que les recettes sont différentes
-      const recipeNames = new Set(recipes.map(r => r.name));
-      if (recipeNames.size !== recipes.length) {
-        throw new Error('Les recettes doivent être différentes');
-      }
-
-      // Validation de la structure de chaque recette
-      recipes.forEach((recipe, index) => {
-        if (!recipe.name || !Array.isArray(recipe.ingredients) || !Array.isArray(recipe.instructions)) {
-          throw new Error(`Structure invalide pour la recette ${index + 1}`);
-        }
-        
-        // Validation des champs obligatoires
-        const requiredFields = ['name', 'ingredients', 'instructions', 'nutritional_info', 'meal_type', 'preparation_time', 'difficulty', 'servings', 'health_benefits'];
-        const missingFields = requiredFields.filter(field => !recipe[field]);
-        
-        if (missingFields.length > 0) {
-          throw new Error(`Champs manquants pour la recette ${index + 1}: ${missingFields.join(', ')}`);
-        }
-      });
-
-      return new Response(
-        JSON.stringify({ recipes }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-
-    } catch (parseError) {
-      console.error('JSON parsing error:', parseError, '\nContent:', cleanedContent);
-      throw new Error(`Erreur de parsing JSON: ${parseError.message}`);
+    const parsedContent = JSON.parse(cleanedContent);
+    
+    if (!parsedContent.recipes || !Array.isArray(parsedContent.recipes)) {
+      throw new Error('Format invalide: propriété "recipes" manquante ou invalide');
     }
+
+    // Validation rapide des recettes
+    const recipes = parsedContent.recipes;
+    const recipeNames = new Set();
+    
+    recipes.forEach((recipe, index) => {
+      if (!validateRecipe(recipe)) {
+        throw new Error(`Structure invalide pour la recette ${index + 1}`);
+      }
+      if (recipeNames.has(recipe.name)) {
+        throw new Error('Les recettes doivent avoir des noms uniques');
+      }
+      recipeNames.add(recipe.name);
+    });
+
+    return new Response(
+      JSON.stringify({ recipes }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
 
   } catch (error) {
     console.error('Error:', error);
