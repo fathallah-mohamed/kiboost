@@ -26,6 +26,11 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
     onSectionChange('recipes');
   };
 
+  const handleGenerateRecipes = () => {
+    console.log('Redirecting to recipe generation...');
+    onSectionChange('recipes');
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <BackToDashboard onBack={() => onSectionChange('categories')} />
@@ -62,9 +67,9 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
           <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 border-red-100 border">
             <p className="text-sm">Vous n'avez pas encore planifié vos repas pour cette semaine</p>
             <Button 
-              onClick={() => onSectionChange('planner')}
+              onClick={handleGenerateRecipes}
             >
-              Planifier maintenant
+              Générer maintenant
             </Button>
           </div>
 
