@@ -86,6 +86,10 @@ export const useRecipeGeneration = () => {
             throw saveError;
           }
 
+          const nutritionalInfo = typeof savedRecipe.nutritional_info === 'string' 
+            ? JSON.parse(savedRecipe.nutritional_info)
+            : savedRecipe.nutritional_info;
+
           return {
             ...savedRecipe,
             ingredients: Array.isArray(savedRecipe.ingredients) 
@@ -99,10 +103,10 @@ export const useRecipeGeneration = () => {
               ? savedRecipe.instructions 
               : [savedRecipe.instructions].filter(Boolean),
             nutritional_info: {
-              calories: Number(savedRecipe.nutritional_info?.calories) || 0,
-              protein: Number(savedRecipe.nutritional_info?.protein) || 0,
-              carbs: Number(savedRecipe.nutritional_info?.carbs) || 0,
-              fat: Number(savedRecipe.nutritional_info?.fat) || 0
+              calories: Number(nutritionalInfo?.calories) || 0,
+              protein: Number(nutritionalInfo?.protein) || 0,
+              carbs: Number(nutritionalInfo?.carbs) || 0,
+              fat: Number(nutritionalInfo?.fat) || 0
             },
             health_benefits: Array.isArray(savedRecipe.health_benefits)
               ? savedRecipe.health_benefits.map((benefit: any) => ({
