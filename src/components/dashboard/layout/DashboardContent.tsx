@@ -6,6 +6,7 @@ import { WeeklyPlanViewer } from '../WeeklyPlanViewer';
 import { ChildrenProfiles } from '../ChildrenProfiles';
 import { ShoppingList } from '../ShoppingList';
 import { FavoriteRecipes } from '../favorites/FavoriteRecipes';
+import { CategoriesGrid } from '../categories/CategoriesGrid';
 
 interface DashboardContentProps {
   session: Session;
@@ -13,7 +14,11 @@ interface DashboardContentProps {
   setActiveSection: (section: string) => void;
 }
 
-export const DashboardContent = ({ session, activeSection, setActiveSection }: DashboardContentProps) => {
+export const DashboardContent = ({ 
+  session, 
+  activeSection, 
+  setActiveSection 
+}: DashboardContentProps) => {
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
@@ -23,6 +28,8 @@ export const DashboardContent = ({ session, activeSection, setActiveSection }: D
             onSectionChange={setActiveSection}
           />
         );
+      case 'categories':
+        return <CategoriesGrid />;
       case 'recipes':
         return <RecipeGenerator onSectionChange={setActiveSection} />;
       case 'planner':

@@ -6,8 +6,10 @@ import {
   Calendar, 
   User, 
   ShoppingCart, 
-  Heart, 
+  Heart,
   CalendarRange,
+  Grid,
+  Home
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -16,12 +18,31 @@ interface DashboardNavigationProps {
   setActiveSection: (section: string) => void;
 }
 
-export const DashboardNavigation = ({ activeSection, setActiveSection }: DashboardNavigationProps) => {
+export const DashboardNavigation = ({ 
+  activeSection, 
+  setActiveSection 
+}: DashboardNavigationProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const quickActions = [
     {
-      label: 'Générer des recettes',
+      label: 'Accueil',
+      icon: Home,
+      action: () => {
+        setActiveSection('overview');
+        setIsOpen(false);
+      }
+    },
+    {
+      label: 'Catégories',
+      icon: Grid,
+      action: () => {
+        setActiveSection('categories');
+        setIsOpen(false);
+      }
+    },
+    {
+      label: 'Recettes',
       icon: ChefHat,
       action: () => {
         setActiveSection('recipes');
@@ -29,7 +50,7 @@ export const DashboardNavigation = ({ activeSection, setActiveSection }: Dashboa
       }
     },
     {
-      label: 'Planificateur de repas',
+      label: 'Planificateur',
       icon: Calendar,
       action: () => {
         setActiveSection('planner');
