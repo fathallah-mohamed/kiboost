@@ -65,15 +65,29 @@ export const RecipeGeneratorPage = () => {
   });
 
   const handleGenerateRecipes = async () => {
+    if (!selectedChildren.length) {
+      toast.error("Veuillez sélectionner au moins un enfant");
+      return;
+    }
+
     try {
       setLoading(true);
-      await generateRecipes(selectedChildren[0], filters.getFilters());
+      setError(null);
+      const selectedChild = selectedChildren[0];
+      
+      // Make sure we have all required fields
+      if (!selectedChild.name || !selectedChild.birth_date) {
+        throw new Error("Les informations de l'enfant sont incomplètes");
+      }
+
+      await generateRecipes(selectedChild, filters.getFilters());
       await refetchRecipes();
       toast.success("Recettes générées avec succès !");
     } catch (error) {
       console.error('Error generating recipes:', error);
-      toast.error("Une erreur est survenue lors de la génération des recettes");
-      setError("Une erreur est survenue lors de la génération des recettes");
+      const errorMessage = error instanceof Error ? error.message : "Une erreur est survenue lors de la génération des recettes";
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

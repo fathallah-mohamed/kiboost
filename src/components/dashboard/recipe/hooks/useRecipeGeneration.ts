@@ -24,7 +24,8 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
 
-      console.log("Generating recipes with filters:", filters);
+      console.log("Generating recipes for child:", child);
+      console.log("Using filters:", filters);
 
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
@@ -32,7 +33,12 @@ export const useRecipeGeneration = () => {
           body: { 
             child: {
               ...child,
-              id: child.id
+              // Make sure we send all required fields
+              id: child.id,
+              name: child.name,
+              birth_date: child.birth_date,
+              allergies: child.allergies || [],
+              preferences: child.preferences || []
             },
             filters
           }
