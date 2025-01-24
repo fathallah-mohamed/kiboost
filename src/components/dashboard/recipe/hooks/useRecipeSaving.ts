@@ -1,12 +1,21 @@
 import { Recipe } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSession } from "@supabase/auth-helpers-react";
 
 export const useRecipeSaving = () => {
+  const session = useSession();
+
   const saveRecipe = async (recipe: Recipe) => {
+    if (!session?.user?.id) {
+      toast.error("Vous devez être connecté pour sauvegarder une recette");
+      return;
+    }
+
     try {
       const recipeToSave = {
         ...recipe,
+        profile_id: session.user.id,  // Add this line to set the profile_id
         instructions: Array.isArray(recipe.instructions) 
           ? recipe.instructions.join('\n') 
           : recipe.instructions,
