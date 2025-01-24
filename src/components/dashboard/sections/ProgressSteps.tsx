@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -15,7 +16,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProgressStepsProps {
   onSectionChange: (section: string) => void;
@@ -37,15 +38,70 @@ interface Step {
 
 export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [hasChildren, setHasChildren] = useState(false);
+  const [hasRecipes, setHasRecipes] = useState(false);
+  const [hasMealPlans, setHasMealPlans] = useState(false);
+  const [hasShoppingList, setHasShoppingList] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    checkCompletedSteps();
+  }, []);
+
+  const checkCompletedSteps = async () => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) return;
+
+      // Check for children profiles
+      const { data: children } = await supabase
+        .from('children_profiles')
+        .select('id')
+        .eq('profile_id', session.session.user.id);
+      setHasChildren(children && children.length > 0);
+
+      // Check for meal plans
+      const { data: mealPlans } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('profile_id', session.session.user.id);
+      setHasMealPlans(mealPlans && mealPlans.length > 0);
+
+      // Check for shopping list
+      const { data: shoppingLists } = await supabase
+        .from('shopping_lists')
+        .select('id')
+        .eq('profile_id', session.session.user.id);
+      setHasShoppingList(shoppingLists && shoppingLists.length > 0);
+
+      // Update current step based on progress
+      if (hasChildren) setCurrentStep(prev => Math.max(prev, 2));
+      if (hasMealPlans) setCurrentStep(prev => Math.max(prev, 3));
+      if (hasShoppingList) setCurrentStep(prev => Math.max(prev, 4));
+    } catch (error) {
+      console.error('Error checking completed steps:', error);
+    }
+  };
   
+  const getStepStatus = (stepNumber: number): StepStatus => {
+    if (stepNumber === 1 && hasChildren) return "completed";
+    if (stepNumber === 2 && hasRecipes) return "completed";
+    if (stepNumber === 3 && hasMealPlans) return "completed";
+    if (stepNumber === 4 && hasShoppingList) return "completed";
+    if (stepNumber === 5 && hasShoppingList && hasMealPlans) return "completed";
+    
+    if (stepNumber < currentStep) return "completed";
+    if (stepNumber === currentStep) return "in-progress";
+    return "locked";
+  };
+
   const steps: Step[] = [
     {
       id: "profiles",
       label: "Configurer les profils enfants",
       icon: User,
-      status: currentStep > 1 ? "completed" : currentStep === 1 ? "in-progress" : "locked",
-      action: "Mettre à jour",
+      status: getStepStatus(1),
+      action: hasChildren ? "Mettre à jour" : "Configurer",
       route: "children",
       description: "Ajoutez ou modifiez les profils de vos enfants",
       feedback: "Profils enfants configurés avec succès !",
@@ -54,7 +110,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "recipes",
       label: "Générer des recettes",
       icon: ChefHat,
-      status: currentStep > 2 ? "completed" : currentStep === 2 ? "in-progress" : "locked",
+      status: getStepStatus(2),
       action: "Générer maintenant",
       route: "recipes",
       description: "Créez des recettes adaptées à vos enfants",
@@ -64,7 +120,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "planning",
       label: "Planifier les repas",
       icon: Calendar,
-      status: currentStep > 3 ? "completed" : currentStep === 3 ? "in-progress" : "locked",
+      status: getStepStatus(3),
       action: "Commencer à planifier",
       route: "planner",
       description: "Organisez les repas de la semaine",
@@ -75,7 +131,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "shopping",
       label: "Liste de courses",
       icon: ShoppingCart,
-      status: currentStep > 4 ? "completed" : currentStep === 4 ? "in-progress" : "locked",
+      status: getStepStatus(4),
       action: "Préparer ma liste",
       route: "shopping",
       description: "Préparez votre liste de courses",
@@ -86,7 +142,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "validate",
       label: "Valider le planning",
       icon: Check,
-      status: currentStep > 5 ? "completed" : currentStep === 5 ? "in-progress" : "locked",
+      status: getStepStatus(5),
       action: "Finaliser",
       route: "view-planner",
       description: "Finalisez votre planning hebdomadaire",
