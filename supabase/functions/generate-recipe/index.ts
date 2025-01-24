@@ -45,7 +45,7 @@ IMPORTANT:
 - Instructions claires et concises.
 - Recettes UNIQUES (noms et ingrédients différents).
 
-FORMAT JSON STRICT:
+FORMAT JSON STRICT (UTILISE DES GUILLEMETS DOUBLES UNIQUEMENT):
 {
   "recipes": [
     {
@@ -66,13 +66,15 @@ FORMAT JSON STRICT:
 // Fonction de nettoyage JSON optimisée
 const cleanJsonContent = (content: string): string => {
   try {
-    // Remove any markdown code block syntax
-    const cleanContent = content
+    // Remove markdown and normalize quotes
+    let cleanContent = content
       .replace(/```json\n?|\n?```/g, '')
       .replace(/[\u0000-\u001F]+/g, ' ')
+      .replace(/['']/g, "'")
+      .replace(/[""]/g, '"')
       .trim();
 
-    // Validate JSON structure
+    // Ensure we have valid JSON
     const parsed = JSON.parse(cleanContent);
     if (!parsed.recipes || !Array.isArray(parsed.recipes)) {
       throw new Error('Invalid JSON structure: missing recipes array');
@@ -82,7 +84,7 @@ const cleanJsonContent = (content: string): string => {
   } catch (error) {
     console.error('Error cleaning JSON content:', error);
     console.log('Raw content:', content);
-    throw error;
+    throw new Error(`JSON parsing error: ${error.message}`);
   }
 };
 
@@ -123,7 +125,7 @@ serve(async (req) => {
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef expert en recettes pour enfants. Génère UNIQUEMENT du JSON valide.' 
+          content: 'Tu es un chef expert en recettes pour enfants. Génère UNIQUEMENT du JSON valide avec des guillemets doubles.' 
         },
         { role: 'user', content: prompt }
       ],
