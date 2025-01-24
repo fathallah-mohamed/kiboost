@@ -22,13 +22,8 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const { generateRecipes, loading, error } = useRecipeGeneration();
 
   const handleQuickPlan = () => {
-    if (!session?.user) {
-      toast.error("Vous devez être connecté pour générer des recettes");
-      return;
-    }
-
     console.log('Redirecting to recipes section...');
-    onSectionChange('planner');
+    onSectionChange('recipes');
   };
 
   return (
@@ -47,14 +42,9 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
           </div>
           <Button 
             onClick={handleQuickPlan}
-            disabled={loading}
             className="whitespace-nowrap group hover:scale-105 transition-all duration-300"
           >
-            {loading ? (
-              <Circle className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
-            )}
+            <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
             Planning express
           </Button>
         </div>
@@ -73,7 +63,6 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
             <p className="text-sm">Vous n'avez pas encore planifié vos repas pour cette semaine</p>
             <Button 
               onClick={() => onSectionChange('planner')}
-              disabled={!session?.user}
             >
               Planifier maintenant
             </Button>
@@ -84,7 +73,6 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
             <Button 
               variant="outline" 
               onClick={() => onSectionChange('shopping')}
-              disabled={!session?.user}
             >
               Mettre à jour
             </Button>
