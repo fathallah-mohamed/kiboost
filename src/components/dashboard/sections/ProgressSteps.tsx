@@ -87,15 +87,8 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
   ];
 
   const handleStepClick = (step: Step) => {
-    console.log(`Navigating to ${step.route}`);
+    console.log(`Navigating to /dashboard/${step.route}`);
     navigate(`/dashboard/${step.route}`);
-  };
-
-  const handleNextStep = () => {
-    const nextStep = steps[currentStep];
-    if (nextStep) {
-      handleStepClick(nextStep);
-    }
   };
 
   return (
@@ -146,7 +139,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
 
       {currentStep < steps.length && (
         <div className="flex justify-end">
-          <Button onClick={handleNextStep} className="gap-2">
+          <Button onClick={() => handleStepClick(steps[currentStep])} className="gap-2">
             Passer à l'étape suivante
             <ArrowRight className="w-4 h-4" />
           </Button>
