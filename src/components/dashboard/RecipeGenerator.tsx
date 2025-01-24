@@ -4,7 +4,7 @@ import { useRecipeGeneration } from './recipe/hooks/useRecipeGeneration';
 import { useRecipeSaving } from './recipe/hooks/useRecipeSaving';
 import { BackToDashboard } from './BackToDashboard';
 import { useNavigate } from 'react-router-dom';
-import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from './types';
+import { Recipe, ChildProfile, MealType, Difficulty, RecipeFilters } from './types';
 import { RecipeGeneratorContent } from './recipe/RecipeGeneratorContent';
 import { usePlannedRecipesFetching } from './recipe/hooks/usePlannedRecipesFetching';
 
