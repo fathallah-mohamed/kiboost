@@ -2,42 +2,6 @@ import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Json } from "@/integrations/supabase/types";
-
-// Helper function to parse JSON data safely
-const parseJsonField = <T>(field: Json | null, defaultValue: T): T => {
-  if (typeof field === 'string') {
-    try {
-      return JSON.parse(field) as T;
-    } catch {
-      return defaultValue;
-    }
-  }
-  return (field as T) || defaultValue;
-};
-
-// Helper to convert Supabase recipe to our Recipe type
-const convertToRecipe = (recipe: any): Recipe => ({
-  ...recipe,
-  ingredients: parseJsonField(recipe.ingredients, []).map((ing: any) => ({
-    item: ing.item || '',
-    quantity: ing.quantity || '',
-    unit: ing.unit || ''
-  })),
-  instructions: typeof recipe.instructions === 'string'
-    ? recipe.instructions.split('\n').filter(Boolean)
-    : Array.isArray(recipe.instructions)
-      ? recipe.instructions
-      : [recipe.instructions].filter(Boolean),
-  nutritional_info: parseJsonField(recipe.nutritional_info, {
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0
-  }),
-  health_benefits: parseJsonField(recipe.health_benefits, []),
-  cooking_steps: parseJsonField(recipe.cooking_steps, [])
-});
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -48,7 +12,8 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
 
-      console.log("Generating recipes with filters:", filters);
+      console.log("Generating recipes for child:", child);
+      console.log("Using filters:", filters);
 
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
@@ -56,7 +21,11 @@ export const useRecipeGeneration = () => {
           body: { 
             child: {
               ...child,
-              profile_id: child.id // Use child.id instead of profile_id
+              id: child.id,
+              name: child.name,
+              birth_date: child.birth_date,
+              allergies: child.allergies || [],
+              preferences: child.preferences || []
             },
             filters
           }
@@ -64,36 +33,13 @@ export const useRecipeGeneration = () => {
       );
 
       if (generateError) throw generateError;
-
       console.log("Generated recipe response:", response);
 
-      let query = supabase
-        .from('recipes')
-        .select('*')
-        .eq('is_generated', true);
-
-      if (filters.mealType && filters.mealType !== 'all') {
-        query = query.eq('meal_type', filters.mealType);
-      }
-      
-      if (filters.maxPrepTime) {
-        query = query.lte('preparation_time', filters.maxPrepTime);
+      if (!response.recipes || !Array.isArray(response.recipes)) {
+        throw new Error("Format de réponse invalide");
       }
 
-      if (filters.difficulty && filters.difficulty !== 'all') {
-        query = query.eq('difficulty', filters.difficulty);
-      }
-
-      const { data: existingRecipes, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      // Convert all recipes to the correct type
-      const allRecipes = [...(response.recipes || []), ...(existingRecipes || [])]
-        .map(convertToRecipe);
-
-      toast.success("Recettes générées avec succès !");
-      return allRecipes;
+      return response.recipes;
 
     } catch (err) {
       console.error("Error generating recipes:", err);

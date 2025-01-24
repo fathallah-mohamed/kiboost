@@ -58,16 +58,16 @@ export const RecipeGeneratorPage = () => {
         throw error;
       }
 
-      const transformedRecipes = (data || []).map(recipe => ({
+      return data.map(recipe => ({
         ...recipe,
         ingredients: typeof recipe.ingredients === 'string' 
           ? JSON.parse(recipe.ingredients)
           : recipe.ingredients,
         instructions: typeof recipe.instructions === 'string'
-          ? recipe.instructions.split('\n').filter(Boolean)
+          ? recipe.instructions.split('\n')
           : Array.isArray(recipe.instructions)
             ? recipe.instructions
-            : [recipe.instructions].filter(Boolean),
+            : [recipe.instructions],
         nutritional_info: typeof recipe.nutritional_info === 'string'
           ? JSON.parse(recipe.nutritional_info)
           : recipe.nutritional_info,
@@ -77,9 +77,7 @@ export const RecipeGeneratorPage = () => {
         cooking_steps: typeof recipe.cooking_steps === 'string'
           ? JSON.parse(recipe.cooking_steps)
           : recipe.cooking_steps || []
-      })) as Recipe[];
-
-      return transformedRecipes;
+      }));
     },
     enabled: !!session?.user?.id,
   });
@@ -111,6 +109,12 @@ export const RecipeGeneratorPage = () => {
       
       if (newRecipes && Array.isArray(newRecipes) && newRecipes.length > 0) {
         setGeneratedRecipes(newRecipes);
+        
+        // Save each recipe to the database
+        for (const recipe of newRecipes) {
+          await handleSaveRecipe(recipe);
+        }
+        
         await refetchRecipes();
         toast.success("Recettes générées avec succès !");
       } else {
