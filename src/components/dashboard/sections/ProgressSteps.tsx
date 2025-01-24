@@ -10,20 +10,14 @@ import {
   Check,
   User,
   ArrowRight,
-  Lock,
-  CheckCircle,
-  Circle,
-  AlertTriangle,
+  AlertCircle,
 } from "lucide-react";
-import { toast } from "sonner";
 
 interface ProgressStepsProps {
   onSectionChange: (section: string) => void;
 }
 
-type StepStatus = "completed" | "in-progress" | "locked";
-
-interface Step {
+type Step = {
   id: string;
   label: string;
   icon: any;
@@ -31,11 +25,10 @@ interface Step {
   route: string;
   description: string;
   feedback: string;
-}
+};
 
 export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
 
   const steps: Step[] = [
@@ -53,7 +46,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       label: "Générer des recettes",
       icon: ChefHat,
       action: "Générer maintenant",
-      route: "recipes",
+      route: "generate-recipes",
       description: "Créez des recettes adaptées à vos enfants",
       feedback: "Recettes générées avec succès !",
     },
@@ -105,16 +98,15 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
 
       <div className="grid gap-4">
         {steps.map((step, index) => (
-          <div
-            key={step.id}
-            className="relative"
-          >
+          <div key={step.id} className="relative">
             {index < steps.length - 1 && (
               <div className="absolute left-[1.4rem] top-[3rem] bottom-[-1rem] w-0.5 bg-gray-200" />
             )}
-            <div className={`flex items-center justify-between p-4 rounded-lg border animate-fade-in hover:shadow-md transition-all ${
-              index < currentStep ? "bg-green-50" : "bg-white"
-            } ${index === currentStep ? "bg-blue-50" : ""}`}>
+            <div
+              className={`flex items-center justify-between p-4 rounded-lg border animate-fade-in hover:shadow-md transition-all ${
+                index < currentStep ? "bg-green-50" : "bg-white"
+              } ${index === currentStep ? "bg-blue-50" : ""}`}
+            >
               <div className="flex items-center gap-4">
                 <step.icon className="w-6 h-6" />
                 <div>
@@ -124,10 +116,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
                   </p>
                 </div>
               </div>
-              <Button
-                onClick={() => handleStepClick(step)}
-                className="gap-2 group"
-              >
+              <Button onClick={() => handleStepClick(step)} className="gap-2 group">
                 <step.icon className="w-4 h-4" />
                 {step.action}
                 <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
@@ -139,7 +128,10 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
 
       {currentStep < steps.length && (
         <div className="flex justify-end">
-          <Button onClick={() => handleStepClick(steps[currentStep])} className="gap-2">
+          <Button
+            onClick={() => handleStepClick(steps[currentStep])}
+            className="gap-2"
+          >
             Passer à l'étape suivante
             <ArrowRight className="w-4 h-4" />
           </Button>
