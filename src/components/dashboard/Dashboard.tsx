@@ -7,6 +7,7 @@ import { ChildProfile } from './types';
 import { DashboardHeader } from './layout/DashboardHeader';
 import { DashboardContent } from './layout/DashboardContent';
 import { DashboardNavigation } from './layout/DashboardNavigation';
+import { CategoriesGrid } from './categories/CategoriesGrid';
 
 interface DashboardProps {
   session: Session;
@@ -18,7 +19,7 @@ export const Dashboard = ({ session }: DashboardProps) => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
-  const [activeSection, setActiveSection] = useState<string>('overview');
+  const [activeSection, setActiveSection] = useState<string>('categories');
 
   useEffect(() => {
     if (location.state?.section) {
@@ -49,15 +50,24 @@ export const Dashboard = ({ session }: DashboardProps) => {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader handleLogout={handleLogout} />
-      <DashboardNavigation 
-        activeSection={activeSection} 
-        setActiveSection={setActiveSection}
-      />
-      <DashboardContent
-        session={session}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
+      {activeSection === 'categories' ? (
+        <div className="container mx-auto px-4 py-8">
+          <h2 className="text-2xl font-bold mb-6">Bienvenue sur Kiboost</h2>
+          <CategoriesGrid />
+        </div>
+      ) : (
+        <>
+          <DashboardNavigation 
+            activeSection={activeSection} 
+            setActiveSection={setActiveSection}
+          />
+          <DashboardContent
+            session={session}
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
+          />
+        </>
+      )}
     </div>
   );
 };
