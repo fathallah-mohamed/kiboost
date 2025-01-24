@@ -1,31 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Configuration, OpenAIApi } from 'https://esm.sh/openai@3.2.1';
 import { corsHeaders } from '../_shared/cors.ts';
 
-// Constants
-const VALID_CATEGORIES = [
-  'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
-  'growth', 'mental', 'organs', 'beauty', 'physical',
-  'prevention', 'global'
-];
-
-const categoryMap: { [key: string]: string } = {
-  'cognitif': 'cognitive',
-  'énergie': 'energy',
-  'satiété': 'satiety',
-  'digestif': 'digestive',
-  'immunité': 'immunity',
-  'croissance': 'growth',
-  'mental': 'mental',
-  'organes': 'organs',
-  'beauté': 'beauty',
-  'physique': 'physical',
-  'prévention': 'prevention',
-  'global': 'global'
-};
-
-// Types
 interface ChildProfile {
   id: string;
   name: string;
@@ -34,59 +10,32 @@ interface ChildProfile {
   preferences: string[];
 }
 
-interface RecipeFilters {
-  mealType?: string;
-  maxPrepTime?: number;
-  difficulty?: string;
-  healthBenefits?: string[];
-  maxCost?: number;
-  season?: number;
-  specialOccasion?: string;
-  includedIngredients?: string[];
-  excludedIngredients?: string[];
+interface RecipeResponse {
+  name: string;
+  ingredients: Array<{
+    item: string;
+    quantity: string;
+    unit: string;
+  }>;
+  instructions: string[];
+  nutritional_info: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  meal_type: string;
+  preparation_time: number;
+  difficulty: string;
+  servings: number;
+  health_benefits: Array<{
+    icon: string;
+    category: string;
+    description: string;
+  }>;
 }
 
-// Helper Functions
-const validateAndMapHealthBenefits = (healthBenefits: any[]) => {
-  if (!Array.isArray(healthBenefits)) {
-    console.error('Health benefits is not an array:', healthBenefits);
-    return [];
-  }
-
-  return healthBenefits
-    .filter(benefit => benefit && typeof benefit === 'object')
-    .map(benefit => {
-      if (!benefit.category || typeof benefit.category !== 'string') {
-        console.error('Invalid benefit format:', benefit);
-        return null;
-      }
-
-      const mappedCategory = categoryMap[benefit.category] || benefit.category.toLowerCase();
-      
-      if (!VALID_CATEGORIES.includes(mappedCategory)) {
-        console.error(`Invalid category found: ${benefit.category}, mapped to: ${mappedCategory}`);
-        return null;
-      }
-
-      return {
-        ...benefit,
-        category: mappedCategory
-      };
-    })
-    .filter(Boolean);
-};
-
-const generatePrompt = (childProfiles: ChildProfile[], filters: RecipeFilters) => {
-  const child = childProfiles[0];
-  const constraints = [];
-
-  if (filters.mealType) constraints.push(`Type de repas : ${filters.mealType}`);
-  if (filters.maxPrepTime) constraints.push(`Temps de préparation maximum : ${filters.maxPrepTime} minutes`);
-  if (filters.difficulty) constraints.push(`Difficulté : ${filters.difficulty}`);
-  if (filters.maxCost) constraints.push(`Coût maximum : ${filters.maxCost}€`);
-  if (filters.season) constraints.push(`Mois : ${filters.season}`);
-  if (filters.specialOccasion) constraints.push(`Occasion spéciale : ${filters.specialOccasion}`);
-  
+const generatePrompt = (child: ChildProfile) => {
   const allergiesText = child.allergies?.length > 0 
     ? `Allergies à éviter : ${child.allergies.join(', ')}`
     : 'Aucune allergie connue';
@@ -103,65 +52,30 @@ Profil de l'enfant :
 - ${allergiesText}
 - ${preferencesText}
 
-Contraintes :
-${constraints.join('\n')}
-
-Pour chaque recette, fournis :
-- Un nom accrocheur
-- Une liste d'ingrédients avec quantités
-- Des instructions détaillées
-- Le temps de préparation
-- La difficulté
-- Les informations nutritionnelles
-- Les bienfaits santé (utilise uniquement ces catégories : cognitif, énergie, satiété, digestif, immunité, croissance, mental, organes, beauté, physique, prévention, global)
-
-Format de réponse souhaité : un tableau JSON de recettes.`;
+Format de réponse souhaité : un tableau JSON de recettes avec les champs suivants :
+- name: string (nom de la recette)
+- ingredients: array of { item: string, quantity: string, unit: string }
+- instructions: array of string (étapes de préparation)
+- nutritional_info: { calories: number, protein: number, carbs: number, fat: number }
+- meal_type: string ('breakfast', 'lunch', 'dinner', 'snack')
+- preparation_time: number (en minutes)
+- difficulty: string ('easy', 'medium', 'hard')
+- servings: number
+- health_benefits: array of { icon: string, category: string, description: string }`;
 };
 
-const processRecipes = (recipes: any[]) => {
-  if (!Array.isArray(recipes)) {
-    console.error('Recipes is not an array:', recipes);
-    throw new Error('Format de réponse invalide: les recettes doivent être un tableau');
-  }
-
-  return recipes.map(recipe => {
-    if (!recipe || typeof recipe !== 'object') {
-      console.error('Invalid recipe format:', recipe);
-      throw new Error('Format de recette invalide');
-    }
-
-    const healthBenefits = validateAndMapHealthBenefits(recipe.health_benefits || []);
-
-    return {
-      ...recipe,
-      health_benefits: healthBenefits,
-      ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
-      instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [recipe.instructions].filter(Boolean),
-      nutritional_info: recipe.nutritional_info || {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
-      }
-    };
-  });
-};
-
-// Main Handler
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { childProfiles, filters } = await req.json();
+    const { childProfiles } = await req.json();
 
     if (!childProfiles || !Array.isArray(childProfiles) || childProfiles.length === 0) {
       throw new Error('Profil enfant invalide ou manquant');
     }
 
-    // Initialize OpenAI
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAiKey) {
       throw new Error('Clé API OpenAI manquante');
@@ -170,12 +84,11 @@ serve(async (req) => {
     const configuration = new Configuration({ apiKey: openAiKey });
     const openai = new OpenAIApi(configuration);
 
-    // Generate recipes
-    const prompt = generatePrompt(childProfiles, filters || {});
+    const prompt = generatePrompt(childProfiles[0]);
     console.log('Prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4',
+      model: 'gpt-4o',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       max_tokens: 2000,
@@ -186,19 +99,17 @@ serve(async (req) => {
       throw new Error('Réponse OpenAI invalide');
     }
 
-    let recipes;
+    let recipes: RecipeResponse[];
     try {
       recipes = JSON.parse(content);
+      console.log('Parsed recipes:', recipes);
     } catch (error) {
       console.error('Error parsing OpenAI response:', error);
       throw new Error('Erreur lors du parsing de la réponse OpenAI');
     }
 
-    // Process and validate recipes
-    const processedRecipes = processRecipes(recipes);
-
     return new Response(
-      JSON.stringify(processedRecipes),
+      JSON.stringify(recipes),
       {
         headers: {
           ...corsHeaders,
@@ -212,7 +123,6 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Une erreur inconnue est survenue',
-        details: 'Une erreur est survenue lors de la génération des recettes. Veuillez réessayer.'
       }),
       {
         headers: {

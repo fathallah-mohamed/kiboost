@@ -1,7 +1,32 @@
 import { useState } from 'react';
-import { Recipe, ChildProfile, HealthBenefitCategory } from '../types';
+import { Recipe, ChildProfile } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface RecipeResponse {
+  name: string;
+  ingredients: Array<{
+    item: string;
+    quantity: string;
+    unit: string;
+  }>;
+  instructions: string[];
+  nutritional_info: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  meal_type: string;
+  preparation_time: number;
+  difficulty: string;
+  servings: number;
+  health_benefits?: Array<{
+    icon: string;
+    category: string;
+    description: string;
+  }>;
+}
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -37,47 +62,31 @@ export const useRecipeGeneration = () => {
       }
 
       const savedRecipes = await Promise.all(
-        generatedRecipes.map(async (recipe) => {
-          const transformedRecipe = {
-            ...recipe,
+        generatedRecipes.map(async (recipe: RecipeResponse) => {
+          const recipeData = {
             profile_id: userId,
+            name: recipe.name,
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            nutritional_info: recipe.nutritional_info,
+            meal_type: recipe.meal_type,
+            preparation_time: recipe.preparation_time,
+            difficulty: recipe.difficulty,
+            servings: recipe.servings,
             is_generated: true,
-            ingredients: Array.isArray(recipe.ingredients) 
-              ? recipe.ingredients.map((ing: any) => ({
-                  item: ing.item || ing.name || '',
-                  quantity: ing.quantity?.toString() || '0',
-                  unit: ing.unit || ''
-                }))
-              : [],
-            instructions: Array.isArray(recipe.instructions) 
-              ? recipe.instructions 
-              : [recipe.instructions].filter(Boolean),
-            nutritional_info: {
-              calories: Number(recipe.nutritional_info?.calories) || 0,
-              protein: Number(recipe.nutritional_info?.protein) || 0,
-              carbs: Number(recipe.nutritional_info?.carbs) || 0,
-              fat: Number(recipe.nutritional_info?.fat) || 0
-            },
-            health_benefits: Array.isArray(recipe.health_benefits)
-              ? recipe.health_benefits.map((benefit: any) => ({
-                  icon: benefit.icon || 'sparkles',
-                  category: (benefit.category || 'global') as HealthBenefitCategory,
-                  description: benefit.description || ''
-                }))
-              : [],
-            cooking_steps: Array.isArray(recipe.cooking_steps)
-              ? recipe.cooking_steps.map((step: any, index: number) => ({
-                  step: Number(step.step) || index + 1,
-                  description: step.description || '',
-                  duration: step.duration ? Number(step.duration) : undefined,
-                  tips: step.tips || undefined
-                }))
-              : []
+            health_benefits: recipe.health_benefits || [],
+            cooking_steps: [],
+            min_age: 0,
+            max_age: 18,
+            dietary_preferences: [],
+            allergens: [],
+            cost_estimate: 0,
+            seasonal_months: [1,2,3,4,5,6,7,8,9,10,11,12]
           };
 
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
-            .insert(transformedRecipe)
+            .insert(recipeData)
             .select('*')
             .single();
 
@@ -86,43 +95,13 @@ export const useRecipeGeneration = () => {
             throw saveError;
           }
 
-          const nutritionalInfo = typeof savedRecipe.nutritional_info === 'string' 
-            ? JSON.parse(savedRecipe.nutritional_info)
-            : savedRecipe.nutritional_info;
-
           return {
             ...savedRecipe,
-            ingredients: Array.isArray(savedRecipe.ingredients) 
-              ? savedRecipe.ingredients.map((ing: any) => ({
-                  item: ing.item || ing.name || '',
-                  quantity: ing.quantity?.toString() || '0',
-                  unit: ing.unit || ''
-                }))
-              : [],
-            instructions: Array.isArray(savedRecipe.instructions) 
-              ? savedRecipe.instructions 
-              : [savedRecipe.instructions].filter(Boolean),
-            nutritional_info: {
-              calories: Number(nutritionalInfo?.calories) || 0,
-              protein: Number(nutritionalInfo?.protein) || 0,
-              carbs: Number(nutritionalInfo?.carbs) || 0,
-              fat: Number(nutritionalInfo?.fat) || 0
-            },
-            health_benefits: Array.isArray(savedRecipe.health_benefits)
-              ? savedRecipe.health_benefits.map((benefit: any) => ({
-                  icon: benefit.icon || 'sparkles',
-                  category: (benefit.category || 'global') as HealthBenefitCategory,
-                  description: benefit.description || ''
-                }))
-              : [],
-            cooking_steps: Array.isArray(savedRecipe.cooking_steps)
-              ? savedRecipe.cooking_steps.map((step: any, index: number) => ({
-                  step: Number(step.step) || index + 1,
-                  description: step.description || '',
-                  duration: step.duration ? Number(step.duration) : undefined,
-                  tips: step.tips || undefined
-                }))
-              : []
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            nutritional_info: recipe.nutritional_info,
+            health_benefits: recipe.health_benefits || [],
+            cooking_steps: []
           } as Recipe;
         })
       );
