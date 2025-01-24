@@ -1,43 +1,21 @@
-import { useState, useEffect } from 'react';
-import { Recipe, ChildProfile, RecipeFilters } from '../types';
-import { useToast } from '@/components/ui/use-toast';
+import { useState } from 'react';
+import { Recipe, ChildProfile } from '../types';
 import { supabase } from '@/integrations/supabase/client';
-
-const STORAGE_KEY = 'generated_recipes';
+import { toast } from 'sonner';
 
 export const useRecipeGeneration = () => {
-  const [recipes, setRecipes] = useState<Recipe[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
-  }, [recipes]);
-
-  const clearRecipes = () => {
-    console.log('Clearing recipes and localStorage');
-    localStorage.removeItem(STORAGE_KEY);
-    setRecipes([]);
-    setLoading(false);
-    setError(null);
-  };
-
-  const generateRecipes = async (child: ChildProfile, filters?: RecipeFilters) => {
+  const generateRecipes = async (child: ChildProfile) => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Generating recipes for children:', child, 'with filters:', filters);
+      console.log('Generating recipes for child:', child);
       
       const { data: generatedRecipes, error: functionError } = await supabase.functions.invoke('generate-recipe', {
-        body: {
-          childProfiles: [child],
-          filters,
-        },
+        body: { childProfiles: [child] }
       });
 
       if (functionError) {
@@ -52,13 +30,20 @@ export const useRecipeGeneration = () => {
       }
 
       // Sauvegarder les recettes générées dans la base de données
+      const { data: session } = await supabase.auth.getSession();
+      const userId = session?.session?.user?.id;
+
+      if (!userId) {
+        throw new Error('Utilisateur non connecté');
+      }
+
       const savedRecipes = await Promise.all(
         generatedRecipes.map(async (recipe) => {
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
             .insert({
               ...recipe,
-              profile_id: (await supabase.auth.getSession()).data.session?.user.id,
+              profile_id: userId,
               is_generated: true,
             })
             .select('*')
@@ -69,53 +54,25 @@ export const useRecipeGeneration = () => {
             throw saveError;
           }
 
-          // Transform the saved recipe to match the Recipe type
-          return {
-            ...savedRecipe,
-            ingredients: typeof savedRecipe.ingredients === 'string' 
-              ? JSON.parse(savedRecipe.ingredients)
-              : savedRecipe.ingredients,
-            nutritional_info: typeof savedRecipe.nutritional_info === 'string'
-              ? JSON.parse(savedRecipe.nutritional_info)
-              : savedRecipe.nutritional_info,
-            instructions: Array.isArray(savedRecipe.instructions)
-              ? savedRecipe.instructions
-              : [savedRecipe.instructions].filter(Boolean),
-            health_benefits: savedRecipe.health_benefits
-              ? (typeof savedRecipe.health_benefits === 'string'
-                ? JSON.parse(savedRecipe.health_benefits)
-                : savedRecipe.health_benefits)
-              : undefined,
-            cooking_steps: savedRecipe.cooking_steps
-              ? (typeof savedRecipe.cooking_steps === 'string'
-                ? JSON.parse(savedRecipe.cooking_steps)
-                : savedRecipe.cooking_steps)
-              : []
-          } as Recipe;
+          return savedRecipe as Recipe;
         })
       );
 
       console.log('Saved recipes:', savedRecipes);
-      setRecipes(savedRecipes);
+      return savedRecipes;
 
     } catch (err) {
       console.error('Error generating recipes:', err);
-      setError('Une erreur est survenue lors de la génération des recettes.');
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de générer les recettes.",
-      });
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
   return {
-    recipes,
-    loading,
-    error,
     generateRecipes,
-    clearRecipes
+    loading,
+    error
   };
 };

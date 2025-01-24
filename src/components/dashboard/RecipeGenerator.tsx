@@ -29,6 +29,7 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
     }
 
     try {
+      console.log('Starting quick plan generation...');
       await generateRecipes({
         id: "default",
         name: "Enfant par défaut",
@@ -40,7 +41,7 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
       toast.success("Vos recettes ont été générées avec succès !");
       onSectionChange('planner');
     } catch (err) {
-      console.error('Error generating recipes:', err);
+      console.error('Error in handleQuickPlan:', err);
       toast.error("Une erreur est survenue lors de la génération des recettes");
     }
   };
