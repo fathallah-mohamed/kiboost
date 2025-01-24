@@ -183,8 +183,10 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
       }
 
       if (data?.items) {
-        const parsedItems = Array.isArray(data.items) ? data.items : [];
-        setItems(parsedItems as ShoppingListItem[]);
+        const parsedItems = Array.isArray(data.items) 
+          ? (data.items as unknown as ShoppingListItem[])
+          : [];
+        setItems(parsedItems);
       } else {
         setItems([]);
       }
