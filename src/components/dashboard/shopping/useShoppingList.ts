@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-export interface ShoppingItem {
-  id: string;
-  name: string;
-  completed: boolean;
-}
+import { ShoppingItem } from '../types/shopping';
+import { Json } from '@/integrations/supabase/types';
 
 export const useShoppingList = (userId: string) => {
   const [items, setItems] = useState<ShoppingItem[]>([]);
@@ -53,7 +49,7 @@ export const useShoppingList = (userId: string) => {
         .from('shopping_lists')
         .upsert({ 
           profile_id: userId, 
-          items: updatedItems 
+          items: updatedItems as unknown as Json
         });
 
       if (error) throw error;
@@ -77,7 +73,7 @@ export const useShoppingList = (userId: string) => {
         .from('shopping_lists')
         .upsert({ 
           profile_id: userId, 
-          items: updatedItems 
+          items: updatedItems as unknown as Json
         });
 
       if (error) throw error;
@@ -103,7 +99,7 @@ export const useShoppingList = (userId: string) => {
         .from('shopping_lists')
         .upsert({ 
           profile_id: userId, 
-          items: updatedItems 
+          items: updatedItems as unknown as Json
         });
 
       if (error) throw error;

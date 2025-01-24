@@ -28,7 +28,6 @@ export const StepNavigation = ({ previousStep, nextStep }: StepNavigationProps) 
           {previousStep.label}
         </Button>
       ) : (
-        // Spacer element for flex alignment
         <div></div>
       )}
 

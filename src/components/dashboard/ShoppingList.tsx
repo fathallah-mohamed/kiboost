@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { BackToDashboard } from './BackToDashboard';
 import { StepNavigation } from './navigation/StepNavigation';
 import { useShoppingList } from './shopping/useShoppingList';
-import { ShoppingItem } from './types';
+import { ShoppingItem } from './types/shopping';
 
 interface ShoppingListProps {
   userId: string;
