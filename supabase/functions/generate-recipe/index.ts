@@ -84,6 +84,19 @@ const generatePrompt = (child: ChildProfile, filters: RecipeFilters) => {
     ? `\nContraintes supplémentaires :\n${additionalConstraints.join('\n')}`
     : '';
 
+  const timeConstraint = filters.maxPrepTime && filters.maxPrepTime <= 15
+    ? `\nIMPORTANT: Les recettes DOIVENT être réalisables en ${filters.maxPrepTime} minutes maximum.
+       Suggestions de recettes rapides pour le petit-déjeuner:
+       - Smoothies et boissons
+       - Bowls de céréales ou muesli personnalisés
+       - Tartines et toasts avec différentes garnitures
+       - Yaourts et fromages blancs avec toppings
+       - Fruits frais préparés
+       - Pancakes express (version micro-ondes ou poêle)
+       - Overnight oats (préparation la veille)
+       - Wraps et sandwichs express`
+    : '';
+
   return `Génère 3 recettes pour enfants adaptées au profil suivant :
 
 Profil de l'enfant :
@@ -92,12 +105,16 @@ Profil de l'enfant :
 - ${allergiesText}
 - ${preferencesText}
 ${constraintsText}
+${timeConstraint}
 
 IMPORTANT : 
 - Chaque recette DOIT avoir EXACTEMENT 3 bienfaits santé différents
 - Les catégories de bienfaits santé DOIVENT être UNIQUEMENT parmi : ${validCategoriesText}
 - NE PAS inventer d'autres catégories
 - Respecter STRICTEMENT toutes les contraintes données
+- Pour les recettes rapides, privilégier des ingrédients prêts à l'emploi et des étapes simples
+- Inclure des astuces pour gagner du temps dans la préparation
+- Les temps de préparation doivent être RÉALISTES et tenir compte du temps total (préparation + cuisson)
 
 Réponds UNIQUEMENT avec un tableau JSON contenant exactement 3 recettes au format suivant :
 [
