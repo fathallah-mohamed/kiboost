@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Clock, ChefHat, Gauge } from "lucide-react";
+import { Coffee, Utensils, Moon, Award, Star, Flame, Clock } from "lucide-react";
 import { MealType, Difficulty } from "../types";
 import { cn } from "@/lib/utils";
 
@@ -13,18 +13,18 @@ interface RecipeFiltersProps {
 }
 
 const mealTypes: { value: MealType | "all"; label: string; icon: JSX.Element }[] = [
-  { value: "all", label: "Tous", icon: <ChefHat className="w-4 h-4" /> },
-  { value: "breakfast", label: "Petit-déjeuner", icon: <ChefHat className="w-4 h-4" /> },
-  { value: "lunch", label: "Déjeuner", icon: <ChefHat className="w-4 h-4" /> },
-  { value: "dinner", label: "Dîner", icon: <ChefHat className="w-4 h-4" /> },
-  { value: "snack", label: "Goûter", icon: <ChefHat className="w-4 h-4" /> },
+  { value: "all", label: "Tous", icon: <Utensils className="w-4 h-4" /> },
+  { value: "breakfast", label: "Petit-déjeuner", icon: <Coffee className="w-4 h-4" /> },
+  { value: "lunch", label: "Déjeuner", icon: <Utensils className="w-4 h-4" /> },
+  { value: "dinner", label: "Dîner", icon: <Moon className="w-4 h-4" /> },
+  { value: "snack", label: "Goûter", icon: <Coffee className="w-4 h-4" /> },
 ];
 
 const difficulties: { value: Difficulty | "all"; label: string; icon: JSX.Element }[] = [
-  { value: "all", label: "Toutes", icon: <Gauge className="w-4 h-4" /> },
-  { value: "easy", label: "Facile", icon: <Gauge className="w-4 h-4" /> },
-  { value: "medium", label: "Moyen", icon: <Gauge className="w-4 h-4" /> },
-  { value: "hard", label: "Difficile", icon: <Gauge className="w-4 h-4" /> },
+  { value: "all", label: "Toutes", icon: <Star className="w-4 h-4" /> },
+  { value: "easy", label: "Facile", icon: <Award className="w-4 h-4" /> },
+  { value: "medium", label: "Moyen", icon: <Star className="w-4 h-4" /> },
+  { value: "hard", label: "Difficile", icon: <Flame className="w-4 h-4" /> },
 ];
 
 const prepTimes = [15, 30, 45, 60];
@@ -41,7 +41,7 @@ export const RecipeFilters = ({
     <div className="space-y-6">
       <div className="space-y-2">
         <label className="text-sm font-medium flex items-center gap-2">
-          <ChefHat className="w-4 h-4" />
+          <Utensils className="w-4 h-4" />
           Type de repas
         </label>
         <div className="flex flex-wrap gap-2">
@@ -84,7 +84,7 @@ export const RecipeFilters = ({
 
       <div className="space-y-2">
         <label className="text-sm font-medium flex items-center gap-2">
-          <Gauge className="w-4 h-4" />
+          <Star className="w-4 h-4" />
           Difficulté
         </label>
         <div className="flex flex-wrap gap-2">
