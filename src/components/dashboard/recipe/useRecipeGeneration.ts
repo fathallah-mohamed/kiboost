@@ -54,11 +54,11 @@ export const useRecipeGeneration = () => {
             instructions: Array.isArray(recipe.instructions) 
               ? recipe.instructions 
               : [recipe.instructions].filter(Boolean),
-            nutritional_info: recipe.nutritional_info || {
-              calories: 0,
-              protein: 0,
-              carbs: 0,
-              fat: 0
+            nutritional_info: {
+              calories: Number(recipe.nutritional_info?.calories) || 0,
+              protein: Number(recipe.nutritional_info?.protein) || 0,
+              carbs: Number(recipe.nutritional_info?.carbs) || 0,
+              fat: Number(recipe.nutritional_info?.fat) || 0
             }
           };
 
@@ -85,7 +85,13 @@ export const useRecipeGeneration = () => {
               : [],
             instructions: Array.isArray(savedRecipe.instructions) 
               ? savedRecipe.instructions 
-              : [savedRecipe.instructions].filter(Boolean)
+              : [savedRecipe.instructions].filter(Boolean),
+            nutritional_info: {
+              calories: Number(savedRecipe.nutritional_info?.calories) || 0,
+              protein: Number(savedRecipe.nutritional_info?.protein) || 0,
+              carbs: Number(savedRecipe.nutritional_info?.carbs) || 0,
+              fat: Number(savedRecipe.nutritional_info?.fat) || 0
+            }
           } as Recipe;
         })
       );
