@@ -129,13 +129,24 @@ export const RecipeGeneratorPage = () => {
   const handleSaveRecipe = async (recipe: Recipe) => {
     try {
       setSaving(true);
+      
+      // Convert recipe data to match database schema
+      const recipeToSave = {
+        ...recipe,
+        profile_id: session?.user?.id,
+        is_generated: true,
+        instructions: Array.isArray(recipe.instructions) 
+          ? recipe.instructions.join('\n') 
+          : recipe.instructions,
+        ingredients: JSON.stringify(recipe.ingredients),
+        nutritional_info: JSON.stringify(recipe.nutritional_info),
+        health_benefits: JSON.stringify(recipe.health_benefits || []),
+        cooking_steps: JSON.stringify(recipe.cooking_steps || [])
+      };
+
       const { error } = await supabase
         .from('recipes')
-        .insert({
-          ...recipe,
-          profile_id: session?.user?.id,
-          is_generated: true
-        });
+        .insert(recipeToSave);
 
       if (error) throw error;
       
