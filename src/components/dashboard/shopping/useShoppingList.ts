@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ShoppingItem } from '../types/shopping';
+import { ShoppingItem, ShoppingListDB } from '../types/shopping';
 import { Json } from '@/integrations/supabase/types';
 
 export const useShoppingList = (userId: string) => {
@@ -24,7 +24,7 @@ export const useShoppingList = (userId: string) => {
       if (error) throw error;
 
       if (shoppingList?.items) {
-        setItems(shoppingList.items as unknown as ShoppingItem[]);
+        setItems(shoppingList.items as ShoppingItem[]);
       }
     } catch (error) {
       console.error('Error fetching shopping list:', error);
@@ -50,7 +50,7 @@ export const useShoppingList = (userId: string) => {
         .upsert({ 
           profile_id: userId, 
           items: updatedItems as unknown as Json
-        });
+        } as ShoppingListDB);
 
       if (error) throw error;
 
@@ -74,7 +74,7 @@ export const useShoppingList = (userId: string) => {
         .upsert({ 
           profile_id: userId, 
           items: updatedItems as unknown as Json
-        });
+        } as ShoppingListDB);
 
       if (error) throw error;
 
@@ -100,7 +100,7 @@ export const useShoppingList = (userId: string) => {
         .upsert({ 
           profile_id: userId, 
           items: updatedItems as unknown as Json
-        });
+        } as ShoppingListDB);
 
       if (error) throw error;
 

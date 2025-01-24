@@ -13,3 +13,11 @@ export interface ShoppingList {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface ShoppingListDB {
+  id?: string;
+  profile_id: string;
+  items: Json;
+  created_at?: string;
+  updated_at?: string;
+}

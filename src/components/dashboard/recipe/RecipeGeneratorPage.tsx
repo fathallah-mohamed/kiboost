@@ -20,19 +20,6 @@ export const RecipeGeneratorPage = () => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const [displayCount, setDisplayCount] = useState(5);
   const [error, setError] = useState<string | null>(null);
-  const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
-  const [mealType, setMealType] = useState<MealType | "all">("all");
-  const [maxPrepTime, setMaxPrepTime] = useState(60);
-  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({
-    dietaryPreferences: [],
-    excludedAllergens: [],
-    maxCost: 15,
-    healthBenefits: [],
-    season: 1,
-  });
-
   const session = useSession();
   const navigate = useNavigate();
   const { generateRecipes } = useRecipeGeneration();
@@ -55,7 +42,21 @@ export const RecipeGeneratorPage = () => {
         throw error;
       }
 
-      return data as Recipe[];
+      return data.map(recipe => ({
+        ...recipe,
+        ingredients: Array.isArray(recipe.ingredients) 
+          ? recipe.ingredients 
+          : JSON.parse(recipe.ingredients),
+        nutritional_info: typeof recipe.nutritional_info === 'string'
+          ? JSON.parse(recipe.nutritional_info)
+          : recipe.nutritional_info,
+        health_benefits: typeof recipe.health_benefits === 'string'
+          ? JSON.parse(recipe.health_benefits)
+          : recipe.health_benefits,
+        cooking_steps: typeof recipe.cooking_steps === 'string'
+          ? JSON.parse(recipe.cooking_steps)
+          : recipe.cooking_steps || []
+      })) as Recipe[];
     },
     enabled: !!session?.user?.id,
   });
@@ -118,16 +119,16 @@ export const RecipeGeneratorPage = () => {
             />
 
             <RecipeFiltersSection
-              mealType={mealType}
-              setMealType={setMealType}
-              maxPrepTime={maxPrepTime}
-              setMaxPrepTime={setMaxPrepTime}
-              difficulty={difficulty}
-              setDifficulty={setDifficulty}
-              showAdvancedFilters={showAdvancedFilters}
-              setShowAdvancedFilters={setShowAdvancedFilters}
-              advancedFilters={advancedFilters}
-              setAdvancedFilters={setAdvancedFilters}
+              mealType={"all"}
+              setMealType={() => {}}
+              maxPrepTime={60}
+              setMaxPrepTime={() => {}}
+              difficulty={"all"}
+              setDifficulty={() => {}}
+              showAdvancedFilters={false}
+              setShowAdvancedFilters={() => {}}
+              advancedFilters={{ dietaryPreferences: [], excludedAllergens: [], maxCost: 15, healthBenefits: [], season: 1 }}
+              setAdvancedFilters={() => {}}
             />
 
             <div className="flex justify-end">
@@ -147,7 +148,7 @@ export const RecipeGeneratorPage = () => {
             <RecipeList
               recipes={recipes.slice(0, displayCount)}
               error={error}
-              plannedRecipes={plannedRecipes}
+              plannedRecipes={{}}
               onSaveRecipe={handleSaveRecipe}
             />
 
