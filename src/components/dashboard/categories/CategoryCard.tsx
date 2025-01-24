@@ -4,16 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import * as LucideIcons from "lucide-react";
+import { 
+  Utensils, Brain, Dumbbell, Users, 
+  GraduationCap, MapPin, Heart, Plane 
+} from "lucide-react";
 
 interface CategoryCardProps {
   category: Category;
 }
 
+const iconMap = {
+  Utensils,
+  Brain,
+  Dumbbell,
+  Users,
+  GraduationCap,
+  MapPin,
+  Heart,
+  Plane
+};
+
 export const CategoryCard = ({ category }: CategoryCardProps) => {
   const navigate = useNavigate();
-  // Type assertion to ensure we get the correct icon component
-  const IconComponent = (LucideIcons as Record<string, React.ComponentType>)[category.icon];
+  const Icon = iconMap[category.icon as keyof typeof iconMap];
 
   const handleClick = () => {
     if (category.isActive && category.route) {
@@ -40,7 +53,7 @@ export const CategoryCard = ({ category }: CategoryCardProps) => {
       )}
 
       <div className="flex items-center justify-center mb-4">
-        {IconComponent && <IconComponent className="w-12 h-12 text-primary" />}
+        {Icon && <Icon className="w-12 h-12 text-primary" />}
       </div>
 
       <h3 className="text-xl font-bold mb-2">{category.title}</h3>

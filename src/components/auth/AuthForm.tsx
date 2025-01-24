@@ -70,6 +70,11 @@ export const AuthForm = () => {
         case 'Password should be at least 6 characters':
           errorMessage = "Le mot de passe doit contenir au moins 6 caractères.";
           break;
+        case 'Invalid Refresh Token: Refresh Token Not Found':
+          // Handle refresh token error by redirecting to login
+          window.location.href = '/login';
+          errorMessage = "Votre session a expiré. Veuillez vous reconnecter.";
+          break;
         default:
           if (authError.message.includes('weak-password')) {
             errorMessage = "Le mot de passe est trop faible.";
