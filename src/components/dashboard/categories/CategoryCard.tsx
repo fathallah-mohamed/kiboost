@@ -2,7 +2,6 @@ import { Category } from "../types/category";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   Utensils, Brain, Dumbbell, Users, 
@@ -12,6 +11,7 @@ import {
 
 interface CategoryCardProps {
   category: Category;
+  onSectionChange?: (section: string) => void;
 }
 
 const iconMap: Record<string, LucideIcon> = {
@@ -25,16 +25,16 @@ const iconMap: Record<string, LucideIcon> = {
   Plane
 };
 
-export const CategoryCard = ({ category }: CategoryCardProps) => {
-  const navigate = useNavigate();
+export const CategoryCard = ({ category, onSectionChange }: CategoryCardProps) => {
   const Icon = iconMap[category.icon as keyof typeof iconMap];
 
   const handleClick = () => {
     if (category.isActive) {
       if (category.id === 'recipes') {
-        navigate('/dashboard', { state: { section: 'overview' } });
+        onSectionChange?.('recipes');
       } else if (category.route) {
-        navigate(category.route);
+        // Handle other routes when implemented
+        toast.info(category.comingSoonMessage || "Cette fonctionnalité sera bientôt disponible !");
       }
     } else {
       toast.info(category.comingSoonMessage || "Cette fonctionnalité sera bientôt disponible !");
