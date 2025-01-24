@@ -67,7 +67,7 @@ IMPORTANT:
 - Étapes courtes et efficaces
 - CHAQUE recette doit être DIFFÉRENTE des autres
 
-Format JSON uniquement, sans commentaires ni backticks:
+RÉPONDS UNIQUEMENT EN JSON VALIDE SANS BACKTICKS NI COMMENTAIRES. Format:
 [{
   "name": "Nom de la recette",
   "ingredients": [{"item": "Ingrédient", "quantity": "Quantité", "unit": "Unité"}],
@@ -104,21 +104,26 @@ serve(async (req) => {
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef créatif spécialisé en recettes rapides pour enfants. Assure-toi que chaque recette soit UNIQUE et DIFFÉRENTE des autres. Réponds uniquement en JSON valide sans backticks ni commentaires.' 
+          content: 'Tu es un chef créatif spécialisé en recettes rapides pour enfants. Assure-toi que chaque recette soit UNIQUE et DIFFÉRENTE des autres. RÉPONDS UNIQUEMENT EN JSON VALIDE.' 
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.9, // Increased for more creativity
+      temperature: 0.9,
       max_tokens: 1000,
     });
 
     const content = completion.data.choices[0]?.message?.content;
     if (!content) throw new Error('Réponse OpenAI invalide');
 
+    console.log('Raw OpenAI response:', content);
+
     // Nettoyage et validation du JSON
     const cleanedContent = content
       .replace(/```json\n?|\n?```/g, '')
+      .replace(/\n/g, ' ')
       .trim();
+
+    console.log('Cleaned content:', cleanedContent);
 
     try {
       const recipes = JSON.parse(cleanedContent);
