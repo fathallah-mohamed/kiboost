@@ -2,8 +2,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MultiChildSelector } from "../MultiChildSelector";
 import { RecipeFiltersSection } from "../RecipeFiltersSection";
-import { ChildProfile, RecipeFilters } from "../../types";
+import { ChildProfile } from "../../types";
 import { toast } from "sonner";
+import { useRecipeFilters } from "../hooks/useRecipeFilters";
 
 interface GenerationSectionProps {
   loading: boolean;

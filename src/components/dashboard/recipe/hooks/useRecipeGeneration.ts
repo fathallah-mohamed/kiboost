@@ -14,16 +14,19 @@ export const useRecipeGeneration = () => {
 
       console.log("Generating recipes with filters:", filters);
 
-      // Générer de nouvelles recettes
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
         {
           body: { 
             child: {
               ...child,
-              profile_id: child.id // Correction du type
+              profile_id: child.id // Utiliser l'id de l'enfant comme profile_id
             },
-            filters
+            filters: {
+              ...filters,
+              mealType: filters.mealType === 'all' ? undefined : filters.mealType,
+              difficulty: filters.difficulty === 'all' ? undefined : filters.difficulty
+            }
           }
         }
       );
@@ -37,9 +40,11 @@ export const useRecipeGeneration = () => {
         .from('recipes')
         .select('*')
         .eq('is_generated', true)
-        .eq(filters.mealType ? 'meal_type' : true, filters.mealType || true)
+        .eq(filters.mealType && filters.mealType !== 'all' ? 'meal_type' : 'is_generated', 
+            filters.mealType && filters.mealType !== 'all' ? filters.mealType : true)
         .lte('preparation_time', filters.maxPrepTime || 120)
-        .eq(filters.difficulty ? 'difficulty' : true, filters.difficulty || true);
+        .eq(filters.difficulty && filters.difficulty !== 'all' ? 'difficulty' : 'is_generated',
+            filters.difficulty && filters.difficulty !== 'all' ? filters.difficulty : true);
 
       if (fetchError) throw fetchError;
 
@@ -48,7 +53,9 @@ export const useRecipeGeneration = () => {
         ...recipe,
         ingredients: typeof recipe.ingredients === 'string' 
           ? JSON.parse(recipe.ingredients)
-          : recipe.ingredients,
+          : Array.isArray(recipe.ingredients)
+            ? recipe.ingredients
+            : [],
         instructions: typeof recipe.instructions === 'string'
           ? recipe.instructions.split('\n').filter(Boolean)
           : Array.isArray(recipe.instructions)
