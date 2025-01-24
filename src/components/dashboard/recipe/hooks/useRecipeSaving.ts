@@ -1,65 +1,34 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Recipe, ChildProfile } from '../../types';
-import { toast } from 'sonner';
+import { Recipe } from "../../types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const useRecipeSaving = () => {
-  const [saving, setSaving] = useState(false);
-
-  const saveRecipe = async (recipe: Recipe, selectedChildren: ChildProfile[]) => {
-    if (!recipe?.id) {
-      toast.error("Erreur: ID de recette manquant");
-      return null;
-    }
-
-    if (selectedChildren.length === 0) {
-      toast.error("Veuillez sélectionner au moins un enfant");
-      return null;
-    }
-
-    setSaving(true);
+  const saveRecipe = async (recipe: Recipe) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Non authentifié");
-      }
+      const recipeToSave = {
+        ...recipe,
+        instructions: Array.isArray(recipe.instructions) 
+          ? recipe.instructions.join('\n') 
+          : recipe.instructions,
+        ingredients: JSON.stringify(recipe.ingredients),
+        nutritional_info: JSON.stringify(recipe.nutritional_info),
+        health_benefits: JSON.stringify(recipe.health_benefits || []),
+        cooking_steps: JSON.stringify(recipe.cooking_steps || [])
+      };
 
-      const today = new Date();
-      const formattedDate = today.toISOString().split('T')[0];
+      const { error } = await supabase
+        .from('recipes')
+        .insert(recipeToSave);
 
-      // Créer les entrées dans meal_plans pour chaque enfant
-      for (const child of selectedChildren) {
-        const { error: planError } = await supabase
-          .from('meal_plans')
-          .insert({
-            profile_id: session.user.id,
-            recipe_id: recipe.id,
-            child_id: child.id,
-            date: formattedDate,
-            meal_time: recipe.meal_type || 'dinner'
-          });
-
-        if (planError) {
-          console.error('Error details:', planError);
-          throw planError;
-        }
-      }
-
-      toast.success("Recette planifiée !", {
-        description: `${recipe.name} a été planifiée pour ${selectedChildren.length} enfant(s)`,
-      });
-
-      return recipe;
+      if (error) throw error;
+      
+      toast.success("Recette sauvegardée avec succès !");
     } catch (error) {
       console.error('Error saving recipe:', error);
-      toast.error("Erreur lors de la planification", {
-        description: "Une erreur est survenue lors de la planification de la recette.",
-      });
-      return null;
-    } finally {
-      setSaving(false);
+      toast.error("Une erreur est survenue lors de la sauvegarde de la recette");
+      throw error;
     }
   };
 
-  return { saveRecipe, saving };
+  return { saveRecipe };
 };

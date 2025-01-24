@@ -1,19 +1,18 @@
 import { useState } from 'react';
-import { useRecipeGeneration } from './useRecipeGeneration';
 import { useSession } from '@supabase/auth-helpers-react';
 import { BackToDashboard } from '../BackToDashboard';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Recipe, ChildProfile, MealType } from "../types";
+import { Recipe, ChildProfile } from "../types";
 import { StepNavigation } from '../navigation/StepNavigation';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useRecipeFilters } from './hooks/useRecipeFilters';
+import { useInView } from 'react-intersection-observer';
+import { LoadingOverlay } from './LoadingOverlay';
 import { GenerationSection } from './sections/GenerationSection';
 import { ResultsSection } from './sections/ResultsSection';
-import { useInView } from 'react-intersection-observer';
-import { useEffect } from 'react';
-import { LoadingOverlay } from './LoadingOverlay';
+import { useRecipeQuery } from './hooks/useRecipeQuery';
+import { useRecipeGeneration } from './hooks/useRecipeGeneration';
+import { useRecipeSaving } from './hooks/useRecipeSaving';
 
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
@@ -24,70 +23,12 @@ export const RecipeGeneratorPage = () => {
   const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
   const session = useSession();
   const navigate = useNavigate();
-  const { generateRecipes } = useRecipeGeneration();
   const filters = useRecipeFilters();
   const { ref: loadMoreRef, inView } = useInView();
+  const { generateRecipes } = useRecipeGeneration();
+  const { saveRecipe } = useRecipeSaving();
 
-  const { data: recipes = [], refetch: refetchRecipes } = useQuery({
-    queryKey: ['generated-recipes', session?.user?.id, filters.getFilters()],
-    queryFn: async () => {
-      if (!session?.user?.id) return [];
-      
-      let query = supabase
-        .from('recipes')
-        .select('*')
-        .eq('profile_id', session.user.id)
-        .eq('is_generated', true);
-
-      if (filters.mealType && filters.mealType !== 'all') {
-        query = query.eq('meal_type', filters.mealType);
-      }
-      
-      if (filters.maxPrepTime) {
-        query = query.lte('preparation_time', filters.maxPrepTime);
-      }
-
-      if (filters.difficulty && filters.difficulty !== 'all') {
-        query = query.eq('difficulty', filters.difficulty);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching recipes:', error);
-        throw error;
-      }
-
-      return data.map(recipe => ({
-        ...recipe,
-        meal_type: recipe.meal_type as MealType, // Ensure meal_type is properly typed
-        ingredients: typeof recipe.ingredients === 'string' 
-          ? JSON.parse(recipe.ingredients)
-          : recipe.ingredients,
-        instructions: typeof recipe.instructions === 'string'
-          ? recipe.instructions.split('\n')
-          : Array.isArray(recipe.instructions)
-            ? recipe.instructions
-            : [recipe.instructions],
-        nutritional_info: typeof recipe.nutritional_info === 'string'
-          ? JSON.parse(recipe.nutritional_info)
-          : recipe.nutritional_info,
-        health_benefits: typeof recipe.health_benefits === 'string'
-          ? JSON.parse(recipe.health_benefits)
-          : recipe.health_benefits || [],
-        cooking_steps: typeof recipe.cooking_steps === 'string'
-          ? JSON.parse(recipe.cooking_steps)
-          : recipe.cooking_steps || []
-      })) as Recipe[];
-    },
-    enabled: !!session?.user?.id,
-  });
-
-  useEffect(() => {
-    if (inView) {
-      setDisplayCount(prev => Math.min(prev + 5, recipes.length));
-    }
-  }, [inView, recipes.length]);
+  const { data: recipes = [] } = useRecipeQuery(session?.user?.id, filters.getFilters());
 
   const handleGenerateRecipes = async () => {
     if (!selectedChildren.length) {
@@ -109,63 +50,25 @@ export const RecipeGeneratorPage = () => {
       console.log("Generated recipes:", newRecipes);
       
       if (newRecipes && Array.isArray(newRecipes) && newRecipes.length > 0) {
-        const typedRecipes = newRecipes.map(recipe => ({
-          ...recipe,
-          meal_type: recipe.meal_type as MealType
-        })) as Recipe[];
-        
-        setGeneratedRecipes(typedRecipes);
+        setGeneratedRecipes(newRecipes);
         
         // Save each recipe to the database
-        for (const recipe of typedRecipes) {
-          await handleSaveRecipe(recipe);
+        setSaving(true);
+        for (const recipe of newRecipes) {
+          await saveRecipe(recipe);
         }
         
-        await refetchRecipes();
         toast.success("Recettes générées avec succès !");
       } else {
         throw new Error("Aucune recette n'a été générée");
       }
     } catch (error) {
       console.error('Error generating recipes:', error);
-      const errorMessage = error instanceof Error ? error.message : "Une erreur est survenue lors de la génération des recettes";
+      const errorMessage = error instanceof Error ? error.message : "Une erreur est survenue";
       toast.error(errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSaveRecipe = async (recipe: Recipe) => {
-    try {
-      setSaving(true);
-      
-      // Convert recipe data to match database schema
-      const recipeToSave = {
-        ...recipe,
-        profile_id: session?.user?.id,
-        is_generated: true,
-        instructions: Array.isArray(recipe.instructions) 
-          ? recipe.instructions.join('\n') 
-          : recipe.instructions,
-        ingredients: JSON.stringify(recipe.ingredients),
-        nutritional_info: JSON.stringify(recipe.nutritional_info),
-        health_benefits: JSON.stringify(recipe.health_benefits || []),
-        cooking_steps: JSON.stringify(recipe.cooking_steps || [])
-      };
-
-      const { error } = await supabase
-        .from('recipes')
-        .insert(recipeToSave);
-
-      if (error) throw error;
-      
-      toast.success("Recette sauvegardée avec succès !");
-      await refetchRecipes();
-    } catch (error) {
-      console.error('Error saving recipe:', error);
-      toast.error("Une erreur est survenue lors de la sauvegarde de la recette");
-    } finally {
       setSaving(false);
     }
   };
@@ -196,7 +99,7 @@ export const RecipeGeneratorPage = () => {
           recipes={allRecipes.slice(0, displayCount)}
           displayCount={displayCount}
           error={error}
-          onSaveRecipe={handleSaveRecipe}
+          onSaveRecipe={saveRecipe}
           onLoadMore={handleLoadMore}
         />
 
