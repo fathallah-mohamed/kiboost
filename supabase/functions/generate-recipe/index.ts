@@ -35,7 +35,7 @@ const generatePrompt = (child: any, filters: any) => {
     constraints.push(`Difficulté : ${filters.difficulty}`);
   }
 
-  return `Génère 3 recettes UNIQUES, CRÉATIVES et TRÈS DIFFÉRENTES les unes des autres pour petit-déjeuner:
+  return `Retourne UNIQUEMENT un objet JSON valide (sans formatage markdown) contenant 3 recettes UNIQUES et TRÈS DIFFÉRENTES les unes des autres pour petit-déjeuner:
 Age: ${child.birth_date}
 ${allergiesText}
 ${preferencesText}
@@ -51,6 +51,7 @@ RÈGLES IMPORTANTES:
 - Utilise des ingrédients simples et prêts à l'emploi
 - Les étapes doivent être courtes et efficaces
 - UTILISE UNIQUEMENT des guillemets doubles (") pour le JSON
+- RETOURNE UNIQUEMENT L'OBJET JSON, PAS DE TEXTE AVANT OU APRÈS
 
 FORMAT JSON REQUIS:
 {
@@ -113,7 +114,7 @@ serve(async (req) => {
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef créatif spécialisé en recettes pour enfants. Tu dois générer UNIQUEMENT des recettes UNIQUES et DIFFÉRENTES les unes des autres. Évite absolument les répétitions ou les variations sur un même thème.' 
+          content: 'Tu es un chef créatif spécialisé en recettes pour enfants. Tu dois générer UNIQUEMENT un objet JSON valide (sans formatage markdown) avec des recettes UNIQUES et DIFFÉRENTES les unes des autres. Évite absolument les répétitions ou les variations sur un même thème.' 
         },
         { role: 'user', content: prompt }
       ],
@@ -127,7 +128,9 @@ serve(async (req) => {
     console.log('Raw OpenAI response:', content);
 
     try {
-      const parsedContent = JSON.parse(content);
+      // Remove any potential markdown formatting
+      const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      const parsedContent = JSON.parse(cleanedContent);
       
       if (!parsedContent.recipes || !Array.isArray(parsedContent.recipes)) {
         throw new Error('Format de réponse invalide');
