@@ -1,8 +1,9 @@
-import { ChildProfile } from '../../types';
-import { Card } from '@/components/ui/card';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { UserRound, Users, UserMinus, UserPlus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ChildProfile } from '../../types';
+import { Users, UserCheck, UserX } from 'lucide-react';
 
 interface ChildrenSelectorProps {
   children: ChildProfile[];
@@ -10,19 +11,13 @@ interface ChildrenSelectorProps {
   onSelectionChange: (children: ChildProfile[]) => void;
 }
 
-const CHILD_COLORS = [
-  'hover:bg-pink-100 border-pink-300',
-  'hover:bg-blue-100 border-blue-300',
-  'hover:bg-purple-100 border-purple-300',
-  'hover:bg-green-100 border-green-300',
-  'hover:bg-yellow-100 border-yellow-300',
-];
-
 export const ChildrenSelector = ({
   children,
   selectedChildren,
   onSelectionChange,
 }: ChildrenSelectorProps) => {
+  const [expanded, setExpanded] = useState(true);
+
   const handleSelectAll = () => {
     onSelectionChange(children);
   };
@@ -40,16 +35,12 @@ export const ChildrenSelector = ({
     }
   };
 
-  const getChildColor = (index: number) => {
-    return CHILD_COLORS[index % CHILD_COLORS.length];
-  };
-
   return (
-    <div className="space-y-4">
+    <Card className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          <h3 className="font-medium">Sélection des enfants</h3>
+          <Users className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Sélection des enfants</h3>
         </div>
         <div className="flex gap-2">
           <Button
@@ -58,7 +49,7 @@ export const ChildrenSelector = ({
             onClick={handleSelectAll}
             className="flex items-center gap-2"
           >
-            <UserPlus className="h-4 w-4" />
+            <UserCheck className="w-4 h-4" />
             Tout sélectionner
           </Button>
           <Button
@@ -67,31 +58,43 @@ export const ChildrenSelector = ({
             onClick={handleDeselectAll}
             className="flex items-center gap-2"
           >
-            <UserMinus className="h-4 w-4" />
+            <UserX className="w-4 h-4" />
             Tout désélectionner
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {children.map((child, index) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {children.map((child) => {
           const isSelected = selectedChildren.some(c => c.id === child.id);
           return (
-            <Button
+            <Card
               key={child.id}
-              variant={isSelected ? "default" : "outline"}
+              className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+                isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
+              }`}
               onClick={() => toggleChild(child)}
-              className={cn(
-                "flex items-center gap-2 transition-colors",
-                !isSelected && getChildColor(index)
-              )}
             >
-              <UserRound className="h-4 w-4" />
-              {child.name}
-            </Button>
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="font-medium">{child.name}</div>
+                  {child.allergies.length > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      Allergies: {child.allergies.join(', ')}
+                    </div>
+                  )}
+                  {child.preferences.length > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      Préférences: {child.preferences.join(', ')}
+                    </div>
+                  )}
+                </div>
+                <Checkbox checked={isSelected} />
+              </div>
+            </Card>
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 };

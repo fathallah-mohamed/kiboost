@@ -19,17 +19,9 @@ interface RecipeCardProps {
   isNew?: boolean;
   onAdd?: (recipe: Recipe) => void;
   compact?: boolean;
-  onRemove?: () => void; // Added this prop
 }
 
-export const RecipeCard = ({ 
-  recipe, 
-  isPlanned, 
-  isNew, 
-  onAdd, 
-  compact,
-  onRemove 
-}: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, isNew, onAdd, compact }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const { toast } = useToast();
@@ -53,19 +45,7 @@ export const RecipeCard = ({
         "p-4 border rounded-lg transition-all duration-500",
         isNew && "bg-gradient-to-r from-purple-50 to-blue-50 border-primary shadow-lg"
       )}>
-        <div className="flex justify-between items-start">
-          <h4 className="font-medium">{recipe.name}</h4>
-          {onRemove && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onRemove}
-              className="text-destructive hover:text-destructive/90"
-            >
-              Retirer
-            </Button>
-          )}
-        </div>
+        <h4 className="font-medium">{recipe.name}</h4>
         {isNew && (
           <span className="inline-block px-2 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full mb-2">
             Nouvelle recette

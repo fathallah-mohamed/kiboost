@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { AvailableRecipes } from './meal-planner/AvailableRecipes';
-import { MealPlannerGrid } from './meal-planner/MealPlannerGrid';
+import { WeeklyCalendar } from './meal-planner/WeeklyCalendar';
 import { useMealPlanner } from './meal-planner/useMealPlanner';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CalendarDays, CalendarRange, Download } from "lucide-react";
@@ -37,15 +37,11 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
   } = useMealPlanner(userId, selectedChildren);
 
   const handleDownloadPlan = () => {
+    // TODO: Implement plan download
     toast({
       title: "Téléchargement du planning",
       description: "Cette fonctionnalité sera bientôt disponible.",
     });
-  };
-
-  const handlePlanMeal = (date: string, childId: string) => {
-    // Cette fonction sera utilisée pour ouvrir une modale de sélection de repas
-    // Pour l'instant, on garde le comportement existant
   };
 
   if (loadingChildren) {
@@ -93,13 +89,16 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
       </Card>
       
       <div className="grid grid-cols-1 gap-6">
-        <MealPlannerGrid
-          selectedDate={selectedDate}
-          plannedRecipes={plannedRecipes}
-          selectedChildren={selectedChildren}
-          onPlanMeal={handlePlanMeal}
-          onRemoveRecipe={removeRecipe}
-        />
+        <Card className="p-4">
+          <WeeklyCalendar
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            plannedRecipes={plannedRecipes}
+            viewMode={viewMode}
+            selectedChildren={selectedChildren}
+            onRemoveRecipe={removeRecipe}
+          />
+        </Card>
 
         <AvailableRecipes
           recipes={recipes}
