@@ -13,6 +13,13 @@ interface ShoppingListProps {
   onSectionChange: (section: string) => void;
 }
 
+interface ShoppingListItem {
+  item: string;
+  quantity: number;
+  unit: string;
+  checked: boolean;
+}
+
 interface AvailableIngredient {
   id?: string;
   ingredient_name: string;
@@ -21,7 +28,7 @@ interface AvailableIngredient {
 }
 
 export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [newIngredient, setNewIngredient] = useState<AvailableIngredient>({
     ingredient_name: '',

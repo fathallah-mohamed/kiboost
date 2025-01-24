@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRecipes } from './useRecipes';
 import { usePlannedRecipes } from './usePlannedRecipes';
 import { useRecipePlanning } from './useRecipePlanning';
-import { Recipe, ChildProfile } from '../types';
+import { Recipe, ChildProfile } from '../../types';
 import { format } from 'date-fns';
 
 export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[]) => {
