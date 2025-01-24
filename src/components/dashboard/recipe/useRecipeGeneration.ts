@@ -39,13 +39,32 @@ export const useRecipeGeneration = () => {
 
       const savedRecipes = await Promise.all(
         generatedRecipes.map(async (recipe) => {
+          // Transform ingredients to match Recipe type
+          const transformedRecipe = {
+            ...recipe,
+            profile_id: userId,
+            is_generated: true,
+            ingredients: Array.isArray(recipe.ingredients) 
+              ? recipe.ingredients.map((ing: any) => ({
+                  item: ing.item || ing.name || '',
+                  quantity: ing.quantity?.toString() || '0',
+                  unit: ing.unit || ''
+                }))
+              : [],
+            instructions: Array.isArray(recipe.instructions) 
+              ? recipe.instructions 
+              : [recipe.instructions].filter(Boolean),
+            nutritional_info: recipe.nutritional_info || {
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0
+            }
+          };
+
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
-            .insert({
-              ...recipe,
-              profile_id: userId,
-              is_generated: true,
-            })
+            .insert(transformedRecipe)
             .select('*')
             .single();
 
@@ -54,7 +73,20 @@ export const useRecipeGeneration = () => {
             throw saveError;
           }
 
-          return savedRecipe as Recipe;
+          // Transform the saved recipe to match Recipe type
+          return {
+            ...savedRecipe,
+            ingredients: Array.isArray(savedRecipe.ingredients) 
+              ? savedRecipe.ingredients.map((ing: any) => ({
+                  item: ing.item || ing.name || '',
+                  quantity: ing.quantity?.toString() || '0',
+                  unit: ing.unit || ''
+                }))
+              : [],
+            instructions: Array.isArray(savedRecipe.instructions) 
+              ? savedRecipe.instructions 
+              : [savedRecipe.instructions].filter(Boolean)
+          } as Recipe;
         })
       );
 
