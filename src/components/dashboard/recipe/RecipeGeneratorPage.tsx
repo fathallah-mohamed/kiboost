@@ -5,7 +5,7 @@ import { useSession } from '@supabase/auth-helpers-react';
 import { BackToDashboard } from '../BackToDashboard';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from "../types";
+import { Recipe, ChildProfile } from "../types";
 import { MultiChildSelector } from './MultiChildSelector';
 import { RecipeFiltersSection } from './RecipeFiltersSection';
 import { RecipeList } from './RecipeList';
@@ -46,15 +46,18 @@ export const RecipeGeneratorPage = () => {
         ...recipe,
         ingredients: Array.isArray(recipe.ingredients) 
           ? recipe.ingredients 
-          : JSON.parse(recipe.ingredients),
+          : JSON.parse(recipe.ingredients as string),
+        instructions: typeof recipe.instructions === 'string'
+          ? recipe.instructions.split('\n')
+          : recipe.instructions,
         nutritional_info: typeof recipe.nutritional_info === 'string'
           ? JSON.parse(recipe.nutritional_info)
           : recipe.nutritional_info,
         health_benefits: typeof recipe.health_benefits === 'string'
-          ? JSON.parse(recipe.health_benefits)
+          ? JSON.parse(recipe.health_benefits as string)
           : recipe.health_benefits,
         cooking_steps: typeof recipe.cooking_steps === 'string'
-          ? JSON.parse(recipe.cooking_steps)
+          ? JSON.parse(recipe.cooking_steps as string)
           : recipe.cooking_steps || []
       })) as Recipe[];
     },
