@@ -1,16 +1,23 @@
 import { Recipe, ChildProfile } from '../types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Clock, Utensils } from 'lucide-react';
+import { Clock, Utensils, Users } from 'lucide-react';
 import { useFavorites } from '../recipe/hooks/useFavorites';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { Avatar } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface AvailableRecipesProps {
   recipes: Recipe[];
   loading: boolean;
   planningRecipe: boolean;
-  onPlanRecipe: (recipe: Recipe) => void;
+  onPlanRecipe: (recipe: Recipe, children: ChildProfile[]) => void;
   selectedChildren: ChildProfile[];
 }
 
@@ -24,6 +31,14 @@ export const AvailableRecipes = ({
   const { favoriteRecipes } = useFavorites();
   const [searchTerm, setSearchTerm] = useState('');
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase();
+  };
+
   if (loading) {
     return <p>Chargement des recettes...</p>;
   }
@@ -32,19 +47,15 @@ export const AvailableRecipes = ({
     return <p>Aucune recette disponible. Générez d'abord des recettes dans l'onglet "Recettes".</p>;
   }
 
-  // Filtrer les doublons et les recettes qui ne correspondent pas aux critères des enfants
   const filteredRecipes = recipes.reduce((acc: Recipe[], current) => {
     const normalizedName = current.name.toLowerCase();
     const exists = acc.some(recipe => recipe.name.toLowerCase() === normalizedName);
     
-    // Vérifier si la recette correspond aux critères des enfants sélectionnés
     const isCompatible = selectedChildren.length === 0 || selectedChildren.every(child => {
-      // Vérifier les allergies
       const hasNoAllergies = child.allergies.every(allergy => 
         !current.allergens?.includes(allergy)
       );
       
-      // Vérifier l'âge
       const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
       const isAgeAppropriate = (current.min_age === undefined || childAge >= current.min_age) &&
                               (current.max_age === undefined || childAge <= current.max_age);
@@ -52,7 +63,6 @@ export const AvailableRecipes = ({
       return hasNoAllergies && isAgeAppropriate;
     });
 
-    // Filtrer par terme de recherche
     const matchesSearch = searchTerm === '' || 
       current.name.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -62,7 +72,6 @@ export const AvailableRecipes = ({
     return acc;
   }, []);
 
-  // Trier les recettes pour afficher les favoris en premier
   const sortedRecipes = [...filteredRecipes].sort((a, b) => {
     const aIsFavorite = favoriteRecipes.includes(a.id);
     const bIsFavorite = favoriteRecipes.includes(b.id);
@@ -116,14 +125,40 @@ export const AvailableRecipes = ({
                   </div>
                 )}
               </div>
-              <Button 
-                className="mt-4 w-full"
-                onClick={() => onPlanRecipe(recipe)}
-                disabled={planningRecipe}
-              >
-                Planifier
-                {selectedChildren.length > 0 && ` pour ${selectedChildren.length} enfant${selectedChildren.length > 1 ? 's' : ''}`}
-              </Button>
+              
+              {selectedChildren.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="mt-4 w-full" disabled={planningRecipe}>
+                      Planifier
+                      {selectedChildren.length > 1 && (
+                        <Users className="ml-2 h-4 w-4" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem 
+                      onClick={() => onPlanRecipe(recipe, selectedChildren)}
+                      className="flex items-center"
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      <span>Pour tous les enfants</span>
+                    </DropdownMenuItem>
+                    {selectedChildren.map(child => (
+                      <DropdownMenuItem
+                        key={child.id}
+                        onClick={() => onPlanRecipe(recipe, [child])}
+                        className="flex items-center"
+                      >
+                        <Avatar className="h-4 w-4 mr-2">
+                          <span className="text-[10px]">{getInitials(child.name)}</span>
+                        </Avatar>
+                        <span>Pour {child.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </Card>
         ))}

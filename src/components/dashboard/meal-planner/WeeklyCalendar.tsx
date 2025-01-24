@@ -1,12 +1,13 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth, addWeeks, subWeeks } from 'date-fns';
+import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Recipe, ChildProfile } from '../types';
 import { RecipeCard } from '../recipe/recipe-card/RecipeCard';
-import { ChevronLeft, ChevronRight, Trash2, Users } from 'lucide-react';
+import { Trash2, Users } from 'lucide-react';
 import { RecipeHealthBenefits } from '../recipe/recipe-card/RecipeHealthBenefits';
 import { Avatar } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface WeeklyCalendarProps {
   selectedDate: Date;
@@ -84,6 +85,7 @@ export const WeeklyCalendar = ({
               <div className="text-sm text-muted-foreground">
                 {format(day, 'd MMMM', { locale: fr })}
               </div>
+              
               {selectedChildren.length > 0 && (
                 <div className="flex items-center justify-center gap-1 mt-2">
                   {selectedChildren.length > 1 ? (
@@ -109,25 +111,35 @@ export const WeeklyCalendar = ({
               <div className="space-y-4">
                 <div className="relative">
                   <RecipeCard recipe={recipe} compact />
-                  {!readOnly && onRemoveRecipe && (
-                    <div className="absolute top-2 right-2">
-                      {selectedChildren.map(child => (
-                        <Button
-                          key={child.id}
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemoveRecipe(formattedDate, child.id);
-                          }}
-                          title={`Retirer le repas pour ${child.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      ))}
-                    </div>
-                  )}
+                  {!readOnly && onRemoveRecipe && selectedChildren.map(child => (
+                    <TooltipProvider key={child.id}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="absolute top-2 right-2 flex items-center gap-2 bg-white/90 p-1 rounded">
+                            <Avatar className="h-5 w-5 bg-primary/10">
+                              <span className="text-xs font-medium">
+                                {getInitials(child.name)}
+                              </span>
+                            </Avatar>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRemoveRecipe(formattedDate, child.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Retirer le repas pour {child.name}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
                 </div>
                 {recipe.health_benefits && (
                   <RecipeHealthBenefits benefits={recipe.health_benefits} compact />
