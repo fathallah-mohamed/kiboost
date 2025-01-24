@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { ProgressSteps } from './sections/ProgressSteps';
 import { useRecipeGeneration } from './recipe/useRecipeGeneration';
 import { useSession } from '@supabase/auth-helpers-react';
+import { useNavigate } from 'react-router-dom';
 
 interface RecipeGeneratorProps {
   onSectionChange: (section: string) => void;
@@ -19,16 +20,17 @@ interface RecipeGeneratorProps {
 export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const session = useSession();
+  const navigate = useNavigate();
   const { generateRecipes, loading, error } = useRecipeGeneration();
 
   const handleQuickPlan = () => {
     console.log('Redirecting to recipes section...');
-    onSectionChange('recipes');
+    navigate('/dashboard/recipes');
   };
 
   const handleGenerateRecipes = () => {
     console.log('Redirecting to recipe generation...');
-    onSectionChange('recipes');
+    navigate('/dashboard/recipes');
   };
 
   return (
@@ -77,7 +79,7 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
             <p className="text-sm">Votre liste de courses n'est pas à jour</p>
             <Button 
               variant="outline" 
-              onClick={() => onSectionChange('shopping')}
+              onClick={() => navigate('/dashboard/shopping')}
             >
               Mettre à jour
             </Button>

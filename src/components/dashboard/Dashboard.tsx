@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Session } from '@supabase/auth-helpers-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardHeader } from './layout/DashboardHeader';
@@ -41,17 +41,13 @@ export const Dashboard = ({ session }: DashboardProps) => {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader handleLogout={handleLogout} />
-      {activeSection === 'categories' ? (
+      {location.pathname === '/dashboard' ? (
         <div className="container mx-auto px-4 py-8">
           <h2 className="text-2xl font-bold mb-6">Bienvenue sur Kiboost</h2>
-          <CategoriesGrid onSectionChange={setActiveSection} />
+          <CategoriesGrid onSectionChange={(section) => navigate(`/dashboard/${section}`)} />
         </div>
       ) : (
-        <DashboardContent
-          session={session}
-          activeSection={activeSection}
-          setActiveSection={setActiveSection}
-        />
+        <Outlet />
       )}
     </div>
   );

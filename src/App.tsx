@@ -11,6 +11,7 @@ import { Dashboard } from "./components/dashboard/Dashboard";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { RecipeGenerator } from "./components/dashboard/RecipeGenerator";
 
 const queryClient = new QueryClient();
 
@@ -37,10 +38,9 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/login" element={session ? <Navigate to="/dashboard" /> : <Auth />} />
       <Route path="/signup" element={session ? <Navigate to="/dashboard" /> : <Auth />} />
-      <Route 
-        path="/dashboard" 
-        element={session ? <Dashboard session={session} /> : <Navigate to="/login" />} 
-      />
+      <Route path="/dashboard/*" element={session ? <Dashboard session={session} /> : <Navigate to="/login" />}>
+        <Route path="recipes" element={<RecipeGenerator onSectionChange={() => {}} />} />
+      </Route>
     </Routes>
   );
 };
