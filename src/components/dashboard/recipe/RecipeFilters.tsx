@@ -1,7 +1,6 @@
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { Clock, Utensils, ChevronUp, ChevronDown } from "lucide-react";
+import { Clock, Utensils, ChevronUp, ChevronDown, Mountain } from "lucide-react";
 import { MealType, Difficulty } from "../types";
 import { useState } from "react";
 
@@ -23,6 +22,19 @@ const timeOptions = [
   { value: 120, label: ">1h30" },
 ];
 
+const mealTypeOptions = [
+  { value: "breakfast", label: "Petit-déjeuner", icon: <Utensils className="w-4 h-4" /> },
+  { value: "lunch", label: "Déjeuner", icon: <Utensils className="w-4 h-4" /> },
+  { value: "dinner", label: "Dîner", icon: <Utensils className="w-4 h-4" /> },
+  { value: "snack", label: "Collation", icon: <Utensils className="w-4 h-4" /> },
+];
+
+const difficultyOptions = [
+  { value: "easy", label: "Facile", icon: <ChevronDown className="w-4 h-4" /> },
+  { value: "medium", label: "Moyen", icon: <Mountain className="w-4 h-4" /> },
+  { value: "hard", label: "Difficile", icon: <ChevronUp className="w-4 h-4" /> },
+];
+
 export const RecipeFilters = ({
   mealType,
   setMealType,
@@ -31,35 +43,23 @@ export const RecipeFilters = ({
   difficulty,
   setDifficulty,
 }: RecipeFiltersProps) => {
-  const [showTimeOptions, setShowTimeOptions] = useState(false);
-
   return (
     <div className="grid gap-6 md:grid-cols-3">
       <div className="space-y-2">
         <Label>Type de repas</Label>
-        <RadioGroup 
-          value={mealType} 
-          onValueChange={(value: MealType | "all") => setMealType(value)}
-          className="grid grid-cols-2 gap-2"
-          defaultValue="breakfast"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="breakfast" id="breakfast" />
-            <Label htmlFor="breakfast">Petit-déjeuner</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="lunch" id="lunch" />
-            <Label htmlFor="lunch">Déjeuner</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="dinner" id="dinner" />
-            <Label htmlFor="dinner">Dîner</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="snack" id="snack" />
-            <Label htmlFor="snack">Collation</Label>
-          </div>
-        </RadioGroup>
+        <div className="grid grid-cols-2 gap-2">
+          {mealTypeOptions.map((option) => (
+            <Button
+              key={option.value}
+              variant={mealType === option.value ? "default" : "outline"}
+              onClick={() => setMealType(option.value as MealType)}
+              className="w-full justify-start gap-2"
+            >
+              {option.icon}
+              {option.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -81,25 +81,19 @@ export const RecipeFilters = ({
 
       <div className="space-y-2">
         <Label>Difficulté</Label>
-        <RadioGroup 
-          value={difficulty} 
-          onValueChange={(value: Difficulty | "all") => setDifficulty(value)}
-          className="grid grid-cols-2 gap-2"
-          defaultValue="easy"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="easy" id="easy" />
-            <Label htmlFor="easy">Facile</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="medium" id="medium" />
-            <Label htmlFor="medium">Moyen</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="hard" id="hard" />
-            <Label htmlFor="hard">Difficile</Label>
-          </div>
-        </RadioGroup>
+        <div className="grid grid-cols-2 gap-2">
+          {difficultyOptions.map((option) => (
+            <Button
+              key={option.value}
+              variant={difficulty === option.value ? "default" : "outline"}
+              onClick={() => setDifficulty(option.value as Difficulty)}
+              className="w-full justify-start gap-2"
+            >
+              {option.icon}
+              {option.label}
+            </Button>
+          ))}
+        </div>
       </div>
     </div>
   );
