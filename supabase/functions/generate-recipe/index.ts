@@ -33,22 +33,39 @@ const generatePrompt = (child: any, filters: any) => {
     constraints.push(`Difficulté : ${filters.difficulty}`);
   }
 
-  const timeConstraint = filters.maxPrepTime && filters.maxPrepTime <= 15
-    ? `\nRecettes rapides suggérées : smoothies, bowls de céréales, tartines garnies, yaourts avec toppings, fruits préparés, pancakes express, overnight oats, wraps express`
+  // Suggestions de recettes variées selon le type de repas
+  const mealSuggestions = filters.mealType === 'breakfast' && filters.maxPrepTime <= 15
+    ? `\nSuggestions de petit-déjeuner rapide (choisis-en 3 différentes):
+    - Porridge express aux fruits
+    - Pancakes à la banane
+    - Overnight oats
+    - Smoothie bowl
+    - Toast à l'avocat
+    - Yaourt parfait aux fruits
+    - Wrap petit-déjeuner
+    - Muffin anglais garni
+    - Bol de quinoa sucré
+    - Crêpes express
+    - Sandwich petit-déjeuner
+    - Chia pudding
+    - Granola maison express
+    - Gaufres express
+    - Bowl de fromage blanc aux fruits`
     : '';
 
-  return `Génère 3 recettes rapides pour enfant:
+  return `Génère 3 recettes DIFFÉRENTES et CRÉATIVES pour enfant:
 Age: ${child.birth_date}
 ${allergiesText}
 ${preferencesText}
 ${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
-${timeConstraint}
+${mealSuggestions}
 
 IMPORTANT:
 - 3 bienfaits santé par recette parmi: ${validCategories.join(', ')}
 - Temps réaliste incluant préparation + cuisson
 - Ingrédients simples et prêts à l'emploi
 - Étapes courtes et efficaces
+- CHAQUE recette doit être DIFFÉRENTE des autres
 
 Format JSON uniquement, sans commentaires ni backticks:
 [{
@@ -87,11 +104,11 @@ serve(async (req) => {
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef spécialisé en recettes rapides pour enfants. Réponds uniquement en JSON valide sans backticks ni commentaires.' 
+          content: 'Tu es un chef créatif spécialisé en recettes rapides pour enfants. Assure-toi que chaque recette soit UNIQUE et DIFFÉRENTE des autres. Réponds uniquement en JSON valide sans backticks ni commentaires.' 
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.7,
+      temperature: 0.9, // Increased for more creativity
       max_tokens: 1000,
     });
 
@@ -108,6 +125,12 @@ serve(async (req) => {
       
       if (!Array.isArray(recipes) || recipes.length === 0) {
         throw new Error('Format de recettes invalide');
+      }
+
+      // Vérifier que les recettes sont différentes
+      const recipeNames = new Set(recipes.map(r => r.name));
+      if (recipeNames.size !== recipes.length) {
+        throw new Error('Les recettes doivent être différentes');
       }
 
       return new Response(
