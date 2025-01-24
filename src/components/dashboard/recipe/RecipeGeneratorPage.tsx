@@ -19,7 +19,7 @@ export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
-  const [displayCount, setDisplayCount] = useState(5);
+  const [displayCount, setDisplayCount] = useState(10); // Augmenté pour afficher plus de recettes
   const [error, setError] = useState<string | null>(null);
   const session = useSession();
   const navigate = useNavigate();
@@ -36,8 +36,7 @@ export const RecipeGeneratorPage = () => {
         .from('recipes')
         .select('*')
         .eq('profile_id', session.user.id)
-        .eq('is_generated', true)
-        .order('created_at', { ascending: false });
+        .eq('is_generated', true);
 
       // Appliquer les filtres
       if (filters.mealType && filters.mealType !== 'all') {
@@ -52,6 +51,9 @@ export const RecipeGeneratorPage = () => {
         query = query.eq('difficulty', filters.difficulty);
       }
 
+      // Ajout d'un ordre aléatoire pour varier les recettes affichées
+      query = query.order('created_at', { ascending: false });
+
       const { data, error } = await query;
 
       if (error) {
@@ -59,7 +61,8 @@ export const RecipeGeneratorPage = () => {
         throw error;
       }
 
-      return data.map(recipe => ({
+      // Transformation des données
+      const transformedRecipes = (data || []).map(recipe => ({
         ...recipe,
         ingredients: typeof recipe.ingredients === 'string' 
           ? JSON.parse(recipe.ingredients)
@@ -79,6 +82,9 @@ export const RecipeGeneratorPage = () => {
           ? JSON.parse(recipe.cooking_steps)
           : recipe.cooking_steps || []
       })) as Recipe[];
+
+      // Mélanger les recettes pour plus de variété
+      return transformedRecipes.sort(() => Math.random() - 0.5);
     },
     enabled: !!session?.user?.id,
   });

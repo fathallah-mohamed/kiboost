@@ -34,7 +34,7 @@ const generatePrompt = (child: any, filters: any) => {
   }
 
   const mealSuggestions = filters.mealType === 'breakfast' && filters.maxPrepTime <= 15
-    ? `\nSuggestions de petit-déjeuner rapide (choisis-en 3 différentes):
+    ? `\nSuggestions de petit-déjeuner rapide (choisis-en 3 DIFFÉRENTES parmi cette liste):
     - Porridge express aux fruits
     - Pancakes à la banane
     - Overnight oats
@@ -65,6 +65,7 @@ IMPORTANT:
 - Ingrédients simples et prêts à l'emploi
 - Étapes courtes et efficaces
 - CHAQUE recette doit être DIFFÉRENTE des autres
+- Utilise UNIQUEMENT des guillemets doubles (") pour le JSON, PAS de guillemets simples (')
 
 FORMAT JSON REQUIS (respecte EXACTEMENT ce format):
 {
@@ -127,7 +128,7 @@ serve(async (req) => {
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef créatif spécialisé en recettes rapides pour enfants. Tu dois générer UNIQUEMENT un objet JSON valide avec une propriété "recipes" contenant un tableau de recettes. Pas de texte avant ou après, uniquement du JSON.' 
+          content: 'Tu es un chef créatif spécialisé en recettes rapides pour enfants. Tu dois générer UNIQUEMENT un objet JSON valide avec une propriété "recipes" contenant un tableau de 3 recettes DIFFÉRENTES. Pas de texte avant ou après, uniquement du JSON avec des guillemets doubles.' 
         },
         { role: 'user', content: prompt }
       ],
@@ -145,6 +146,7 @@ serve(async (req) => {
       .replace(/```json\n?|\n?```/g, '')
       .replace(/[\u0000-\u001F]+/g, ' ')
       .replace(/\s+/g, ' ')
+      .replace(/'/g, '"') // Remplacer les guillemets simples par des doubles
       .trim();
 
     console.log('Cleaned content:', cleanedContent);
