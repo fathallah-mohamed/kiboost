@@ -2,26 +2,22 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Recipe } from "../types";
-import { 
-  Utensils, Clock, Heart, Beef, Wheat, 
-  Flame, Cookie, Star, ChevronDown
-} from "lucide-react";
-import { RecipeRating } from "./RecipeRating";
+import { Clock, Heart, Star, ChevronDown, Users } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { RecipeHealthBenefits } from "./recipe-card/RecipeHealthBenefits";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
+  isNew?: boolean;
   onAdd?: (recipe: Recipe) => void;
+  compact?: boolean;
 }
 
-export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, isNew, onAdd, compact = false }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [showRating, setShowRating] = useState(false);
   const { toast } = useToast();
 
   const toggleFavorite = async () => {
@@ -58,6 +54,27 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
     }
   };
 
+  if (compact) {
+    return (
+      <div className="p-2 bg-background rounded-lg border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="font-medium text-sm">{recipe.name}</h4>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+              <Clock className="w-3 h-3" />
+              <span>{recipe.preparation_time} min</span>
+              <Star className="w-3 h-3 ml-2" />
+              <span>{recipe.meal_type}</span>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={toggleFavorite}>
+            <Heart className="w-4 h-4" fill={isFavorite ? "currentColor" : "none"} />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Card className="overflow-hidden">
       <div className="relative">
@@ -83,8 +100,19 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
                 <Heart className="w-4 h-4" fill={isFavorite ? "currentColor" : "none"} />
               </Button>
               {onAdd && (
-                <Button onClick={() => onAdd(recipe)} disabled={isPlanned}>
-                  {isPlanned ? 'Déjà planifiée' : 'Planifier'}
+                <Button 
+                  onClick={() => onAdd(recipe)} 
+                  disabled={isPlanned}
+                  className="flex items-center gap-2"
+                >
+                  {isPlanned ? (
+                    <>
+                      <Users className="w-4 h-4" />
+                      Déjà planifié
+                    </>
+                  ) : (
+                    'Planifier'
+                  )}
                 </Button>
               )}
             </div>
@@ -92,107 +120,56 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
 
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
-              <Utensils className="w-4 h-4" />
-              {recipe.difficulty}
-            </span>
-            <span className="flex items-center gap-1">
               <Star className="w-4 h-4" />
               {recipe.meal_type}
             </span>
           </div>
 
-          {recipe.health_benefits && (
-            <RecipeHealthBenefits benefits={recipe.health_benefits} />
-          )}
-
           <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-            <CollapsibleContent className="space-y-6 mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <Utensils className="w-4 h-4 text-primary" />
-                    Ingrédients
-                  </h4>
-                  <ul className="space-y-2">
+            <CollapsibleContent className="space-y-4 mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Ingrédients</h4>
+                  <ul className="space-y-1 text-sm">
                     {recipe.ingredients.map((ingredient, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm">
-                        <span className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs">
-                          {index + 1}
-                        </span>
-                        <span>
-                          {ingredient.quantity} {ingredient.unit} {ingredient.item}
-                        </span>
+                      <li key={index}>
+                        {ingredient.quantity} {ingredient.unit} {ingredient.item}
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <h4 className="font-semibold">Instructions</h4>
-                  <ol className="space-y-2">
-                    {recipe.instructions.map((step, index) => (
-                      <li key={index} className="flex gap-2 text-sm">
-                        <span className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs shrink-0">
-                          {index + 1}
-                        </span>
-                        <span>{step}</span>
-                      </li>
+                  <ol className="space-y-1 text-sm list-decimal list-inside">
+                    {recipe.instructions.map((instruction, index) => (
+                      <li key={index}>{instruction}</li>
                     ))}
                   </ol>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50">
-                  <Flame className="w-5 h-5 text-red-500" />
-                  <div>
-                    <div className="text-sm font-medium">Calories</div>
-                    <div className="text-lg font-bold text-red-600">
-                      {recipe.nutritional_info.calories}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-secondary/20 p-2 rounded-lg">
+                  <div className="font-medium">Calories</div>
+                  <div className="text-lg font-bold">{recipe.nutritional_info.calories}</div>
                 </div>
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50">
-                  <Beef className="w-5 h-5 text-blue-500" />
-                  <div>
-                    <div className="text-sm font-medium">Protéines</div>
-                    <div className="text-lg font-bold text-blue-600">
-                      {recipe.nutritional_info.protein}g
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-50">
-                  <Wheat className="w-5 h-5 text-yellow-500" />
-                  <div>
-                    <div className="text-sm font-medium">Glucides</div>
-                    <div className="text-lg font-bold text-yellow-600">
-                      {recipe.nutritional_info.carbs}g
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50">
-                  <Cookie className="w-5 h-5 text-purple-500" />
-                  <div>
-                    <div className="text-sm font-medium">Lipides</div>
-                    <div className="text-lg font-bold text-purple-600">
-                      {recipe.nutritional_info.fat}g
-                    </div>
-                  </div>
+                <div className="bg-secondary/20 p-2 rounded-lg">
+                  <div className="font-medium">Protéines</div>
+                  <div className="text-lg font-bold">{recipe.nutritional_info.protein}g</div>
                 </div>
               </div>
             </CollapsibleContent>
-          </Collapsible>
 
-          <div className="flex justify-center">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => setIsOpen(!isOpen)}
-              className="w-full md:w-auto"
+              className="w-full mt-4"
             >
               <ChevronDown className={`w-4 h-4 mr-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-              {isOpen ? 'Masquer la recette' : 'Afficher la recette'}
+              {isOpen ? 'Masquer les détails' : 'Voir les détails'}
             </Button>
-          </div>
+          </Collapsible>
         </div>
       </div>
     </Card>
