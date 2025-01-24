@@ -29,7 +29,6 @@ export const useRecipeGeneration = () => {
         throw new Error('Format de réponse invalide');
       }
 
-      // Sauvegarder les recettes générées dans la base de données
       const { data: session } = await supabase.auth.getSession();
       const userId = session?.session?.user?.id;
 
@@ -39,7 +38,6 @@ export const useRecipeGeneration = () => {
 
       const savedRecipes = await Promise.all(
         generatedRecipes.map(async (recipe) => {
-          // Transform ingredients to match Recipe type
           const transformedRecipe = {
             ...recipe,
             profile_id: userId,
@@ -66,6 +64,14 @@ export const useRecipeGeneration = () => {
                   category: (benefit.category || 'global') as HealthBenefitCategory,
                   description: benefit.description || ''
                 }))
+              : [],
+            cooking_steps: Array.isArray(recipe.cooking_steps)
+              ? recipe.cooking_steps.map((step: any, index: number) => ({
+                  step: Number(step.step) || index + 1,
+                  description: step.description || '',
+                  duration: step.duration ? Number(step.duration) : undefined,
+                  tips: step.tips || undefined
+                }))
               : []
           };
 
@@ -80,7 +86,6 @@ export const useRecipeGeneration = () => {
             throw saveError;
           }
 
-          // Transform the saved recipe to match Recipe type
           return {
             ...savedRecipe,
             ingredients: Array.isArray(savedRecipe.ingredients) 
@@ -104,6 +109,14 @@ export const useRecipeGeneration = () => {
                   icon: benefit.icon || 'sparkles',
                   category: (benefit.category || 'global') as HealthBenefitCategory,
                   description: benefit.description || ''
+                }))
+              : [],
+            cooking_steps: Array.isArray(savedRecipe.cooking_steps)
+              ? savedRecipe.cooking_steps.map((step: any, index: number) => ({
+                  step: Number(step.step) || index + 1,
+                  description: step.description || '',
+                  duration: step.duration ? Number(step.duration) : undefined,
+                  tips: step.tips || undefined
                 }))
               : []
           } as Recipe;
