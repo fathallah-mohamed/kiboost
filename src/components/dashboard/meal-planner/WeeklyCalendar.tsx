@@ -4,6 +4,8 @@ import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth, ad
 import { fr } from 'date-fns/locale';
 import { Recipe, ChildProfile } from '../types';
 import { ChevronLeft, ChevronRight, Clock, Utensils, Trash2 } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface WeeklyCalendarProps {
   selectedDate: Date;
@@ -50,6 +52,10 @@ export const WeeklyCalendar = ({
 
   const handleNextWeek = () => {
     onSelectDate(addWeeks(selectedDate, 1));
+  };
+
+  const getInitials = (name: string) => {
+    return name.substring(0, 2).toUpperCase();
   };
 
   const days = getDaysToDisplay();
@@ -112,11 +118,6 @@ export const WeeklyCalendar = ({
                 <div className="text-sm text-muted-foreground">
                   {format(day, 'd MMMM', { locale: fr })}
                 </div>
-                {selectedChildren.length > 0 && (
-                  <div className="text-sm text-rose-400 mt-1">
-                    {selectedChildren.length} {selectedChildren.length === 1 ? 'enfant sélectionné' : 'enfants sélectionnés'}
-                  </div>
-                )}
               </div>
               
               {recipe && (
@@ -136,22 +137,51 @@ export const WeeklyCalendar = ({
                           </div>
                         </div>
                       </div>
-                      
-                      {!readOnly && onRemoveRecipe && selectedChildren.map(child => (
-                        <Button
-                          key={child.id}
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemoveRecipe(formattedDate, child.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      ))}
                     </div>
+
+                    {!readOnly && selectedChildren.length > 0 && (
+                      <div className="mt-3 pt-2 border-t border-border/50">
+                        <div className="flex flex-wrap gap-2">
+                          {selectedChildren.map(child => (
+                            <div key={child.id} className="flex items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarFallback className="text-xs">
+                                      {getInitials(child.name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{child.name}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              
+                              {onRemoveRecipe && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemoveRecipe(formattedDate, child.id);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Supprimer la recette pour {child.name}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
