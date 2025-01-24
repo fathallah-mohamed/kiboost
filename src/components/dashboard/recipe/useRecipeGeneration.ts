@@ -28,29 +28,25 @@ interface RecipeResponse {
   }>;
 }
 
-const mapHealthBenefitCategory = (category: string): string => {
-  const categoryMap: { [key: string]: string } = {
-    strength: 'physical',
-    muscle: 'physical',
-    brain: 'cognitive',
-    heart: 'physical',
-    cardiovascular: 'physical',
-    cardio: 'physical',
-    blood: 'physical',
-    circulation: 'physical',
-    // Add more mappings as needed
-  };
+const normalizeRecipeName = (name: string): string => {
+  return name.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, ' ')
+    .trim();
+};
+
+const areRecipesSimilar = (recipe1: string, recipe2: string): boolean => {
+  const name1 = normalizeRecipeName(recipe1);
+  const name2 = normalizeRecipeName(recipe2);
   
-  const mappedCategory = categoryMap[category.toLowerCase()] || category;
+  // Calculer la similarité des noms
+  const words1 = new Set(name1.split(' '));
+  const words2 = new Set(name2.split(' '));
+  const commonWords = [...words1].filter(word => words2.has(word));
   
-  // Ensure the category is one of the valid ones, default to 'physical' if not
-  const validCategories = [
-    'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
-    'growth', 'mental', 'organs', 'beauty', 'physical',
-    'prevention', 'global'
-  ];
-  
-  return validCategories.includes(mappedCategory) ? mappedCategory : 'physical';
+  // Si plus de 70% des mots sont communs, considérer comme similaire
+  return commonWords.length / Math.max(words1.size, words2.size) > 0.7;
 };
 
 export const useRecipeGeneration = () => {
@@ -62,8 +58,12 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Generating recipes for child:', child);
-      
+      // Récupérer d'abord les recettes existantes
+      const { data: existingRecipes } = await supabase
+        .from('recipes')
+        .select('name')
+        .eq('profile_id', (await supabase.auth.getSession()).data.session?.user.id);
+
       const { data: generatedRecipes, error: functionError } = await supabase.functions.invoke('generate-recipe', {
         body: { childProfiles: [child] }
       });
@@ -73,8 +73,6 @@ export const useRecipeGeneration = () => {
         throw new Error(functionError.message);
       }
 
-      console.log('Generated recipes:', generatedRecipes);
-      
       if (!generatedRecipes || !Array.isArray(generatedRecipes)) {
         throw new Error('Format de réponse invalide');
       }
@@ -86,14 +84,20 @@ export const useRecipeGeneration = () => {
         throw new Error('Utilisateur non connecté');
       }
 
-      const savedRecipes = await Promise.all(
-        generatedRecipes.map(async (recipe: RecipeResponse) => {
-          // Map health benefits categories to valid ones
-          const mappedHealthBenefits = recipe.health_benefits?.map(benefit => ({
-            ...benefit,
-            category: mapHealthBenefitCategory(benefit.category)
-          })) || [];
+      // Filtrer les recettes similaires
+      const uniqueRecipes = generatedRecipes.filter(recipe => 
+        !existingRecipes?.some(existing => 
+          areRecipesSimilar(recipe.name, existing.name)
+        )
+      );
 
+      if (uniqueRecipes.length === 0) {
+        toast.error("Toutes les recettes générées sont similaires à des recettes existantes. Réessayez !");
+        return [];
+      }
+
+      const savedRecipes = await Promise.all(
+        uniqueRecipes.map(async (recipe: RecipeResponse) => {
           const recipeData = {
             profile_id: userId,
             name: recipe.name,
@@ -107,7 +111,7 @@ export const useRecipeGeneration = () => {
             difficulty: recipe.difficulty,
             servings: recipe.servings,
             is_generated: true,
-            health_benefits: mappedHealthBenefits,
+            health_benefits: recipe.health_benefits || [],
             cooking_steps: [],
             min_age: 0,
             max_age: 18,
@@ -135,7 +139,7 @@ export const useRecipeGeneration = () => {
             ),
             ingredients: recipe.ingredients,
             nutritional_info: recipe.nutritional_info,
-            health_benefits: mappedHealthBenefits,
+            health_benefits: recipe.health_benefits || [],
             cooking_steps: []
           } as Recipe;
         })

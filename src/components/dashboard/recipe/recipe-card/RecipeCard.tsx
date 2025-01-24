@@ -75,6 +75,7 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd, compact }: RecipeCardProp
                   onClick={handleAdd} 
                   disabled={isPlanned}
                   className="whitespace-nowrap"
+                  variant={isPlanned ? "secondary" : "default"}
                 >
                   {isPlanned ? 'Déjà planifiée' : 'Ajouter au planificateur'}
                 </Button>

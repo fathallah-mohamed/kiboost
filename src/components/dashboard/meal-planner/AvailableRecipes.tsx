@@ -27,8 +27,28 @@ export const AvailableRecipes = ({
     return <p>Aucune recette disponible. Générez d'abord des recettes dans l'onglet "Recettes".</p>;
   }
 
+  // Filtrer les doublons basés sur le nom normalisé
+  const normalizeRecipeName = (name: string): string => {
+    return name.toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, ' ')
+      .trim();
+  };
+
+  const uniqueRecipes = recipes.reduce((acc: Recipe[], current) => {
+    const normalizedName = normalizeRecipeName(current.name);
+    const exists = acc.some(recipe => 
+      normalizeRecipeName(recipe.name) === normalizedName
+    );
+    if (!exists) {
+      acc.push(current);
+    }
+    return acc;
+  }, []);
+
   // Trier les recettes pour afficher les favoris en premier
-  const sortedRecipes = [...recipes].sort((a, b) => {
+  const sortedRecipes = [...uniqueRecipes].sort((a, b) => {
     const aIsFavorite = favoriteRecipes.includes(a.id);
     const bIsFavorite = favoriteRecipes.includes(b.id);
     if (aIsFavorite && !bIsFavorite) return -1;
