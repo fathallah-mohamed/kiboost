@@ -1,21 +1,25 @@
 import { useState } from "react";
-import { Recipe, RecipeFilters, ChildProfile, MealType, Difficulty } from "../../types";
+import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
 
-type ExtendedMealType = MealType | "all";
-type ExtendedDifficulty = Difficulty | "all";
-
-interface ExtendedFilters extends Omit<RecipeFilters, 'mealType' | 'difficulty'> {
-  mealType?: ExtendedMealType;
-  difficulty?: ExtendedDifficulty;
-}
+const parseJsonField = <T>(field: Json | null, defaultValue: T): T => {
+  if (typeof field === 'string') {
+    try {
+      return JSON.parse(field) as T;
+    } catch {
+      return defaultValue;
+    }
+  }
+  return (field as T) || defaultValue;
+};
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateRecipes = async (child: ChildProfile, filters: ExtendedFilters) => {
+  const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     try {
       setLoading(true);
       setError(null);
@@ -28,55 +32,41 @@ export const useRecipeGeneration = () => {
           body: { 
             child: {
               ...child,
-              profile_id: child.id
+              profile_id: child.id // Use child.id as profile_id
             },
-            filters: {
-              ...filters,
-              mealType: filters.mealType === 'all' ? undefined : filters.mealType as MealType,
-              difficulty: filters.difficulty === 'all' ? undefined : filters.difficulty as Difficulty
-            }
+            filters
           }
         }
       );
 
       if (generateError) throw generateError;
 
-      // Récupérer aussi les recettes historiques qui correspondent aux filtres
-      const { data: existingRecipes, error: fetchError } = await supabase
+      console.log("Generated recipe response:", response);
+
+      let query = supabase
         .from('recipes')
         .select('*')
-        .eq('is_generated', true)
-        .eq(
-          filters.mealType && filters.mealType !== 'all' ? 'meal_type' : 'is_generated', 
-          filters.mealType && filters.mealType !== 'all' ? filters.mealType : true
-        )
-        .lte('preparation_time', filters.maxPrepTime || 120)
-        .eq(
-          filters.difficulty && filters.difficulty !== 'all' ? 'difficulty' : 'is_generated',
-          filters.difficulty && filters.difficulty !== 'all' ? filters.difficulty : true
-        );
+        .eq('is_generated', true);
+
+      if (filters.mealType && filters.mealType !== 'all') {
+        query = query.eq('meal_type', filters.mealType);
+      }
+      
+      if (filters.maxPrepTime) {
+        query = query.lte('preparation_time', filters.maxPrepTime);
+      }
+
+      if (filters.difficulty && filters.difficulty !== 'all') {
+        query = query.eq('difficulty', filters.difficulty);
+      }
+
+      const { data: existingRecipes, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
 
-      const parseJsonField = <T>(field: unknown, defaultValue: T): T => {
-        if (typeof field === 'string') {
-          try {
-            return JSON.parse(field);
-          } catch {
-            return defaultValue;
-          }
-        }
-        return field as T || defaultValue;
-      };
-
-      // Convertir les données en type Recipe
       const allRecipes = [...(response.recipes || []), ...(existingRecipes || [])].map(recipe => ({
         ...recipe,
-        ingredients: parseJsonField(recipe.ingredients, []).map((ingredient: any) => ({
-          item: ingredient.item || '',
-          quantity: ingredient.quantity || '',
-          unit: ingredient.unit || ''
-        })),
+        ingredients: parseJsonField(recipe.ingredients, []),
         instructions: typeof recipe.instructions === 'string'
           ? recipe.instructions.split('\n').filter(Boolean)
           : Array.isArray(recipe.instructions)

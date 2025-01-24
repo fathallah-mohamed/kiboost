@@ -4,6 +4,9 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type SpecialOccasion = 'birthday' | 'school' | 'quick' | 'party' | 'holiday';
 
+export type FilterMealType = MealType | 'all';
+export type FilterDifficulty = Difficulty | 'all';
+
 export interface Recipe {
   id: string;
   profile_id: string;
@@ -46,9 +49,9 @@ export interface Recipe {
 }
 
 export interface RecipeFilters {
-  mealType?: MealType;
+  mealType?: FilterMealType;
   maxPrepTime?: number;
-  difficulty?: Difficulty;
+  difficulty?: FilterDifficulty;
   dietaryPreferences?: string[];
   excludedAllergens?: string[];
   maxCost?: number;
