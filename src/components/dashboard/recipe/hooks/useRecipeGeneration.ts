@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { Recipe, ChildProfile, MealType, RecipeFilters } from "../../types";
+import { Recipe, ChildProfile, RecipeFilters } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSession } from "@supabase/auth-helpers-react";
+import { useRecipeSaving } from "./useRecipeSaving";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const session = useSession();
+  const { saveRecipe } = useRecipeSaving();
 
   const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     try {
@@ -39,12 +43,34 @@ export const useRecipeGeneration = () => {
         throw new Error("Format de réponse invalide");
       }
 
-      const typedRecipes = response.recipes.map(recipe => ({
-        ...recipe,
-        meal_type: recipe.meal_type as MealType
-      })) as Recipe[];
+      // Save each generated recipe to the database
+      const savedRecipes = await Promise.all(
+        response.recipes.map(async (recipe: Recipe) => {
+          const recipeWithMetadata = {
+            ...recipe,
+            is_generated: true,
+            profile_id: session?.user?.id
+          };
+          
+          try {
+            await saveRecipe(recipeWithMetadata);
+            return recipeWithMetadata;
+          } catch (error) {
+            console.error('Error saving generated recipe:', error);
+            toast.error(`Erreur lors de la sauvegarde de la recette ${recipe.name}`);
+            return null;
+          }
+        })
+      );
 
-      return typedRecipes;
+      // Filter out any recipes that failed to save
+      const successfullySavedRecipes = savedRecipes.filter((recipe): recipe is Recipe => recipe !== null);
+
+      if (successfullySavedRecipes.length > 0) {
+        toast.success(`${successfullySavedRecipes.length} recettes générées et sauvegardées`);
+      }
+
+      return successfullySavedRecipes;
 
     } catch (err) {
       console.error("Error generating recipes:", err);

@@ -16,11 +16,9 @@ import { useRecipeSaving } from './hooks/useRecipeSaving';
 
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const [displayCount, setDisplayCount] = useState(10);
   const [error, setError] = useState<string | null>(null);
-  const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
   const session = useSession();
   const navigate = useNavigate();
   const filters = useRecipeFilters();
@@ -28,6 +26,7 @@ export const RecipeGeneratorPage = () => {
   const { generateRecipes } = useRecipeGeneration();
   const { saveRecipe } = useRecipeSaving();
 
+  // Fetch existing generated recipes
   const { data: recipes = [] } = useRecipeQuery(session?.user?.id, filters.getFilters());
 
   const handleGenerateRecipes = async () => {
@@ -49,19 +48,10 @@ export const RecipeGeneratorPage = () => {
       const newRecipes = await generateRecipes(selectedChild, filters.getFilters());
       console.log("Generated recipes:", newRecipes);
       
-      if (newRecipes && Array.isArray(newRecipes) && newRecipes.length > 0) {
-        setGeneratedRecipes(newRecipes);
-        
-        // Save each recipe to the database
-        setSaving(true);
-        for (const recipe of newRecipes) {
-          await saveRecipe(recipe);
-        }
-        
-        toast.success("Recettes générées avec succès !");
-      } else {
+      if (!newRecipes || newRecipes.length === 0) {
         throw new Error("Aucune recette n'a été générée");
       }
+      
     } catch (error) {
       console.error('Error generating recipes:', error);
       const errorMessage = error instanceof Error ? error.message : "Une erreur est survenue";
@@ -69,15 +59,12 @@ export const RecipeGeneratorPage = () => {
       setError(errorMessage);
     } finally {
       setLoading(false);
-      setSaving(false);
     }
   };
 
   const handleLoadMore = () => {
     setDisplayCount(prev => Math.min(prev + 5, recipes.length));
   };
-
-  const allRecipes = [...generatedRecipes, ...recipes] as Recipe[];
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -88,7 +75,7 @@ export const RecipeGeneratorPage = () => {
       <div className="space-y-6">
         <GenerationSection
           loading={loading}
-          saving={saving}
+          saving={false}
           selectedChildren={selectedChildren}
           setSelectedChildren={setSelectedChildren}
           onGenerate={handleGenerateRecipes}
@@ -96,14 +83,14 @@ export const RecipeGeneratorPage = () => {
         />
 
         <ResultsSection
-          recipes={allRecipes.slice(0, displayCount)}
+          recipes={recipes.slice(0, displayCount)}
           displayCount={displayCount}
           error={error}
           onSaveRecipe={saveRecipe}
           onLoadMore={handleLoadMore}
         />
 
-        {displayCount < allRecipes.length && (
+        {displayCount < recipes.length && (
           <div ref={loadMoreRef} className="h-10" />
         )}
 
