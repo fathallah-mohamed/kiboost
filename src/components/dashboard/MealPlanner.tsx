@@ -4,11 +4,13 @@ import { AvailableRecipes } from './meal-planner/AvailableRecipes';
 import { WeeklyCalendar } from './meal-planner/WeeklyCalendar';
 import { useMealPlanner } from './meal-planner/useMealPlanner';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CalendarDays, CalendarRange } from "lucide-react";
-import { MultiChildSelector } from './recipe/MultiChildSelector';
+import { CalendarDays, CalendarRange, Download } from "lucide-react";
 import { ChildProfile } from './types';
 import { BackToDashboard } from './BackToDashboard';
 import { StepNavigation } from './navigation/StepNavigation';
+import { ChildrenSelector } from './meal-planner/children/ChildrenSelector';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface MealPlannerProps {
   userId: string;
@@ -17,6 +19,7 @@ interface MealPlannerProps {
 
 export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
+  const { toast } = useToast();
   
   const {
     selectedDate,
@@ -28,8 +31,22 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     planRecipe,
     removeRecipe,
     viewMode,
-    setViewMode
+    setViewMode,
+    children,
+    loadingChildren
   } = useMealPlanner(userId, selectedChildren);
+
+  const handleDownloadPlan = () => {
+    // TODO: Implement plan download
+    toast({
+      title: "Téléchargement du planning",
+      description: "Cette fonctionnalité sera bientôt disponible.",
+    });
+  };
+
+  if (loadingChildren) {
+    return <div>Chargement des profils...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -38,7 +55,11 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold">Planificateur de repas</h2>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'week' | 'month')}>
+          <ToggleGroup 
+            type="single" 
+            value={viewMode} 
+            onValueChange={(value) => value && setViewMode(value as 'week' | 'month')}
+          >
             <ToggleGroupItem value="week" aria-label="Vue semaine">
               <CalendarDays className="h-4 w-4" />
               <span className="ml-2">Semaine</span>
@@ -48,13 +69,22 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
               <span className="ml-2">Mois</span>
             </ToggleGroupItem>
           </ToggleGroup>
+          <Button
+            variant="outline"
+            onClick={handleDownloadPlan}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Télécharger le planning
+          </Button>
         </div>
       </div>
 
       <Card className="p-4">
-        <MultiChildSelector 
-          onSelectChildren={setSelectedChildren}
+        <ChildrenSelector
+          children={children}
           selectedChildren={selectedChildren}
+          onSelectionChange={setSelectedChildren}
         />
       </Card>
       
@@ -75,6 +105,7 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
           loading={loading}
           planningRecipe={planningRecipe}
           onPlanRecipe={(recipe) => planRecipe(recipe, selectedChildren)}
+          selectedChildren={selectedChildren}
         />
 
         <StepNavigation
