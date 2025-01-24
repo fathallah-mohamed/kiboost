@@ -50,17 +50,17 @@ IMPORTANT:
 - Ingrédients simples et prêts à l'emploi
 - Étapes courtes et efficaces
 
-Format JSON uniquement:
+Format JSON uniquement, sans commentaires ni backticks:
 [{
-  "name": "Nom",
-  "ingredients": [{"item": "Ingrédient", "quantity": "Qté", "unit": "Unité"}],
+  "name": "Nom de la recette",
+  "ingredients": [{"item": "Ingrédient", "quantity": "Quantité", "unit": "Unité"}],
   "instructions": ["Étape 1", "Étape 2"],
   "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
-  "meal_type": "breakfast|lunch|dinner|snack",
-  "preparation_time": 30,
-  "difficulty": "easy|medium|hard",
+  "meal_type": "breakfast",
+  "preparation_time": 15,
+  "difficulty": "easy",
   "servings": 4,
-  "health_benefits": [{"icon": "...", "category": "...", "description": "..."}]
+  "health_benefits": [{"icon": "brain", "category": "cognitive", "description": "Description du bienfait"}]
 }]`;
 };
 
@@ -83,31 +83,42 @@ serve(async (req) => {
     console.log('Using prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o-mini',  // Using the faster model
+      model: 'gpt-4o-mini',
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef spécialisé en recettes rapides pour enfants. Réponds uniquement en JSON.' 
+          content: 'Tu es un chef spécialisé en recettes rapides pour enfants. Réponds uniquement en JSON valide sans backticks ni commentaires.' 
         },
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 1000, // Reduced token count for faster response
+      max_tokens: 1000,
     });
 
     const content = completion.data.choices[0]?.message?.content;
     if (!content) throw new Error('Réponse OpenAI invalide');
 
-    const recipes = JSON.parse(content.replace(/```json\n?|\n?```/g, '').trim());
-    
-    if (!Array.isArray(recipes) || recipes.length !== 3) {
-      throw new Error('Format de recettes invalide');
-    }
+    // Nettoyage et validation du JSON
+    const cleanedContent = content
+      .replace(/```json\n?|\n?```/g, '')
+      .trim();
 
-    return new Response(
-      JSON.stringify({ recipes }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    try {
+      const recipes = JSON.parse(cleanedContent);
+      
+      if (!Array.isArray(recipes) || recipes.length === 0) {
+        throw new Error('Format de recettes invalide');
+      }
+
+      return new Response(
+        JSON.stringify({ recipes }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError, '\nContent:', cleanedContent);
+      throw new Error(`Erreur de parsing JSON: ${parseError.message}`);
+    }
 
   } catch (error) {
     console.error('Error:', error);
