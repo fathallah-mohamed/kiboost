@@ -65,11 +65,25 @@ FORMAT JSON STRICT:
 
 // Fonction de nettoyage JSON optimisée
 const cleanJsonContent = (content: string): string => {
-  return content
-    .replace(/```json\n?|\n?```/g, '')
-    .replace(/[\u0000-\u001F]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  try {
+    // Remove any markdown code block syntax
+    const cleanContent = content
+      .replace(/```json\n?|\n?```/g, '')
+      .replace(/[\u0000-\u001F]+/g, ' ')
+      .trim();
+
+    // Validate JSON structure
+    const parsed = JSON.parse(cleanContent);
+    if (!parsed.recipes || !Array.isArray(parsed.recipes)) {
+      throw new Error('Invalid JSON structure: missing recipes array');
+    }
+
+    return cleanContent;
+  } catch (error) {
+    console.error('Error cleaning JSON content:', error);
+    console.log('Raw content:', content);
+    throw error;
+  }
 };
 
 // Validation rapide de la structure des recettes
@@ -113,14 +127,14 @@ serve(async (req) => {
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.8,
+      temperature: 0.7,
       max_tokens: 2000,
-      presence_penalty: 0.6,
-      frequency_penalty: 0.8
+      presence_penalty: 0.3,
+      frequency_penalty: 0.5
     });
 
     const content = completion.data.choices[0]?.message?.content;
-    if (!content) throw new Error('Réponse OpenAI invalide');
+    if (!content) throw new Error('Invalid OpenAI response');
 
     console.log('Raw OpenAI response:', content);
     const cleanedContent = cleanJsonContent(content);
@@ -129,7 +143,7 @@ serve(async (req) => {
     const parsedContent = JSON.parse(cleanedContent);
     
     if (!parsedContent.recipes || !Array.isArray(parsedContent.recipes)) {
-      throw new Error('Format invalide: propriété "recipes" manquante ou invalide');
+      throw new Error('Invalid format: missing "recipes" property or not an array');
     }
 
     // Validation rapide des recettes
@@ -138,10 +152,10 @@ serve(async (req) => {
     
     recipes.forEach((recipe, index) => {
       if (!validateRecipe(recipe)) {
-        throw new Error(`Structure invalide pour la recette ${index + 1}`);
+        throw new Error(`Invalid structure for recipe ${index + 1}`);
       }
       if (recipeNames.has(recipe.name)) {
-        throw new Error('Les recettes doivent avoir des noms uniques');
+        throw new Error('Recipes must have unique names');
       }
       recipeNames.add(recipe.name);
     });
