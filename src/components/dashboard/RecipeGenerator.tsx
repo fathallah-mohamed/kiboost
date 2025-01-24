@@ -16,7 +16,7 @@ export const RecipeGenerator = () => {
   const navigate = useNavigate();
   const { generateRecipes, loading } = useRecipeGeneration();
   const { saveRecipe, saving } = useRecipeSaving();
-  const { plannedRecipes } = usePlannedRecipesFetching();
+  const { plannedRecipes } = usePlannedRecipesFetching(selectedChildren);
 
   // Filter states
   const [mealType, setMealType] = useState<MealType | "all">("all");
