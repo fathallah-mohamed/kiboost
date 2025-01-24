@@ -1,6 +1,6 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Configuration, OpenAIApi } from 'https://esm.sh/openai@3.2.1';
-import { corsHeaders } from '../_shared/cors.ts';
 
 interface ChildProfile {
   id: string;
@@ -10,30 +10,10 @@ interface ChildProfile {
   preferences: string[];
 }
 
-interface RecipeResponse {
-  name: string;
-  ingredients: Array<{
-    item: string;
-    quantity: string;
-    unit: string;
-  }>;
-  instructions: string[];
-  nutritional_info: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  meal_type: string;
-  preparation_time: number;
-  difficulty: string;
-  servings: number;
-  health_benefits: Array<{
-    icon: string;
-    category: string;
-    description: string;
-  }>;
-}
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const generatePrompt = (child: ChildProfile) => {
   const allergiesText = child.allergies?.length > 0 
@@ -71,6 +51,7 @@ serve(async (req) => {
 
   try {
     const { childProfiles } = await req.json();
+    console.log('Received child profiles:', childProfiles);
 
     if (!childProfiles || !Array.isArray(childProfiles) || childProfiles.length === 0) {
       throw new Error('Profil enfant invalide ou manquant');
@@ -85,7 +66,7 @@ serve(async (req) => {
     const openai = new OpenAIApi(configuration);
 
     const prompt = generatePrompt(childProfiles[0]);
-    console.log('Prompt:', prompt);
+    console.log('Generated prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
       model: 'gpt-4o',
@@ -99,7 +80,7 @@ serve(async (req) => {
       throw new Error('Réponse OpenAI invalide');
     }
 
-    let recipes: RecipeResponse[];
+    let recipes;
     try {
       recipes = JSON.parse(content);
       console.log('Parsed recipes:', recipes);
