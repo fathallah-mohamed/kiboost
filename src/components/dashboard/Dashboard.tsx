@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Session } from '@supabase/auth-helpers-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ChildProfile } from './types';
 import { DashboardHeader } from './layout/DashboardHeader';
 import { DashboardContent } from './layout/DashboardContent';
-import { DashboardNavigation } from './layout/DashboardNavigation';
 import { CategoriesGrid } from './categories/CategoriesGrid';
 
 interface DashboardProps {
@@ -18,14 +16,7 @@ export const Dashboard = ({ session }: DashboardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
-  const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
   const [activeSection, setActiveSection] = useState<string>('categories');
-
-  useEffect(() => {
-    if (location.state?.section) {
-      setActiveSection(location.state.section);
-    }
-  }, [location.state]);
 
   const handleLogout = async () => {
     try {
@@ -56,17 +47,11 @@ export const Dashboard = ({ session }: DashboardProps) => {
           <CategoriesGrid />
         </div>
       ) : (
-        <>
-          <DashboardNavigation 
-            activeSection={activeSection} 
-            setActiveSection={setActiveSection}
-          />
-          <DashboardContent
-            session={session}
-            activeSection={activeSection}
-            setActiveSection={setActiveSection}
-          />
-        </>
+        <DashboardContent
+          session={session}
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+        />
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from './types';
 import { useRecipeSaving } from './recipe/hooks/useRecipeSaving';
 import { toast } from 'sonner';
+import { BackToDashboard } from './BackToDashboard';
 
 interface RecipeGeneratorProps {
   onSectionChange: (section: string) => void;
@@ -59,7 +60,8 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   };
 
   return (
-    <RecipeGeneratorLayout onSectionChange={onSectionChange}>
+    <div className="space-y-6">
+      <BackToDashboard onBack={() => onSectionChange('categories')} />
       <RecipeGeneratorContent
         loading={loading}
         saving={saving}
@@ -83,6 +85,6 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
         advancedFilters={advancedFilters}
         setAdvancedFilters={setAdvancedFilters}
       />
-    </RecipeGeneratorLayout>
+    </div>
   );
 };
