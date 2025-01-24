@@ -25,8 +25,8 @@ export const RecipeGeneratorPage = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({
     dietaryPreferences: [],
-    allergens: [],
-    costEstimate: [0, 50],
+    excludedAllergens: [],
+    maxCost: 15,
     healthBenefits: [],
     seasonalMonths: [],
   });
@@ -43,13 +43,7 @@ export const RecipeGeneratorPage = () => {
 
     try {
       setLoading(true);
-      const generatedRecipes = await generateRecipes({
-        children: selectedChildren,
-        mealType,
-        maxPrepTime,
-        difficulty,
-        ...advancedFilters,
-      });
+      const generatedRecipes = await generateRecipes(selectedChildren[0]);
       setRecipes(generatedRecipes);
       toast.success("Recettes générées avec succès !");
     } catch (error) {
