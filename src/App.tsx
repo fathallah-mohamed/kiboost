@@ -9,11 +9,28 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { useSession } from "@supabase/auth-helpers-react";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const session = useSession();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token has been refreshed');
+      }
+      if (event === 'SIGNED_OUT') {
+        toast.error("Votre session a expiré. Veuillez vous reconnecter.");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <Routes>

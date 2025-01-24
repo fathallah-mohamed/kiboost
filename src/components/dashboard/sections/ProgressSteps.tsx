@@ -11,7 +11,6 @@ import {
   Check,
   ArrowRight,
   Lock,
-  AlertCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -22,11 +21,25 @@ interface ProgressStepsProps {
   onSectionChange: (section: string) => void;
 }
 
+type StepStatus = "completed" | "in-progress" | "locked";
+
+interface Step {
+  id: string;
+  label: string;
+  icon: any;
+  status: StepStatus;
+  action: string;
+  route: string;
+  description: string;
+  feedback: string;
+  requiresPrevious?: boolean;
+}
+
 export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
   
-  const steps = [
+  const steps: Step[] = [
     {
       id: "profiles",
       label: "Configurer les profils enfants",
@@ -87,7 +100,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
     return (completed / steps.length) * 100;
   };
 
-  const getStatusIcon = (status: "completed" | "in-progress" | "locked") => {
+  const getStatusIcon = (status: StepStatus) => {
     switch (status) {
       case "completed":
         return <CheckCircle className="w-6 h-6 text-green-500" />;
@@ -98,7 +111,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
     }
   };
 
-  const handleStepClick = (step: typeof steps[0]) => {
+  const handleStepClick = (step: Step) => {
     if (step.status === "locked") {
       toast.error("Terminez l'étape précédente pour continuer");
       return;
