@@ -4,7 +4,6 @@ import { useSession } from '@supabase/auth-helpers-react';
 import { BackToDashboard } from '../BackToDashboard';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Recipe, ChildProfile } from "../types";
 import { StepNavigation } from '../navigation/StepNavigation';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +16,7 @@ import { useEffect } from 'react';
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
+  const [selectedChildren, setSelectedChildren] = useState([]);
   const [displayCount, setDisplayCount] = useState(5);
   const [error, setError] = useState<string | null>(null);
   const session = useSession();
@@ -77,7 +76,7 @@ export const RecipeGeneratorPage = () => {
         cooking_steps: typeof recipe.cooking_steps === 'string'
           ? JSON.parse(recipe.cooking_steps)
           : recipe.cooking_steps || []
-      })) as Recipe[];
+      }));
     },
     enabled: !!session?.user?.id,
   });
@@ -116,7 +115,7 @@ export const RecipeGeneratorPage = () => {
     }
   };
 
-  const handleSaveRecipe = async (recipe: Recipe) => {
+  const handleSaveRecipe = async (recipe) => {
     try {
       setSaving(true);
       // Implement save recipe logic here
@@ -129,7 +128,9 @@ export const RecipeGeneratorPage = () => {
     }
   };
 
-  const filteredRecipes = recipes.slice(0, displayCount);
+  const handleLoadMore = () => {
+    setDisplayCount(prev => Math.min(prev + 5, recipes.length));
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -146,9 +147,11 @@ export const RecipeGeneratorPage = () => {
         />
 
         <ResultsSection
-          recipes={filteredRecipes}
+          recipes={recipes}
+          displayCount={displayCount}
           error={error}
           onSaveRecipe={handleSaveRecipe}
+          onLoadMore={handleLoadMore}
         />
 
         {displayCount < recipes.length && (
