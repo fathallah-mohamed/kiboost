@@ -70,7 +70,10 @@ serve(async (req) => {
 
     const completion = await openai.createChatCompletion({
       model: 'gpt-4o',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        { role: 'system', content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants.' },
+        { role: 'user', content: prompt }
+      ],
       temperature: 0.7,
       max_tokens: 2000,
     });
@@ -106,11 +109,11 @@ serve(async (req) => {
         error: error instanceof Error ? error.message : 'Une erreur inconnue est survenue',
       }),
       {
+        status: 500,
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
         },
-        status: 500,
       },
     );
   }
