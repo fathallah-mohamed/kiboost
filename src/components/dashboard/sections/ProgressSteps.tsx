@@ -10,17 +10,20 @@ import {
   ShoppingCart,
   Check,
   ArrowRight,
-  Lock
+  Lock,
+  AlertCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface ProgressStepsProps {
   onSectionChange: (section: string) => void;
 }
 
 export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
+  const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
   
   const steps = [
@@ -28,7 +31,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "profiles",
       label: "Configurer les profils enfants",
       icon: User,
-      status: "completed" as const,
+      status: currentStep > 1 ? "completed" : currentStep === 1 ? "in-progress" : "locked",
       action: "Mettre à jour",
       route: "children",
       description: "Ajoutez ou modifiez les profils de vos enfants",
@@ -38,7 +41,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "recipes",
       label: "Générer des recettes",
       icon: ChefHat,
-      status: "in-progress" as const,
+      status: currentStep > 2 ? "completed" : currentStep === 2 ? "in-progress" : "locked",
       action: "Générer maintenant",
       route: "recipes",
       description: "Créez des recettes adaptées à vos enfants",
@@ -48,7 +51,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "planning",
       label: "Planifier les repas",
       icon: Calendar,
-      status: "locked" as const,
+      status: currentStep > 3 ? "completed" : currentStep === 3 ? "in-progress" : "locked",
       action: "Commencer à planifier",
       route: "planner",
       description: "Organisez les repas de la semaine",
@@ -59,7 +62,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "shopping",
       label: "Liste de courses",
       icon: ShoppingCart,
-      status: "locked" as const,
+      status: currentStep > 4 ? "completed" : currentStep === 4 ? "in-progress" : "locked",
       action: "Préparer ma liste",
       route: "shopping",
       description: "Préparez votre liste de courses",
@@ -70,7 +73,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       id: "validate",
       label: "Valider le planning",
       icon: Check,
-      status: "locked" as const,
+      status: currentStep > 5 ? "completed" : currentStep === 5 ? "in-progress" : "locked",
       action: "Finaliser",
       route: "view-planner",
       description: "Finalisez votre planning hebdomadaire",
@@ -103,6 +106,17 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
 
     onSectionChange(step.route);
     toast.success(step.feedback);
+
+    if (step.status === "in-progress") {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const handleNextStep = () => {
+    const nextStep = steps[currentStep];
+    if (nextStep) {
+      handleStepClick(nextStep);
+    }
   };
 
   return (
@@ -157,6 +171,15 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
           </div>
         ))}
       </div>
+
+      {currentStep < steps.length && (
+        <div className="flex justify-end">
+          <Button onClick={handleNextStep} className="gap-2">
+            Passer à l'étape suivante
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </Card>
   );
 };
