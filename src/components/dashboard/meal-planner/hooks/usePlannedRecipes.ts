@@ -21,6 +21,14 @@ export const usePlannedRecipes = (
     }));
   };
 
+  const removePlannedRecipeFromState = (date: string) => {
+    setPlannedRecipes(prev => {
+      const newState = { ...prev };
+      delete newState[date];
+      return newState;
+    });
+  };
+
   const parseRecipeData = (recipeData: any): Recipe => {
     return {
       ...recipeData,
@@ -94,5 +102,11 @@ export const usePlannedRecipes = (
     fetchPlannedRecipes();
   }, [selectedDate, viewMode, selectedChildren]);
 
-  return { plannedRecipes, loading, updateLocalPlannedRecipes, fetchPlannedRecipes };
+  return { 
+    plannedRecipes, 
+    loading, 
+    updateLocalPlannedRecipes, 
+    fetchPlannedRecipes,
+    removePlannedRecipeFromState 
+  };
 };
