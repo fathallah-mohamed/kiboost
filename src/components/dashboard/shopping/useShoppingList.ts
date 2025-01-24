@@ -24,8 +24,10 @@ export const useShoppingList = (userId: string) => {
       if (error) throw error;
 
       if (shoppingList?.items) {
-        // Ensure proper type casting from Json to ShoppingItem[]
-        const parsedItems = shoppingList.items as ShoppingItem[];
+        // Parse the items from JSON and ensure they match ShoppingItem type
+        const parsedItems = (Array.isArray(shoppingList.items) 
+          ? shoppingList.items 
+          : JSON.parse(shoppingList.items as string)) as ShoppingItem[];
         setItems(parsedItems);
       }
     } catch (error) {
@@ -51,7 +53,7 @@ export const useShoppingList = (userId: string) => {
         .from('shopping_lists')
         .upsert({ 
           profile_id: userId, 
-          items: updatedItems as unknown as Json
+          items: updatedItems
         });
 
       if (error) throw error;
@@ -75,7 +77,7 @@ export const useShoppingList = (userId: string) => {
         .from('shopping_lists')
         .upsert({ 
           profile_id: userId, 
-          items: updatedItems as unknown as Json
+          items: updatedItems
         });
 
       if (error) throw error;
@@ -101,7 +103,7 @@ export const useShoppingList = (userId: string) => {
         .from('shopping_lists')
         .upsert({ 
           profile_id: userId, 
-          items: updatedItems as unknown as Json
+          items: updatedItems
         });
 
       if (error) throw error;

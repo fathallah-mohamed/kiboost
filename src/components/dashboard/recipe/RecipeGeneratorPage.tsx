@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useRecipeGeneration } from './useRecipeGeneration';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -44,20 +44,22 @@ export const RecipeGeneratorPage = () => {
 
       return data.map(recipe => ({
         ...recipe,
-        ingredients: Array.isArray(recipe.ingredients) 
-          ? recipe.ingredients 
-          : JSON.parse(recipe.ingredients as string),
+        ingredients: typeof recipe.ingredients === 'string' 
+          ? JSON.parse(recipe.ingredients)
+          : recipe.ingredients,
         instructions: typeof recipe.instructions === 'string'
-          ? recipe.instructions.split('\n')
-          : recipe.instructions,
+          ? recipe.instructions.split('\n').filter(Boolean)
+          : Array.isArray(recipe.instructions)
+            ? recipe.instructions
+            : [recipe.instructions].filter(Boolean),
         nutritional_info: typeof recipe.nutritional_info === 'string'
           ? JSON.parse(recipe.nutritional_info)
           : recipe.nutritional_info,
         health_benefits: typeof recipe.health_benefits === 'string'
-          ? JSON.parse(recipe.health_benefits as string)
-          : recipe.health_benefits,
+          ? JSON.parse(recipe.health_benefits)
+          : recipe.health_benefits || [],
         cooking_steps: typeof recipe.cooking_steps === 'string'
-          ? JSON.parse(recipe.cooking_steps as string)
+          ? JSON.parse(recipe.cooking_steps)
           : recipe.cooking_steps || []
       })) as Recipe[];
     },
