@@ -32,37 +32,37 @@ Profil de l'enfant :
 - ${allergiesText}
 - ${preferencesText}
 
-Format de réponse requis : un tableau JSON contenant des objets avec les champs suivants :
-{
-  "name": "Nom de la recette",
-  "ingredients": [
-    {
-      "item": "Nom de l'ingrédient",
-      "quantity": "Quantité",
-      "unit": "Unité"
-    }
-  ],
-  "instructions": ["Étape 1", "Étape 2", "..."],
-  "nutritional_info": {
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0
-  },
-  "meal_type": "breakfast|lunch|dinner|snack",
-  "preparation_time": 30,
-  "difficulty": "easy|medium|hard",
-  "servings": 4,
-  "health_benefits": [
-    {
-      "icon": "brain|heart|etc",
-      "category": "cognitive|energy|etc",
-      "description": "Description du bénéfice"
-    }
-  ]
-}
-
-IMPORTANT: La réponse doit être un tableau JSON valide contenant exactement 3 recettes.`;
+Réponds UNIQUEMENT avec un tableau JSON contenant exactement 3 recettes au format suivant :
+[
+  {
+    "name": "Nom de la recette",
+    "ingredients": [
+      {
+        "item": "Nom de l'ingrédient",
+        "quantity": "Quantité",
+        "unit": "Unité"
+      }
+    ],
+    "instructions": ["Étape 1", "Étape 2"],
+    "nutritional_info": {
+      "calories": 0,
+      "protein": 0,
+      "carbs": 0,
+      "fat": 0
+    },
+    "meal_type": "breakfast|lunch|dinner|snack",
+    "preparation_time": 30,
+    "difficulty": "easy|medium|hard",
+    "servings": 4,
+    "health_benefits": [
+      {
+        "icon": "brain|heart|etc",
+        "category": "cognitive|energy|etc",
+        "description": "Description du bénéfice"
+      }
+    ]
+  }
+]`;
 };
 
 serve(async (req) => {
@@ -94,7 +94,7 @@ serve(async (req) => {
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants. Tu dois TOUJOURS répondre avec un tableau JSON valide contenant exactement 3 recettes, en suivant strictement le format demandé.' 
+          content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants. Tu dois UNIQUEMENT répondre avec un tableau JSON valide contenant exactement 3 recettes. Ne réponds JAMAIS avec du texte avant ou après le JSON.' 
         },
         { role: 'user', content: prompt }
       ],
@@ -112,8 +112,15 @@ serve(async (req) => {
 
     let recipes;
     try {
-      // Attempt to clean the response if it contains markdown backticks
-      const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      // Remove any potential markdown or extra text
+      const cleanContent = content
+        .replace(/```json\n?|\n?```/g, '')
+        .replace(/^[\s\n]*\[/, '[')
+        .replace(/\][\s\n]*$/, ']')
+        .trim();
+
+      console.log('Cleaned content:', cleanContent);
+      
       recipes = JSON.parse(cleanContent);
       
       if (!Array.isArray(recipes)) {
