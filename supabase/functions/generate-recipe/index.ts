@@ -41,7 +41,9 @@ Format de réponse souhaité : un tableau JSON de recettes avec les champs suiva
 - preparation_time: number (en minutes)
 - difficulty: string ('easy', 'medium', 'hard')
 - servings: number
-- health_benefits: array of { icon: string, category: string, description: string }`;
+- health_benefits: array of { icon: string, category: string, description: string }
+
+Assure-toi que la réponse est un tableau JSON valide.`;
 };
 
 serve(async (req) => {
@@ -71,7 +73,7 @@ serve(async (req) => {
     const completion = await openai.createChatCompletion({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants.' },
+        { role: 'system', content: 'Tu es un chef cuisinier spécialisé dans la création de recettes pour enfants. Réponds uniquement avec un tableau JSON valide.' },
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
@@ -80,15 +82,21 @@ serve(async (req) => {
 
     const content = completion.data.choices[0]?.message?.content;
     if (!content) {
+      console.error('Invalid OpenAI response:', completion.data);
       throw new Error('Réponse OpenAI invalide');
     }
+
+    console.log('Raw OpenAI response:', content);
 
     let recipes;
     try {
       recipes = JSON.parse(content);
+      if (!Array.isArray(recipes)) {
+        throw new Error('La réponse n\'est pas un tableau');
+      }
       console.log('Parsed recipes:', recipes);
     } catch (error) {
-      console.error('Error parsing OpenAI response:', error);
+      console.error('Error parsing OpenAI response:', error, 'Content:', content);
       throw new Error('Erreur lors du parsing de la réponse OpenAI');
     }
 
