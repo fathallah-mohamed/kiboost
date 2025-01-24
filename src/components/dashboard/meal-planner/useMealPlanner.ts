@@ -12,29 +12,39 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
   const { recipes: availableRecipes, loading: recipesLoading, clearRecipes } = useRecipes(userId);
   const { 
     plannedRecipes, 
-    loading: plannedRecipesLoading, 
-    updateLocalPlannedRecipes 
+    loading: plannedRecipesLoading,
+    updateLocalPlannedRecipes,
+    fetchPlannedRecipes,
+    removePlannedRecipeFromState
   } = usePlannedRecipes(
     userId,
     selectedDate,
     viewMode,
     selectedChildren
   );
-  const { planRecipe, saving } = useRecipePlanning();
+  const { planRecipe, removePlannedRecipe, saving } = useRecipePlanning();
 
   const loading = recipesLoading || plannedRecipesLoading;
 
-  // Force refresh on mount only
   useEffect(() => {
     clearRecipes();
   }, []);
 
+  useEffect(() => {
+    fetchPlannedRecipes();
+  }, [selectedDate, viewMode, selectedChildren]);
+
   const handlePlanRecipe = async (recipe: Recipe, children: ChildProfile[]) => {
     await planRecipe(recipe, children, selectedDate, userId);
-    
-    // Mettre à jour le state local immédiatement
     const formattedDate = format(selectedDate, 'yyyy-MM-dd');
     updateLocalPlannedRecipes(formattedDate, recipe);
+    await fetchPlannedRecipes();
+  };
+
+  const handleRemoveRecipe = async (date: string, childId: string) => {
+    await removePlannedRecipe(date, childId, userId);
+    removePlannedRecipeFromState(date);
+    await fetchPlannedRecipes();
   };
 
   return {
@@ -45,6 +55,7 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
     loading,
     planningRecipe: saving,
     planRecipe: handlePlanRecipe,
+    removeRecipe: handleRemoveRecipe,
     viewMode,
     setViewMode
   };

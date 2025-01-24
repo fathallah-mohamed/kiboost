@@ -5,7 +5,7 @@ import { useSession } from '@supabase/auth-helpers-react';
 import { BackToDashboard } from '../BackToDashboard';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Recipe, ChildProfile, RecipeFilters } from "../types";
+import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from "../types";
 import { MultiChildSelector } from './MultiChildSelector';
 import { RecipeFiltersSection } from './RecipeFiltersSection';
 import { RecipeList } from './RecipeList';
@@ -25,9 +25,9 @@ export const RecipeGeneratorPage = () => {
   const { generateRecipes } = useRecipeGeneration();
 
   // États pour les filtres
-  const [mealType, setMealType] = useState<string>("all");
+  const [mealType, setMealType] = useState<MealType | "all">("all");
   const [maxPrepTime, setMaxPrepTime] = useState(60);
-  const [difficulty, setDifficulty] = useState<string>("all");
+  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({
     dietaryPreferences: [],
@@ -89,9 +89,9 @@ export const RecipeGeneratorPage = () => {
       setLoading(true);
       const filters: RecipeFilters = {
         ...advancedFilters,
-        mealType,
+        mealType: mealType === "all" ? undefined : mealType,
         maxPrepTime,
-        difficulty,
+        difficulty: difficulty === "all" ? undefined : difficulty,
       };
       
       const generatedRecipes = await generateRecipes(selectedChildren[0], filters);
