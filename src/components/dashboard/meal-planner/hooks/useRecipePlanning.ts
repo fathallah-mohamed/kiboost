@@ -15,7 +15,6 @@ export const useRecipePlanning = () => {
     userId: string
   ) => {
     console.log('Planning recipe:', recipe);
-    console.log('Recipe ID:', recipe?.id);
     console.log('Children:', children);
     console.log('Date:', date);
     console.log('User ID:', userId);

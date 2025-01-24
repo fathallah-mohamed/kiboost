@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 interface WeeklyCalendarProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
-  plannedRecipes: { [key: string]: Recipe | null };
+  plannedRecipes: { [key: string]: { [childId: string]: Recipe } };
   viewMode: 'week' | 'month';
   selectedChildren: ChildProfile[];
   readOnly?: boolean;
@@ -96,7 +96,7 @@ export const WeeklyCalendar = ({
       <div className={`grid ${gridCols} gap-4`}>
         {days.map((day) => {
           const formattedDate = format(day, 'yyyy-MM-dd');
-          const recipe = plannedRecipes[formattedDate];
+          const dayRecipes = plannedRecipes[formattedDate] || {};
           const isCurrentMonth = isSameMonth(day, selectedDate);
           
           return (
@@ -120,30 +120,17 @@ export const WeeklyCalendar = ({
                 </div>
               </div>
               
-              {recipe && (
+              {Object.keys(dayRecipes).length > 0 && (
                 <div className="space-y-3">
-                  <div className="p-3 bg-secondary/20 rounded-lg">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <h4 className="font-medium line-clamp-2">{recipe.name}</h4>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{recipe.preparation_time} min</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Utensils className="w-3 h-3" />
-                            <span>{recipe.meal_type}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {Object.entries(dayRecipes).map(([childId, recipe]) => {
+                    const child = selectedChildren.find(c => c.id === childId);
+                    if (!child) return null;
 
-                    {!readOnly && selectedChildren.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-border/50">
-                        <div className="flex flex-wrap gap-2">
-                          {selectedChildren.map(child => (
-                            <div key={child.id} className="flex items-center gap-1">
+                    return (
+                      <div key={`${childId}-${recipe.id}`} className="p-3 bg-secondary/20 rounded-lg">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
                               <Tooltip>
                                 <TooltipTrigger>
                                   <Avatar className="h-6 w-6">
@@ -156,33 +143,44 @@ export const WeeklyCalendar = ({
                                   <p>{child.name}</p>
                                 </TooltipContent>
                               </Tooltip>
-                              
-                              {onRemoveRecipe && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onRemoveRecipe(formattedDate, child.id);
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Supprimer la recette pour {child.name}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
+                              <h4 className="font-medium line-clamp-2">{recipe.name}</h4>
                             </div>
-                          ))}
+                            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{recipe.preparation_time} min</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Utensils className="w-3 h-3" />
+                                <span>{recipe.meal_type}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {!readOnly && onRemoveRecipe && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRemoveRecipe(formattedDate, childId);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Supprimer la recette pour {child.name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
             </Card>

@@ -4,27 +4,44 @@ import { useToast } from '@/components/ui/use-toast';
 import { Recipe, ChildProfile } from '../../types';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth } from 'date-fns';
 
+interface PlannedRecipesByDate {
+  [date: string]: {
+    [childId: string]: Recipe;
+  };
+}
+
 export const usePlannedRecipes = (
   userId: string,
   selectedDate: Date,
   viewMode: 'week' | 'month',
   selectedChildren: ChildProfile[]
 ) => {
-  const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe }>({});
+  const [plannedRecipes, setPlannedRecipes] = useState<PlannedRecipesByDate>({});
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const updateLocalPlannedRecipes = (date: string, recipe: Recipe) => {
+  const updateLocalPlannedRecipes = (date: string, recipe: Recipe, childId: string) => {
     setPlannedRecipes(prev => ({
       ...prev,
-      [date]: recipe
+      [date]: {
+        ...(prev[date] || {}),
+        [childId]: recipe
+      }
     }));
   };
 
-  const removePlannedRecipeFromState = (date: string) => {
+  const removePlannedRecipeFromState = (date: string, childId: string) => {
     setPlannedRecipes(prev => {
       const newState = { ...prev };
-      delete newState[date];
+      if (newState[date]) {
+        const newDateState = { ...newState[date] };
+        delete newDateState[childId];
+        if (Object.keys(newDateState).length === 0) {
+          delete newState[date];
+        } else {
+          newState[date] = newDateState;
+        }
+      }
       return newState;
     });
   };
@@ -77,11 +94,15 @@ export const usePlannedRecipes = (
         throw error;
       }
 
-      const plannedRecipesByDate: { [key: string]: Recipe } = {};
+      const plannedRecipesByDate: PlannedRecipesByDate = {};
       
       data.forEach(plan => {
-        if (plan.recipes) {
-          plannedRecipesByDate[plan.date] = parseRecipeData(plan.recipes);
+        if (plan.recipes && plan.child_id) {
+          const date = plan.date;
+          if (!plannedRecipesByDate[date]) {
+            plannedRecipesByDate[date] = {};
+          }
+          plannedRecipesByDate[date][plan.child_id] = parseRecipeData(plan.recipes);
         }
       });
 
