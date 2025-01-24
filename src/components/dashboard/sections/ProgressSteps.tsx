@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useNavigate } from "react-router-dom";
 import {
   ChefHat,
   Calendar,
@@ -37,6 +38,7 @@ interface Step {
 export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [progress, setProgress] = useState(0);
+  const navigate = useNavigate();
 
   const steps: Step[] = [
     {
@@ -88,9 +90,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
 
   const handleStepClick = (step: Step) => {
     console.log(`Navigating to ${step.route}`);
-    onSectionChange(step.route);
-    toast.success(step.feedback);
-    setCurrentStep(steps.findIndex(s => s.id === step.id) + 1);
+    navigate(`/dashboard/${step.route}`);
   };
 
   const handleNextStep = () => {
