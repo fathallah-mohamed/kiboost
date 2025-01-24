@@ -4,7 +4,7 @@ import { useSession } from '@supabase/auth-helpers-react';
 import { BackToDashboard } from '../BackToDashboard';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Recipe, ChildProfile } from "../types";
+import { Recipe, ChildProfile, MealType } from "../types";
 import { StepNavigation } from '../navigation/StepNavigation';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,6 +60,7 @@ export const RecipeGeneratorPage = () => {
 
       return data.map(recipe => ({
         ...recipe,
+        meal_type: recipe.meal_type as MealType, // Ensure meal_type is properly typed
         ingredients: typeof recipe.ingredients === 'string' 
           ? JSON.parse(recipe.ingredients)
           : recipe.ingredients,
@@ -77,7 +78,7 @@ export const RecipeGeneratorPage = () => {
         cooking_steps: typeof recipe.cooking_steps === 'string'
           ? JSON.parse(recipe.cooking_steps)
           : recipe.cooking_steps || []
-      }));
+      })) as Recipe[];
     },
     enabled: !!session?.user?.id,
   });
@@ -108,10 +109,15 @@ export const RecipeGeneratorPage = () => {
       console.log("Generated recipes:", newRecipes);
       
       if (newRecipes && Array.isArray(newRecipes) && newRecipes.length > 0) {
-        setGeneratedRecipes(newRecipes);
+        const typedRecipes = newRecipes.map(recipe => ({
+          ...recipe,
+          meal_type: recipe.meal_type as MealType
+        })) as Recipe[];
+        
+        setGeneratedRecipes(typedRecipes);
         
         // Save each recipe to the database
-        for (const recipe of newRecipes) {
+        for (const recipe of typedRecipes) {
           await handleSaveRecipe(recipe);
         }
         
@@ -168,7 +174,7 @@ export const RecipeGeneratorPage = () => {
     setDisplayCount(prev => Math.min(prev + 5, recipes.length));
   };
 
-  const allRecipes = [...generatedRecipes, ...recipes];
+  const allRecipes = [...generatedRecipes, ...recipes] as Recipe[];
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
