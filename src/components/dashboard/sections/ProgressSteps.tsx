@@ -11,6 +11,7 @@ import {
   User,
   ArrowRight,
   AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 
 interface ProgressStepsProps {
@@ -25,6 +26,7 @@ type Step = {
   route: string;
   description: string;
   feedback: string;
+  completed?: boolean;
 };
 
 export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
@@ -40,6 +42,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       route: "children",
       description: "Ajoutez ou modifiez les profils de vos enfants",
       feedback: "Profils enfants configurés avec succès !",
+      completed: true, // Example: This step is completed
     },
     {
       id: "recipes",
@@ -49,6 +52,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       route: "generate-recipes",
       description: "Créez des recettes adaptées à vos enfants",
       feedback: "Recettes générées avec succès !",
+      completed: true, // Example: This step is completed
     },
     {
       id: "planning",
@@ -58,6 +62,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       route: "planner",
       description: "Organisez les repas de la semaine",
       feedback: "Planning des repas créé !",
+      completed: false,
     },
     {
       id: "shopping",
@@ -67,6 +72,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       route: "shopping",
       description: "Préparez votre liste de courses",
       feedback: "Liste de courses générée !",
+      completed: false,
     },
     {
       id: "validate",
@@ -76,6 +82,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
       route: "view-planner",
       description: "Finalisez votre planning hebdomadaire",
       feedback: "Planning validé !",
+      completed: false,
     },
   ];
 
@@ -108,7 +115,14 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
               } ${index === currentStep ? "bg-blue-50" : ""}`}
             >
               <div className="flex items-center gap-4">
-                <step.icon className="w-6 h-6" />
+                <div className="relative">
+                  <step.icon className="w-6 h-6" />
+                  {step.completed && (
+                    <CheckCircle2 
+                      className="w-4 h-4 text-green-500 absolute -top-2 -right-2 bg-white rounded-full" 
+                    />
+                  )}
+                </div>
                 <div>
                   <p className="font-medium">{step.label}</p>
                   <p className="text-sm text-muted-foreground">
