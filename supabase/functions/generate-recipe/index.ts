@@ -7,16 +7,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Validation des catégories de bienfaits santé
+// Validation optimisée avec Set pour une recherche O(1)
 const validHealthCategories = new Set([
   'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
   'growth', 'mental', 'organs', 'beauty', 'physical',
   'prevention', 'global'
 ]);
 
-// Fonction pour générer un prompt optimisé
-const generatePrompt = (child: any, filters: any, generatedRecipes: any[] = []) => {
-  // Construction efficace des textes avec template literals
+// Fonction optimisée pour générer le prompt
+const generatePrompt = (child: any, filters: any) => {
   const allergiesText = child.allergies?.length 
     ? `Allergies à éviter : ${child.allergies.join(', ')}`
     : 'Aucune allergie connue';
@@ -25,24 +24,18 @@ const generatePrompt = (child: any, filters: any, generatedRecipes: any[] = []) 
     ? `Préférences alimentaires : ${child.preferences.join(', ')}`
     : 'Aucune préférence particulière';
 
-  // Construction optimisée des contraintes
+  // Construction efficace des contraintes
   const constraints = [
     filters.mealType !== 'all' && `Type de repas : ${filters.mealType}`,
     filters.maxPrepTime && `Temps maximum : ${filters.maxPrepTime}min`,
     filters.difficulty !== 'all' && `Difficulté : ${filters.difficulty}`
   ].filter(Boolean);
 
-  // Exclusion des recettes déjà générées
-  const excludeRecipes = generatedRecipes.length
-    ? `Exclure ces recettes : ${generatedRecipes.map(r => r.name).join(', ')}`
-    : '';
-
   return `Génère 3 recettes DIFFÉRENTES et CRÉATIVES pour enfant:
 Age: ${child.birth_date}
 ${allergiesText}
 ${preferencesText}
 ${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
-${excludeRecipes}
 
 IMPORTANT:
 - 3 bienfaits santé PARFAITEMENT distincts parmi: ${[...validHealthCategories].join(', ')} dans CHAQUE recette.
