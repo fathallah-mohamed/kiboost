@@ -34,10 +34,23 @@ const mapHealthBenefitCategory = (category: string): string => {
     muscle: 'physical',
     brain: 'cognitive',
     heart: 'physical',
+    cardiovascular: 'physical',
+    cardio: 'physical',
+    blood: 'physical',
+    circulation: 'physical',
     // Add more mappings as needed
   };
   
-  return categoryMap[category.toLowerCase()] || category;
+  const mappedCategory = categoryMap[category.toLowerCase()] || category;
+  
+  // Ensure the category is one of the valid ones, default to 'physical' if not
+  const validCategories = [
+    'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
+    'growth', 'mental', 'organs', 'beauty', 'physical',
+    'prevention', 'global'
+  ];
+  
+  return validCategories.includes(mappedCategory) ? mappedCategory : 'physical';
 };
 
 export const useRecipeGeneration = () => {
