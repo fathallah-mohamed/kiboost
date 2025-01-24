@@ -3,9 +3,7 @@ import { Button } from '@/components/ui/button';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth, addWeeks, subWeeks } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Recipe, ChildProfile } from '../types';
-import { RecipeCard } from '../recipe/recipe-card/RecipeCard';
-import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
-import { RecipeHealthBenefits } from '../recipe/recipe-card/RecipeHealthBenefits';
+import { ChevronLeft, ChevronRight, Clock, Utensils, Trash2 } from 'lucide-react';
 
 interface WeeklyCalendarProps {
   selectedDate: Date;
@@ -55,7 +53,7 @@ export const WeeklyCalendar = ({
   };
 
   const days = getDaysToDisplay();
-  const gridCols = viewMode === 'week' ? 'md:grid-cols-7' : 'md:grid-cols-7';
+  const gridCols = viewMode === 'week' ? 'grid-cols-1' : 'md:grid-cols-7';
   const startDate = days[0];
   const endDate = days[days.length - 1];
 
@@ -89,7 +87,7 @@ export const WeeklyCalendar = ({
         </Button>
       </div>
 
-      <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
+      <div className={`grid ${gridCols} gap-4`}>
         {days.map((day) => {
           const formattedDate = format(day, 'yyyy-MM-dd');
           const recipe = plannedRecipes[formattedDate];
@@ -98,53 +96,63 @@ export const WeeklyCalendar = ({
           return (
             <Card 
               key={day.toString()}
-              className={`p-4 ${!readOnly ? 'cursor-pointer hover:bg-secondary/50' : ''} ${
+              className={`p-4 ${!readOnly ? 'hover:bg-secondary/10 transition-colors' : ''} ${
                 format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
-                  ? 'border-primary border-2'
+                  ? 'border-primary/50'
                   : ''
               } ${
                 !isCurrentMonth && viewMode === 'month' ? 'opacity-50' : ''
               }`}
               onClick={() => !readOnly && onSelectDate(day)}
             >
-              <div className="text-center mb-2">
-                <div className="font-semibold">
-                  {format(day, viewMode === 'week' ? 'EEEE' : 'EEE', { locale: fr })}
+              <div className="text-center mb-4 pb-2 border-b">
+                <div className="font-medium text-lg text-primary">
+                  {format(day, 'EEEE', { locale: fr })}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {format(day, 'd MMMM', { locale: fr })}
                 </div>
                 {selectedChildren.length > 0 && (
-                  <div className="text-sm font-medium text-primary">
-                    {selectedChildren.length === 1 
-                      ? selectedChildren[0].name
-                      : `${selectedChildren.length} enfants sélectionnés`}
+                  <div className="text-sm text-rose-400 mt-1">
+                    {selectedChildren.length} {selectedChildren.length === 1 ? 'enfant sélectionné' : 'enfants sélectionnés'}
                   </div>
                 )}
               </div>
               
               {recipe && (
-                <div className="mt-2 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <RecipeCard recipe={recipe} compact />
-                    {!readOnly && onRemoveRecipe && selectedChildren.map(child => (
-                      <Button
-                        key={child.id}
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemoveRecipe(formattedDate, child.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    ))}
+                <div className="space-y-3">
+                  <div className="p-3 bg-secondary/20 rounded-lg">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <h4 className="font-medium line-clamp-2">{recipe.name}</h4>
+                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{recipe.preparation_time} min</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Utensils className="w-3 h-3" />
+                            <span>{recipe.meal_type}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {!readOnly && onRemoveRecipe && selectedChildren.map(child => (
+                        <Button
+                          key={child.id}
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveRecipe(formattedDate, child.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                  {recipe.health_benefits && (
-                    <RecipeHealthBenefits benefits={recipe.health_benefits} compact />
-                  )}
                 </div>
               )}
             </Card>
