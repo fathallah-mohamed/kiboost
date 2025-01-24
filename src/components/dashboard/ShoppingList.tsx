@@ -99,7 +99,6 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
   const updateShoppingList = async () => {
     setLoading(true);
     try {
-      // Fetch planned recipes for the next week
       const startDate = new Date();
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + 7);
@@ -113,7 +112,6 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
 
       if (mealsError) throw mealsError;
 
-      // Calculate needed ingredients
       const neededIngredients: { [key: string]: { quantity: number; unit: string } } = {};
       
       plannedMeals?.forEach(meal => {
@@ -133,7 +131,6 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
         }
       });
 
-      // Subtract available ingredients
       availableIngredients.forEach(available => {
         const key = available.ingredient_name.toLowerCase();
         if (neededIngredients[key]) {
@@ -144,7 +141,6 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
         }
       });
 
-      // Convert to shopping list items
       const shoppingItems: ShoppingListItem[] = Object.entries(neededIngredients)
         .filter(([_, details]) => details.quantity > 0)
         .map(([item, details]) => ({
@@ -154,12 +150,11 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
           checked: false
         }));
 
-      // Update shopping list
       const { error: updateError } = await supabase
         .from('shopping_lists')
         .upsert({
           profile_id: userId,
-          items: shoppingItems as Json
+          items: shoppingItems as unknown as Json
         });
 
       if (updateError) throw updateError;
@@ -307,7 +302,7 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
                     .from('shopping_lists')
                     .upsert({
                       profile_id: userId,
-                      items: newItems
+                      items: newItems as unknown as Json
                     });
                 }}
                 className="w-5 h-5"
