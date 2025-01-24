@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Recipe, ChildProfile } from '../types';
+import { Recipe, ChildProfile, HealthBenefitCategory } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -59,7 +59,14 @@ export const useRecipeGeneration = () => {
               protein: Number(recipe.nutritional_info?.protein) || 0,
               carbs: Number(recipe.nutritional_info?.carbs) || 0,
               fat: Number(recipe.nutritional_info?.fat) || 0
-            }
+            },
+            health_benefits: Array.isArray(recipe.health_benefits)
+              ? recipe.health_benefits.map((benefit: any) => ({
+                  icon: benefit.icon || 'sparkles',
+                  category: (benefit.category || 'global') as HealthBenefitCategory,
+                  description: benefit.description || ''
+                }))
+              : []
           };
 
           const { data: savedRecipe, error: saveError } = await supabase
@@ -91,7 +98,14 @@ export const useRecipeGeneration = () => {
               protein: Number(savedRecipe.nutritional_info?.protein) || 0,
               carbs: Number(savedRecipe.nutritional_info?.carbs) || 0,
               fat: Number(savedRecipe.nutritional_info?.fat) || 0
-            }
+            },
+            health_benefits: Array.isArray(savedRecipe.health_benefits)
+              ? savedRecipe.health_benefits.map((benefit: any) => ({
+                  icon: benefit.icon || 'sparkles',
+                  category: (benefit.category || 'global') as HealthBenefitCategory,
+                  description: benefit.description || ''
+                }))
+              : []
           } as Recipe;
         })
       );
