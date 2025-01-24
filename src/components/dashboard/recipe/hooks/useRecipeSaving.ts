@@ -15,7 +15,7 @@ export const useRecipeSaving = () => {
     try {
       const recipeToSave = {
         ...recipe,
-        profile_id: session.user.id,  // Add this line to set the profile_id
+        profile_id: session.user.id,
         instructions: Array.isArray(recipe.instructions) 
           ? recipe.instructions.join('\n') 
           : recipe.instructions,
@@ -24,6 +24,8 @@ export const useRecipeSaving = () => {
         health_benefits: JSON.stringify(recipe.health_benefits || []),
         cooking_steps: JSON.stringify(recipe.cooking_steps || [])
       };
+
+      console.log('Saving recipe with data:', recipeToSave);
 
       const { error } = await supabase
         .from('recipes')
