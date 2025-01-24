@@ -13,6 +13,7 @@ import { GenerationSection } from './sections/GenerationSection';
 import { ResultsSection } from './sections/ResultsSection';
 import { useInView } from 'react-intersection-observer';
 import { useEffect } from 'react';
+import { LoadingOverlay } from './LoadingOverlay';
 
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
@@ -135,6 +136,8 @@ export const RecipeGeneratorPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
+      {loading && <LoadingOverlay />}
+      
       <BackToDashboard onBack={() => navigate('/dashboard')} />
       
       <div className="space-y-6">
