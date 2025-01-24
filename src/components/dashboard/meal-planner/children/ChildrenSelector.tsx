@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,6 +16,8 @@ export const ChildrenSelector = ({
   selectedChildren,
   onSelectionChange,
 }: ChildrenSelectorProps) => {
+  const [expanded, setExpanded] = useState(true);
+
   const handleSelectAll = () => {
     onSelectionChange(children);
   };
@@ -32,27 +35,12 @@ export const ChildrenSelector = ({
     }
   };
 
-  const getChildColor = (index: number) => {
-    const colors = ['bg-pink-100', 'bg-blue-100', 'bg-purple-100', 'bg-green-100', 'bg-yellow-100'];
-    return colors[index % colors.length];
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  };
-
   return (
-    <div className="space-y-4">
+    <Card className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-primary" />
-          <span className="text-sm text-muted-foreground">
-            {selectedChildren.length} enfant{selectedChildren.length !== 1 ? 's' : ''} sélectionné{selectedChildren.length !== 1 ? 's' : ''}
-          </span>
+          <h3 className="text-lg font-semibold">Sélection des enfants</h3>
         </div>
         <div className="flex gap-2">
           <Button
@@ -77,10 +65,8 @@ export const ChildrenSelector = ({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {children.map((child, index) => {
+        {children.map((child) => {
           const isSelected = selectedChildren.some(c => c.id === child.id);
-          const backgroundColor = getChildColor(index);
-          
           return (
             <Card
               key={child.id}
@@ -89,11 +75,8 @@ export const ChildrenSelector = ({
               }`}
               onClick={() => toggleChild(child)}
             >
-              <div className="flex items-start gap-3">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${backgroundColor}`}>
-                  <span className="text-sm font-semibold">{getInitials(child.name)}</span>
-                </div>
-                <div className="flex-1 space-y-1">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
                   <div className="font-medium">{child.name}</div>
                   {child.allergies.length > 0 && (
                     <div className="text-sm text-muted-foreground">
@@ -112,6 +95,6 @@ export const ChildrenSelector = ({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 };

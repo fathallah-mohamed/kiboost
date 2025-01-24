@@ -1,8 +1,11 @@
 import { Card } from '@/components/ui/card';
-import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth, addWeeks, subWeeks } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Recipe, ChildProfile } from '../types';
-import { PlannedMealCard } from './PlannedMealCard';
+import { RecipeCard } from '../recipe/recipe-card/RecipeCard';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { RecipeHealthBenefits } from '../recipe/recipe-card/RecipeHealthBenefits';
 
 interface WeeklyCalendarProps {
   selectedDate: Date;
@@ -43,76 +46,111 @@ export const WeeklyCalendar = ({
     }
   };
 
-  const groupRecipesByDay = (date: string) => {
-    const recipeGroups: { [key: string]: { recipe: Recipe; children: ChildProfile[] } } = {};
-    
-    selectedChildren.forEach(child => {
-      const recipe = plannedRecipes[`${date}-${child.id}`];
-      if (recipe) {
-        const recipeId = recipe.id;
-        if (!recipeGroups[recipeId]) {
-          recipeGroups[recipeId] = {
-            recipe,
-            children: []
-          };
-        }
-        recipeGroups[recipeId].children.push(child);
-      }
-    });
-    
-    return recipeGroups;
+  const handlePreviousWeek = () => {
+    onSelectDate(subWeeks(selectedDate, 1));
+  };
+
+  const handleNextWeek = () => {
+    onSelectDate(addWeeks(selectedDate, 1));
   };
 
   const days = getDaysToDisplay();
   const gridCols = viewMode === 'week' ? 'md:grid-cols-7' : 'md:grid-cols-7';
+  const startDate = days[0];
+  const endDate = days[days.length - 1];
 
   return (
-    <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
-      {days.map((day) => {
-        const formattedDate = format(day, 'yyyy-MM-dd');
-        const isCurrentMonth = isSameMonth(day, selectedDate);
-        const recipeGroups = groupRecipesByDay(formattedDate);
+    <div className="space-y-4">
+      <div className="flex items-center justify-between bg-background p-4 rounded-lg shadow-sm">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePreviousWeek}
+          className="flex items-center gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Semaine précédente
+        </Button>
         
-        return (
-          <Card 
-            key={day.toString()}
-            className={`p-4 ${!readOnly ? 'cursor-pointer hover:bg-secondary/50' : ''} ${
-              format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
-                ? 'border-primary border-2'
-                : ''
-            } ${
-              !isCurrentMonth && viewMode === 'month' ? 'opacity-50' : ''
-            }`}
-            onClick={() => !readOnly && onSelectDate(day)}
-          >
-            <div className="text-center mb-4">
-              <div className="font-semibold">
-                {format(day, viewMode === 'week' ? 'EEEE' : 'EEE', { locale: fr })}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {format(day, 'd MMMM', { locale: fr })}
-              </div>
-            </div>
+        <div className="text-center">
+          <h3 className="text-lg font-semibold">
+            {format(startDate, 'd MMMM', { locale: fr })} - {format(endDate, 'd MMMM yyyy', { locale: fr })}
+          </h3>
+        </div>
 
-            <div className="space-y-4">
-              {Object.entries(recipeGroups).map(([recipeId, { recipe, children }]) => (
-                <PlannedMealCard
-                  key={recipeId}
-                  recipe={recipe}
-                  children={children}
-                  onRemove={() => {
-                    if (onRemoveRecipe) {
-                      children.forEach(child => {
-                        onRemoveRecipe(formattedDate, child.id);
-                      });
-                    }
-                  }}
-                />
-              ))}
-            </div>
-          </Card>
-        );
-      })}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleNextWeek}
+          className="flex items-center gap-2"
+        >
+          Semaine suivante
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
+        {days.map((day) => {
+          const formattedDate = format(day, 'yyyy-MM-dd');
+          const recipe = plannedRecipes[formattedDate];
+          const isCurrentMonth = isSameMonth(day, selectedDate);
+          
+          return (
+            <Card 
+              key={day.toString()}
+              className={`p-4 ${!readOnly ? 'cursor-pointer hover:bg-secondary/50' : ''} ${
+                format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
+                  ? 'border-primary border-2'
+                  : ''
+              } ${
+                !isCurrentMonth && viewMode === 'month' ? 'opacity-50' : ''
+              }`}
+              onClick={() => !readOnly && onSelectDate(day)}
+            >
+              <div className="text-center mb-2">
+                <div className="font-semibold">
+                  {format(day, viewMode === 'week' ? 'EEEE' : 'EEE', { locale: fr })}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {format(day, 'd MMMM', { locale: fr })}
+                </div>
+                {selectedChildren.length > 0 && (
+                  <div className="text-sm font-medium text-primary">
+                    {selectedChildren.length === 1 
+                      ? selectedChildren[0].name
+                      : `${selectedChildren.length} enfants sélectionnés`}
+                  </div>
+                )}
+              </div>
+              
+              {recipe && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <RecipeCard recipe={recipe} compact />
+                    {!readOnly && onRemoveRecipe && selectedChildren.map(child => (
+                      <Button
+                        key={child.id}
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveRecipe(formattedDate, child.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ))}
+                  </div>
+                  {recipe.health_benefits && (
+                    <RecipeHealthBenefits benefits={recipe.health_benefits} compact />
+                  )}
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 };
