@@ -28,7 +28,7 @@ export const RecipeGeneratorPage = () => {
     excludedAllergens: [],
     maxCost: 15,
     healthBenefits: [],
-    seasonalMonths: [],
+    season: 1, // Changé de seasonalMonths à season
   });
 
   const session = useSession();
