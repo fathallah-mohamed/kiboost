@@ -143,17 +143,20 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
         }
       });
 
+      // Convert to shopping list items
+      const shoppingItems: ShoppingListItem[] = Object.entries(neededIngredients).map(([item, details]) => ({
+        item,
+        quantity: details.quantity,
+        unit: details.unit,
+        checked: false
+      }));
+
       // Update shopping list
       const { error: updateError } = await supabase
         .from('shopping_lists')
         .upsert({
           profile_id: userId,
-          items: Object.entries(neededIngredients).map(([item, details]) => ({
-            item,
-            quantity: details.quantity,
-            unit: details.unit,
-            checked: false
-          }))
+          items: JSON.stringify(shoppingItems)
         });
 
       if (updateError) throw updateError;
@@ -180,7 +183,19 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
       return;
     }
 
-    setItems(data?.items || []);
+    if (data?.items) {
+      try {
+        const parsedItems = typeof data.items === 'string' 
+          ? JSON.parse(data.items) 
+          : data.items;
+        setItems(parsedItems);
+      } catch (e) {
+        console.error('Error parsing shopping list items:', e);
+        setItems([]);
+      }
+    } else {
+      setItems([]);
+    }
   };
 
   useEffect(() => {
