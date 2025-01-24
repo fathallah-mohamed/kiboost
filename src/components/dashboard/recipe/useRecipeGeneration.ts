@@ -2,6 +2,42 @@ import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
+
+// Helper function to parse JSON data safely
+const parseJsonField = <T>(field: Json | null, defaultValue: T): T => {
+  if (typeof field === 'string') {
+    try {
+      return JSON.parse(field) as T;
+    } catch {
+      return defaultValue;
+    }
+  }
+  return (field as T) || defaultValue;
+};
+
+// Helper to convert Supabase recipe to our Recipe type
+const convertToRecipe = (recipe: any): Recipe => ({
+  ...recipe,
+  ingredients: parseJsonField(recipe.ingredients, []).map((ing: any) => ({
+    item: ing.item || '',
+    quantity: ing.quantity || '',
+    unit: ing.unit || ''
+  })),
+  instructions: typeof recipe.instructions === 'string'
+    ? recipe.instructions.split('\n').filter(Boolean)
+    : Array.isArray(recipe.instructions)
+      ? recipe.instructions
+      : [recipe.instructions].filter(Boolean),
+  nutritional_info: parseJsonField(recipe.nutritional_info, {
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0
+  }),
+  health_benefits: parseJsonField(recipe.health_benefits, []),
+  cooking_steps: parseJsonField(recipe.cooking_steps, [])
+});
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -18,7 +54,10 @@ export const useRecipeGeneration = () => {
         'generate-recipe',
         {
           body: { 
-            child,
+            child: {
+              ...child,
+              profile_id: child.id // Use child.id instead of profile_id
+            },
             filters
           }
         }
@@ -28,34 +67,33 @@ export const useRecipeGeneration = () => {
 
       console.log("Generated recipe response:", response);
 
-      const { data: saveData, error: saveError } = await supabase
+      let query = supabase
         .from('recipes')
-        .insert(response.recipes.map((recipe: any) => ({
-          ...recipe,
-          profile_id: child.profile_id,
-          is_generated: true,
-          ingredients: Array.isArray(recipe.ingredients) 
-            ? recipe.ingredients 
-            : JSON.parse(recipe.ingredients),
-          instructions: Array.isArray(recipe.instructions)
-            ? recipe.instructions
-            : recipe.instructions.split('\n').filter(Boolean),
-          nutritional_info: typeof recipe.nutritional_info === 'string'
-            ? JSON.parse(recipe.nutritional_info)
-            : recipe.nutritional_info,
-          health_benefits: typeof recipe.health_benefits === 'string'
-            ? JSON.parse(recipe.health_benefits)
-            : recipe.health_benefits || [],
-          cooking_steps: typeof recipe.cooking_steps === 'string'
-            ? JSON.parse(recipe.cooking_steps)
-            : recipe.cooking_steps || []
-        })))
-        .select();
+        .select('*')
+        .eq('is_generated', true);
 
-      if (saveError) throw saveError;
+      if (filters.mealType && filters.mealType !== 'all') {
+        query = query.eq('meal_type', filters.mealType);
+      }
+      
+      if (filters.maxPrepTime) {
+        query = query.lte('preparation_time', filters.maxPrepTime);
+      }
+
+      if (filters.difficulty && filters.difficulty !== 'all') {
+        query = query.eq('difficulty', filters.difficulty);
+      }
+
+      const { data: existingRecipes, error: fetchError } = await query;
+
+      if (fetchError) throw fetchError;
+
+      // Convert all recipes to the correct type
+      const allRecipes = [...(response.recipes || []), ...(existingRecipes || [])]
+        .map(convertToRecipe);
 
       toast.success("Recettes générées avec succès !");
-      return saveData as Recipe[];
+      return allRecipes;
 
     } catch (err) {
       console.error("Error generating recipes:", err);
