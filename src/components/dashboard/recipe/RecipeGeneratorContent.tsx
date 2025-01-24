@@ -1,7 +1,11 @@
-import { Recipe, ChildProfile, RecipeFilters } from '../types';
-import { MultiChildSelector } from './MultiChildSelector';
-import { RecipeFiltersSection } from './RecipeFiltersSection';
-import { RecipeList } from './RecipeList';
+import { Card } from "@/components/ui/card";
+import { LoadingOverlay } from "./LoadingOverlay";
+import { MultiChildSelector } from "./MultiChildSelector";
+import { RecipeGeneratorHeader } from "./RecipeGeneratorHeader";
+import { RecipeList } from "./RecipeList";
+import { LoadMoreButton } from "./LoadMoreButton";
+import { RecipeFiltersSection } from "./RecipeFiltersSection";
+import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from "../types";
 
 interface RecipeGeneratorContentProps {
   loading: boolean;
@@ -15,12 +19,12 @@ interface RecipeGeneratorContentProps {
   handleGenerateRecipes: () => Promise<void>;
   handleSaveRecipe: (recipe: Recipe) => Promise<void>;
   handleLoadMore: () => void;
-  mealType: "all" | "breakfast" | "lunch" | "dinner" | "snack";
-  setMealType: (type: "all" | "breakfast" | "lunch" | "dinner" | "snack") => void;
+  mealType: MealType | "all";
+  setMealType: (type: MealType | "all") => void;
   maxPrepTime: number;
   setMaxPrepTime: (time: number) => void;
-  difficulty: "all" | "easy" | "medium" | "hard";
-  setDifficulty: (difficulty: "all" | "easy" | "medium" | "hard") => void;
+  difficulty: Difficulty | "all";
+  setDifficulty: (difficulty: Difficulty | "all") => void;
   showAdvancedFilters: boolean;
   setShowAdvancedFilters: (show: boolean) => void;
   advancedFilters: RecipeFilters;
@@ -52,11 +56,15 @@ export const RecipeGeneratorContent = ({
 }: RecipeGeneratorContentProps) => {
   return (
     <div className="space-y-6">
-      <MultiChildSelector 
-        onSelectChildren={setSelectedChildren}
-        selectedChildren={selectedChildren}
-        mode="compact"
-      />
+      {loading && <LoadingOverlay />}
+
+      <Card className="p-4">
+        <MultiChildSelector 
+          onSelectChildren={setSelectedChildren}
+          selectedChildren={selectedChildren}
+          mode="compact"
+        />
+      </Card>
 
       <RecipeFiltersSection
         mealType={mealType}
@@ -72,13 +80,12 @@ export const RecipeGeneratorContent = ({
       />
 
       <div className="flex justify-end">
-        <button
-          onClick={handleGenerateRecipes}
-          disabled={loading || saving || selectedChildren.length === 0}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
-        >
-          {loading ? 'Génération...' : 'Générer des recettes'}
-        </button>
+        <RecipeGeneratorHeader
+          loading={loading || saving}
+          selectedChildren={selectedChildren}
+          onSelectChildren={setSelectedChildren}
+          onGenerateRecipes={handleGenerateRecipes}
+        />
       </div>
 
       <RecipeList
@@ -88,16 +95,11 @@ export const RecipeGeneratorContent = ({
         onSaveRecipe={handleSaveRecipe}
       />
 
-      {recipes.length > displayCount && (
-        <div className="flex justify-center">
-          <button
-            onClick={handleLoadMore}
-            className="px-4 py-2 text-primary hover:bg-primary/10 rounded-md"
-          >
-            Voir plus de recettes
-          </button>
-        </div>
-      )}
+      <LoadMoreButton 
+        displayCount={displayCount}
+        totalCount={recipes.length}
+        onLoadMore={handleLoadMore}
+      />
     </div>
   );
 };

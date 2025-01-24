@@ -1,64 +1,73 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Recipe } from '../../types';
-import { toast } from 'sonner';
+import { Recipe, ChildProfile, MealType, Difficulty, HealthBenefit } from '../../types';
 
-export const usePlannedRecipesFetching = () => {
+export const usePlannedRecipesFetching = (selectedChildren: ChildProfile[]) => {
   const [plannedRecipes, setPlannedRecipes] = useState<{ [key: string]: Recipe | null }>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchPlannedRecipes();
-  }, []);
 
   const fetchPlannedRecipes = async () => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-      const today = new Date().toISOString().split('T')[0];
-      
-      const { data: mealPlans, error: mealPlansError } = await supabase
+      const query = supabase
         .from('meal_plans')
-        .select('recipe_id')
-        .eq('profile_id', session.session.user.id)
-        .gte('date', today);
+        .select('*, recipes(*)')
+        .eq('profile_id', session.user.id);
 
-      if (mealPlansError) throw mealPlansError;
-
-      const recipeIds = mealPlans.map(plan => plan.recipe_id);
-      
-      if (recipeIds.length === 0) {
-        setPlannedRecipes({});
-        return;
+      if (selectedChildren.length > 0) {
+        query.in('child_id', selectedChildren.map(child => child.id));
       }
 
-      const { data: recipes, error: recipesError } = await supabase
-        .from('recipes')
-        .select('*')
-        .in('id', recipeIds);
+      const { data, error } = await query;
 
-      if (recipesError) throw recipesError;
+      if (error) throw error;
 
-      const plannedRecipesMap = recipes.reduce((acc, recipe) => {
-        acc[recipe.id] = {
-          ...recipe,
-          instructions: recipe.instructions.split('\n'),
-          ingredients: recipe.ingredients,
-          nutritional_info: recipe.nutritional_info,
-          health_benefits: recipe.health_benefits || []
-        };
-        return acc;
-      }, {} as { [key: string]: Recipe });
+      const plannedRecipeMap: { [key: string]: Recipe | null } = {};
+      data.forEach(plan => {
+        if (plan.recipes) {
+          const recipe = plan.recipes;
+          plannedRecipeMap[plan.date] = {
+            ...recipe,
+            ingredients: typeof recipe.ingredients === 'string' 
+              ? JSON.parse(recipe.ingredients) 
+              : recipe.ingredients,
+            nutritional_info: typeof recipe.nutritional_info === 'string'
+              ? JSON.parse(recipe.nutritional_info)
+              : recipe.nutritional_info,
+            instructions: Array.isArray(recipe.instructions)
+              ? recipe.instructions
+              : [recipe.instructions].filter(Boolean),
+            meal_type: recipe.meal_type as MealType,
+            difficulty: recipe.difficulty as Difficulty,
+            health_benefits: recipe.health_benefits ? 
+              (typeof recipe.health_benefits === 'string' 
+                ? JSON.parse(recipe.health_benefits) 
+                : recipe.health_benefits) as HealthBenefit[]
+              : undefined,
+            cooking_steps: recipe.cooking_steps ? 
+              (typeof recipe.cooking_steps === 'string'
+                ? JSON.parse(recipe.cooking_steps)
+                : recipe.cooking_steps) as { 
+                  step: number; 
+                  description: string; 
+                  duration?: number; 
+                  tips?: string; 
+                }[]
+              : []
+          };
+        }
+      });
 
-      setPlannedRecipes(plannedRecipesMap);
+      setPlannedRecipes(plannedRecipeMap);
     } catch (error) {
       console.error('Error fetching planned recipes:', error);
-      toast.error("Erreur lors du chargement des recettes planifiées");
-    } finally {
-      setLoading(false);
     }
   };
 
-  return { plannedRecipes, loading, fetchPlannedRecipes };
+  useEffect(() => {
+    fetchPlannedRecipes();
+  }, [selectedChildren]);
+
+  return { plannedRecipes, fetchPlannedRecipes };
 };
