@@ -10,6 +10,8 @@ import {
 import { BackToDashboard } from './BackToDashboard';
 import { toast } from 'sonner';
 import { ProgressSteps } from './sections/ProgressSteps';
+import { useRecipeGeneration } from './recipe/useRecipeGeneration';
+import { useSession } from '@supabase/auth-helpers-react';
 
 interface RecipeGeneratorProps {
   onSectionChange: (section: string) => void;
@@ -17,24 +19,30 @@ interface RecipeGeneratorProps {
 
 export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 5;
+  const session = useSession();
+  const { generateRecipes, loading, error } = useRecipeGeneration();
 
-  const handleQuickPlan = () => {
-    toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 2000)),
-      {
-        loading: 'Génération de votre planning express...',
-        success: 'Votre planning express est prêt !',
-        error: 'Une erreur est survenue',
-      }
-    );
-    onSectionChange('planner');
-  };
+  const handleQuickPlan = async () => {
+    if (!session?.user) {
+      toast.error("Vous devez être connecté pour générer des recettes");
+      return;
+    }
 
-  const getStepStatus = (stepNumber: number) => {
-    if (stepNumber < currentStep) return 'completed';
-    if (stepNumber === currentStep) return 'in-progress';
-    return 'locked';
+    try {
+      await generateRecipes({
+        id: "default",
+        name: "Enfant par défaut",
+        birth_date: new Date().toISOString(),
+        allergies: [],
+        preferences: []
+      });
+
+      toast.success("Vos recettes ont été générées avec succès !");
+      onSectionChange('planner');
+    } catch (err) {
+      console.error('Error generating recipes:', err);
+      toast.error("Une erreur est survenue lors de la génération des recettes");
+    }
   };
 
   return (
@@ -53,9 +61,16 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
           </div>
           <Button 
             onClick={handleQuickPlan}
+            disabled={loading}
             className="whitespace-nowrap group hover:scale-105 transition-all duration-300"
           >
-            <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
+            {loading ? (
+              <div className="animate-spin mr-2">
+                <Circle className="w-4 h-4" />
+              </div>
+            ) : (
+              <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
+            )}
             Planning express
           </Button>
         </div>
