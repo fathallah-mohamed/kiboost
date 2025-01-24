@@ -21,28 +21,14 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const session = useSession();
   const { generateRecipes, loading, error } = useRecipeGeneration();
 
-  const handleQuickPlan = async () => {
+  const handleQuickPlan = () => {
     if (!session?.user) {
       toast.error("Vous devez être connecté pour générer des recettes");
       return;
     }
 
-    try {
-      console.log('Starting quick plan generation...');
-      await generateRecipes({
-        id: "default",
-        name: "Enfant par défaut",
-        birth_date: new Date().toISOString(),
-        allergies: [],
-        preferences: []
-      });
-
-      toast.success("Vos recettes ont été générées avec succès !");
-      onSectionChange('planner');
-    } catch (err) {
-      console.error('Error in handleQuickPlan:', err);
-      toast.error("Une erreur est survenue lors de la génération des recettes");
-    }
+    console.log('Redirecting to recipes section...');
+    onSectionChange('planner');
   };
 
   return (
@@ -61,7 +47,7 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
           </div>
           <Button 
             onClick={handleQuickPlan}
-            disabled={loading || !session?.user}
+            disabled={loading}
             className="whitespace-nowrap group hover:scale-105 transition-all duration-300"
           >
             {loading ? (
