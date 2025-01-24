@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { useRecipeGeneration } from './useRecipeGeneration';
 import { useSession } from '@supabase/auth-helpers-react';
 import { BackToDashboard } from '../BackToDashboard';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Recipe, ChildProfile, RecipeFilters, MealType, Difficulty } from "../types";
-import { MultiChildSelector } from './MultiChildSelector';
-import { RecipeFiltersSection } from './RecipeFiltersSection';
-import { RecipeList } from './RecipeList';
-import { LoadMoreButton } from './LoadMoreButton';
+import { Recipe, ChildProfile } from "../types";
 import { StepNavigation } from '../navigation/StepNavigation';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRecipeFilters } from './hooks/useRecipeFilters';
+import { GenerationSection } from './sections/GenerationSection';
+import { ResultsSection } from './sections/ResultsSection';
 
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
@@ -23,21 +21,8 @@ export const RecipeGeneratorPage = () => {
   const session = useSession();
   const navigate = useNavigate();
   const { generateRecipes } = useRecipeGeneration();
+  const filters = useRecipeFilters();
 
-  // États pour les filtres
-  const [mealType, setMealType] = useState<MealType | "all">("all");
-  const [maxPrepTime, setMaxPrepTime] = useState(60);
-  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [advancedFilters, setAdvancedFilters] = useState<RecipeFilters>({
-    dietaryPreferences: [],
-    excludedAllergens: [],
-    maxCost: 15,
-    healthBenefits: [],
-    season: 1
-  });
-
-  // Fetch generated recipes from the database
   const { data: recipes = [], refetch: refetchRecipes } = useQuery({
     queryKey: ['generated-recipes', session?.user?.id],
     queryFn: async () => {
@@ -80,21 +65,9 @@ export const RecipeGeneratorPage = () => {
   });
 
   const handleGenerateRecipes = async () => {
-    if (selectedChildren.length === 0) {
-      toast.error("Veuillez sélectionner au moins un enfant");
-      return;
-    }
-
     try {
       setLoading(true);
-      const filters: RecipeFilters = {
-        ...advancedFilters,
-        mealType: mealType === "all" ? undefined : mealType,
-        maxPrepTime,
-        difficulty: difficulty === "all" ? undefined : difficulty,
-      };
-      
-      const generatedRecipes = await generateRecipes(selectedChildren[0], filters);
+      await generateRecipes(selectedChildren[0], filters.getFilters());
       await refetchRecipes();
       toast.success("Recettes générées avec succès !");
     } catch (error) {
@@ -128,62 +101,22 @@ export const RecipeGeneratorPage = () => {
       <BackToDashboard onBack={() => navigate('/dashboard')} />
       
       <div className="space-y-6">
-        <Card className="p-6">
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold">Générateur de Recettes</h2>
-              <p className="text-muted-foreground mt-2">
-                Générez des recettes personnalisées adaptées aux besoins de vos enfants
-              </p>
-            </div>
+        <GenerationSection
+          loading={loading}
+          saving={saving}
+          selectedChildren={selectedChildren}
+          setSelectedChildren={setSelectedChildren}
+          onGenerate={handleGenerateRecipes}
+          filters={filters}
+        />
 
-            <MultiChildSelector 
-              onSelectChildren={setSelectedChildren}
-              selectedChildren={selectedChildren}
-              mode="compact"
-            />
-
-            <RecipeFiltersSection
-              mealType={mealType}
-              setMealType={setMealType}
-              maxPrepTime={maxPrepTime}
-              setMaxPrepTime={setMaxPrepTime}
-              difficulty={difficulty}
-              setDifficulty={setDifficulty}
-              showAdvancedFilters={showAdvancedFilters}
-              setShowAdvancedFilters={setShowAdvancedFilters}
-              advancedFilters={advancedFilters}
-              setAdvancedFilters={setAdvancedFilters}
-            />
-
-            <div className="flex justify-end">
-              <button
-                className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 disabled:opacity-50"
-                onClick={handleGenerateRecipes}
-                disabled={loading || saving || selectedChildren.length === 0}
-              >
-                {loading ? "Génération en cours..." : "Générer des recettes"}
-              </button>
-            </div>
-          </div>
-        </Card>
-
-        {recipes.length > 0 && (
-          <>
-            <RecipeList
-              recipes={recipes.slice(0, displayCount)}
-              error={error}
-              plannedRecipes={{}}
-              onSaveRecipe={handleSaveRecipe}
-            />
-
-            <LoadMoreButton 
-              displayCount={displayCount}
-              totalCount={recipes.length}
-              onLoadMore={handleLoadMore}
-            />
-          </>
-        )}
+        <ResultsSection
+          recipes={recipes}
+          displayCount={displayCount}
+          error={error}
+          onSaveRecipe={handleSaveRecipe}
+          onLoadMore={handleLoadMore}
+        />
 
         <StepNavigation
           previousStep={{
