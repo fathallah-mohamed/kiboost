@@ -78,7 +78,7 @@ export const RecipeGeneratorPage = () => {
           : recipe.cooking_steps || []
       })) as Recipe[];
 
-      // Mélanger les recettes pour plus de variété
+      // Mélanger les recettes de manière aléatoire pour plus de variété
       return transformedRecipes.sort(() => Math.random() - 0.5);
     },
     enabled: !!session?.user?.id,
