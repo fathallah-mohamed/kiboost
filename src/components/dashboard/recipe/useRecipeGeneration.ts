@@ -28,6 +28,18 @@ interface RecipeResponse {
   }>;
 }
 
+const mapHealthBenefitCategory = (category: string): string => {
+  const categoryMap: { [key: string]: string } = {
+    strength: 'physical',
+    muscle: 'physical',
+    brain: 'cognitive',
+    heart: 'physical',
+    // Add more mappings as needed
+  };
+  
+  return categoryMap[category.toLowerCase()] || category;
+};
+
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,11 +75,16 @@ export const useRecipeGeneration = () => {
 
       const savedRecipes = await Promise.all(
         generatedRecipes.map(async (recipe: RecipeResponse) => {
+          // Map health benefits categories to valid ones
+          const mappedHealthBenefits = recipe.health_benefits?.map(benefit => ({
+            ...benefit,
+            category: mapHealthBenefitCategory(benefit.category)
+          })) || [];
+
           const recipeData = {
             profile_id: userId,
             name: recipe.name,
             ingredients: recipe.ingredients,
-            // Convert instructions array to string with numbered steps
             instructions: recipe.instructions.map((instruction, index) => 
               `${index + 1}. ${instruction}`
             ).join('\n'),
@@ -77,7 +94,7 @@ export const useRecipeGeneration = () => {
             difficulty: recipe.difficulty,
             servings: recipe.servings,
             is_generated: true,
-            health_benefits: recipe.health_benefits || [],
+            health_benefits: mappedHealthBenefits,
             cooking_steps: [],
             min_age: 0,
             max_age: 18,
@@ -98,16 +115,14 @@ export const useRecipeGeneration = () => {
             throw saveError;
           }
 
-          // Transform the saved recipe back to the expected Recipe type
           return {
             ...savedRecipe,
-            // Convert the instructions string back to array by splitting on newlines and removing the numbers
             instructions: savedRecipe.instructions.split('\n').map(instruction => 
               instruction.replace(/^\d+\.\s/, '')
             ),
             ingredients: recipe.ingredients,
             nutritional_info: recipe.nutritional_info,
-            health_benefits: recipe.health_benefits || [],
+            health_benefits: mappedHealthBenefits,
             cooking_steps: []
           } as Recipe;
         })
