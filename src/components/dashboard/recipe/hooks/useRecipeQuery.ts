@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Recipe, MealType } from "../../types";
+import { Recipe, MealType, RecipeFilters } from "../../types";
 
-export const useRecipeQuery = (userId: string | undefined, filters: any) => {
+export const useRecipeQuery = (userId: string | undefined, filters: RecipeFilters) => {
   return useQuery({
     queryKey: ['generated-recipes', userId, filters],
     queryFn: async () => {
