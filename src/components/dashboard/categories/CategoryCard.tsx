@@ -6,14 +6,15 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   Utensils, Brain, Dumbbell, Users, 
-  GraduationCap, MapPin, Heart, Plane 
+  GraduationCap, MapPin, Heart, Plane,
+  LucideIcon 
 } from "lucide-react";
 
 interface CategoryCardProps {
   category: Category;
 }
 
-const iconMap = {
+const iconMap: Record<string, LucideIcon> = {
   Utensils,
   Brain,
   Dumbbell,
@@ -29,8 +30,12 @@ export const CategoryCard = ({ category }: CategoryCardProps) => {
   const Icon = iconMap[category.icon as keyof typeof iconMap];
 
   const handleClick = () => {
-    if (category.isActive && category.route) {
-      navigate(category.route);
+    if (category.isActive) {
+      if (category.id === 'recipes') {
+        navigate('/dashboard', { state: { section: 'recipes' } });
+      } else if (category.route) {
+        navigate(category.route);
+      }
     } else {
       toast.info(category.comingSoonMessage || "Cette fonctionnalité sera bientôt disponible !");
     }

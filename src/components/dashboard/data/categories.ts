@@ -8,7 +8,7 @@ export const categories: Category[] = [
     description: "Trouvez des idées de repas simples, rapides et savoureuses pour toute la famille.",
     isActive: true,
     icon: "Utensils",
-    route: "/recipes"
+    route: "/dashboard"
   },
   {
     id: "sports",
