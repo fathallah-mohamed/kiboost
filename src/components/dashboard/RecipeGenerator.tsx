@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
   ChefHat, Calendar, ShoppingCart, 
-  Check, AlertCircle, Sparkles, ArrowRight, Lock,
-  CheckCircle, Circle, AlertTriangle
+  Check, AlertCircle, Sparkles, ArrowRight, Circle
 } from 'lucide-react';
 import { BackToDashboard } from './BackToDashboard';
 import { toast } from 'sonner';
@@ -62,13 +61,11 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
           </div>
           <Button 
             onClick={handleQuickPlan}
-            disabled={loading}
+            disabled={loading || !session?.user}
             className="whitespace-nowrap group hover:scale-105 transition-all duration-300"
           >
             {loading ? (
-              <div className="animate-spin mr-2">
-                <Circle className="w-4 h-4" />
-              </div>
+              <Circle className="w-4 h-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
             )}
@@ -88,14 +85,21 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 border-red-100 border">
             <p className="text-sm">Vous n'avez pas encore planifié vos repas pour cette semaine</p>
-            <Button onClick={() => onSectionChange('planner')}>
+            <Button 
+              onClick={() => onSectionChange('planner')}
+              disabled={!session?.user}
+            >
               Planifier maintenant
             </Button>
           </div>
 
           <div className="flex items-center justify-between p-4 rounded-lg bg-orange-50 border-orange-100 border">
             <p className="text-sm">Votre liste de courses n'est pas à jour</p>
-            <Button variant="outline" onClick={() => onSectionChange('shopping')}>
+            <Button 
+              variant="outline" 
+              onClick={() => onSectionChange('shopping')}
+              disabled={!session?.user}
+            >
               Mettre à jour
             </Button>
           </div>
