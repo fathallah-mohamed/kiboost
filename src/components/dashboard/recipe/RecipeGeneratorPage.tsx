@@ -19,7 +19,7 @@ export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
-  const [displayCount, setDisplayCount] = useState(10); // Augmenté pour afficher plus de recettes
+  const [displayCount, setDisplayCount] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const session = useSession();
   const navigate = useNavigate();
@@ -38,7 +38,6 @@ export const RecipeGeneratorPage = () => {
         .eq('profile_id', session.user.id)
         .eq('is_generated', true);
 
-      // Appliquer les filtres
       if (filters.mealType && filters.mealType !== 'all') {
         query = query.eq('meal_type', filters.mealType);
       }
@@ -51,9 +50,6 @@ export const RecipeGeneratorPage = () => {
         query = query.eq('difficulty', filters.difficulty);
       }
 
-      // Ajout d'un ordre aléatoire pour varier les recettes affichées
-      query = query.order('created_at', { ascending: false });
-
       const { data, error } = await query;
 
       if (error) {
@@ -61,7 +57,6 @@ export const RecipeGeneratorPage = () => {
         throw error;
       }
 
-      // Transformation des données
       const transformedRecipes = (data || []).map(recipe => ({
         ...recipe,
         ingredients: typeof recipe.ingredients === 'string' 

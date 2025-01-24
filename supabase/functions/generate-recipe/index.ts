@@ -33,23 +33,23 @@ const generatePrompt = (child: any, filters: any) => {
     constraints.push(`Difficulté : ${filters.difficulty}`);
   }
 
-  const mealSuggestions = filters.mealType === 'breakfast' && filters.maxPrepTime <= 15
-    ? `\nSuggestions de petit-déjeuner rapide (choisis-en 3 DIFFÉRENTES parmi cette liste):
+  const breakfastSuggestions = filters.mealType === 'breakfast' && filters.maxPrepTime <= 15
+    ? `\nVoici une liste de suggestions de petit-déjeuner rapide. CHOISIS-EN 3 DIFFÉRENTES et DÉTAILLE-LES:
+    - Smoothie bowl aux fruits rouges et granola
+    - Overnight oats aux pommes et cannelle
+    - Pancakes express à la banane
+    - Toast à l'avocat et œuf poché
+    - Yaourt grec aux fruits frais et miel
+    - Wrap petit-déjeuner aux œufs brouillés
+    - Muffin anglais au fromage frais et saumon
     - Porridge express aux fruits
-    - Pancakes à la banane
-    - Overnight oats
-    - Smoothie bowl
-    - Toast à l'avocat
-    - Yaourt parfait aux fruits
-    - Wrap petit-déjeuner
-    - Muffin anglais garni
-    - Bol de quinoa sucré
-    - Crêpes express
-    - Sandwich petit-déjeuner
-    - Chia pudding
-    - Granola maison express
-    - Gaufres express
-    - Bowl de fromage blanc aux fruits`
+    - Bol de quinoa sucré aux fruits secs
+    - Crêpes express au fromage blanc
+    - Sandwich petit-déjeuner express
+    - Chia pudding aux fruits (préparé la veille)
+    - Granola maison express aux noix
+    - Gaufres express au yaourt
+    - Bowl de fromage blanc aux fruits et graines`
     : '';
 
   return `Génère 3 recettes DIFFÉRENTES et CRÉATIVES pour enfant:
@@ -57,15 +57,15 @@ Age: ${child.birth_date}
 ${allergiesText}
 ${preferencesText}
 ${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
-${mealSuggestions}
+${breakfastSuggestions}
 
 IMPORTANT:
-- 3 bienfaits santé par recette parmi: ${validCategories.join(', ')}
-- Temps réaliste incluant préparation + cuisson
-- Ingrédients simples et prêts à l'emploi
-- Étapes courtes et efficaces
-- CHAQUE recette doit être DIFFÉRENTE des autres
-- Utilise UNIQUEMENT des guillemets doubles (") pour le JSON, PAS de guillemets simples (')
+- Les 3 recettes DOIVENT être DIFFÉRENTES
+- Pour chaque recette, ajoute 3 bienfaits santé parmi: ${validCategories.join(', ')}
+- Le temps de préparation doit être RÉALISTE (inclure préparation + cuisson)
+- Utilise des ingrédients simples et prêts à l'emploi
+- Les étapes doivent être courtes et efficaces
+- UTILISE UNIQUEMENT des guillemets doubles (") pour le JSON, PAS de guillemets simples (')
 
 FORMAT JSON REQUIS (respecte EXACTEMENT ce format):
 {
@@ -132,7 +132,7 @@ serve(async (req) => {
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.9,
+      temperature: 1.0, // Augmenté pour plus de créativité
       max_tokens: 2000,
     });
 
@@ -142,7 +142,6 @@ serve(async (req) => {
     console.log('Raw OpenAI response:', content);
 
     try {
-      // First attempt to parse the raw content
       const parsedContent = JSON.parse(content);
       
       if (!parsedContent.recipes || !Array.isArray(parsedContent.recipes)) {
@@ -150,6 +149,11 @@ serve(async (req) => {
       }
 
       const recipes = parsedContent.recipes;
+
+      // Vérifier que nous avons bien 3 recettes
+      if (recipes.length !== 3) {
+        throw new Error(`Nombre incorrect de recettes: ${recipes.length} au lieu de 3`);
+      }
 
       // Vérifier que les recettes sont différentes
       const recipeNames = new Set(recipes.map(r => r.name));
