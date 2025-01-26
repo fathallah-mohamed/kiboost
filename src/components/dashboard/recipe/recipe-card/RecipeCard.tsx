@@ -1,113 +1,106 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Recipe } from "../../types";
+import { Recipe } from "../types";
 import { 
   Utensils, Clock, Heart, Beef, Wheat, 
   Flame, Cookie, Star, ChevronDown
 } from "lucide-react";
-import { RecipeRating } from "../RecipeRating";
+import { RecipeRating } from "./RecipeRating";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { RecipeHealthBenefits } from "./RecipeHealthBenefits";
-import { cn } from "@/lib/utils";
+import { RecipeHealthBenefits } from "./recipe-card/RecipeHealthBenefits";
+import { useRecipeGeneration } from "../hooks/useRecipeGeneration";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
-  isNew?: boolean;
   onAdd?: (recipe: Recipe) => void;
-  compact?: boolean;
 }
 
-export const RecipeCard = ({ recipe, isPlanned, isNew, onAdd, compact }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showRating, setShowRating] = useState(false);
   const { toast } = useToast();
+  const { markRecipeInteraction } = useRecipeGeneration();
 
-  const handleAdd = () => {
-    if (!recipe.id) {
-      console.error('Recipe ID is missing:', recipe);
+  const toggleFavorite = async () => {
+    try {
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('recipe_favorites')
+          .delete()
+          .eq('recipe_id', recipe.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('recipe_favorites')
+          .insert({ recipe_id: recipe.id });
+        
+        if (error) throw error;
+      }
+
+      setIsFavorite(!isFavorite);
+      markRecipeInteraction();
+      toast({
+        title: isFavorite ? "Retiré des favoris" : "Ajouté aux favoris",
+        description: isFavorite 
+          ? "La recette a été retirée de vos favoris"
+          : "La recette a été ajoutée à vos favoris",
+      });
+    } catch (error) {
+      console.error('Erreur lors de la modification des favoris:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible d'ajouter la recette au planificateur. ID manquant.",
+        description: "Une erreur est survenue.",
       });
-      return;
     }
-    onAdd?.(recipe);
   };
 
-  if (compact) {
-    return (
-      <div className={cn(
-        "p-4 border rounded-lg transition-all duration-500",
-        isNew && "bg-gradient-to-r from-purple-50 to-blue-50 border-primary shadow-lg"
-      )}>
-        <h4 className="font-medium">{recipe.name}</h4>
-        {isNew && (
-          <span className="inline-block px-2 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full mb-2">
-            Nouvelle recette
-          </span>
-        )}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-          <span className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            {recipe.preparation_time} min
-          </span>
-          <span className="flex items-center gap-1">
-            <Star className="w-4 h-4" />
-            {recipe.meal_type}
-          </span>
-        </div>
-        {recipe.health_benefits && (
-          <div className="mt-2">
-            <RecipeHealthBenefits benefits={recipe.health_benefits} compact />
-          </div>
-        )}
-      </div>
-    );
-  }
+  const handleAdd = (recipe: Recipe) => {
+    if (onAdd) {
+      onAdd(recipe);
+      markRecipeInteraction();
+    }
+  };
 
   return (
-    <Card className={cn(
-      "overflow-hidden transition-all duration-500",
-      isNew && "bg-gradient-to-r from-purple-50 to-blue-50 border-primary shadow-lg"
-    )}>
+    <Card className="overflow-hidden">
+      <div className="relative">
+        <img 
+          src={recipe.image_url} 
+          alt={recipe.name}
+          className="w-full h-48 object-cover"
+        />
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+          <div className="flex items-center gap-2 text-white">
+            <Clock className="w-4 h-4" />
+            <span>{recipe.preparation_time} min</span>
+          </div>
+        </div>
+      </div>
+
       <div className="p-6">
         <div className="space-y-4">
           <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-2xl font-bold text-primary">{recipe.name}</h3>
-              {isNew && (
-                <span className="inline-block px-2 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full mt-1">
-                  Nouvelle recette
-                </span>
-              )}
-            </div>
+            <h3 className="text-2xl font-bold text-primary">{recipe.name}</h3>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setIsFavorite(!isFavorite)}>
+              <Button variant="ghost" size="sm" onClick={toggleFavorite}>
                 <Heart className="w-4 h-4" fill={isFavorite ? "currentColor" : "none"} />
               </Button>
               {onAdd && (
-                <Button 
-                  onClick={handleAdd} 
-                  disabled={isPlanned}
-                  className="whitespace-nowrap"
-                  variant={isPlanned ? "secondary" : "default"}
-                >
-                  {isPlanned ? 'Déjà planifiée' : 'Ajouter au planificateur'}
+                <Button onClick={() => handleAdd(recipe)} disabled={isPlanned}>
+                  {isPlanned ? 'Déjà planifiée' : 'Planifier'}
                 </Button>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              {recipe.preparation_time} min
-            </span>
             <span className="flex items-center gap-1">
               <Utensils className="w-4 h-4" />
               {recipe.difficulty}
