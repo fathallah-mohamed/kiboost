@@ -71,9 +71,10 @@ export const useRecipeQuery = (userId: string | undefined, filters: RecipeFilter
           : recipe.cooking_steps || []
       })) as Recipe[];
 
-      // Remove any duplicate recipes before returning
       return removeDuplicateRecipes(parsedRecipes);
     },
     enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    gcTime: 1000 * 60 * 15, // Keep unused data for 15 minutes
   });
 };
