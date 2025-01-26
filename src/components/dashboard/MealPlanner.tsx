@@ -40,8 +40,8 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     validatePlanning
   } = useMealPlanner(userId, selectedChildren);
 
-  const handleRemoveRecipe = (date: string, childId: string) => {
-    removeRecipe(date, childId);
+  const handleRemoveRecipe = async (date: string, childId: string) => {
+    await removeRecipe(date, childId);
   };
 
   const handleValidatePlanning = async () => {
@@ -52,7 +52,6 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
   // Vérifie si tous les jours futurs de la semaine sont planifiés
   const checkWeekPlanning = () => {
     if (!selectedChildren.length) return false;
-    if (Object.keys(plannedRecipes).length === 0) return false;
 
     const today = startOfToday();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -90,7 +89,7 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     } else if (hasAnyPlanning) {
       setCurrentStep(3); // En cours
     } else {
-      setCurrentStep(3); // Pas commencé
+      setCurrentStep(2); // Pas commencé
     }
   }, [plannedRecipes, selectedChildren]);
 
@@ -101,7 +100,7 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold">Planificateur de repas</h2>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'week' | 'month')}>
+          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'week' | 'month')} className="justify-start">
             <ToggleGroupItem value="week" aria-label="Vue semaine">
               <CalendarDays className="h-4 w-4" />
               <span className="ml-2">Semaine</span>
