@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sparkles, AlertCircle, Info } from 'lucide-react';
@@ -15,6 +15,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { QuickPlanDialog } from './recipe/QuickPlanDialog';
+import { useRecipes } from './recipe/hooks/useRecipes';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RecipeGeneratorProps {
   onSectionChange: (section: string) => void;
@@ -22,9 +24,31 @@ interface RecipeGeneratorProps {
 
 export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const [showQuickPlanDialog, setShowQuickPlanDialog] = useState(false);
+  const [children, setChildren] = useState<ChildProfile[]>([]);
   const session = useSession();
   const navigate = useNavigate();
   const { generateRecipes, loading, error } = useRecipeGeneration();
+  const { recipes } = useRecipes(session?.user?.id || '');
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchChildren();
+    }
+  }, [session?.user?.id]);
+
+  const fetchChildren = async () => {
+    try {
+      const { data: childrenData, error } = await supabase
+        .from('children_profiles')
+        .select('*')
+        .eq('profile_id', session?.user?.id);
+
+      if (error) throw error;
+      setChildren(childrenData || []);
+    } catch (error) {
+      console.error('Error fetching children:', error);
+    }
+  };
 
   const handleQuickPlan = async (selectedChildren: ChildProfile[]) => {
     if (selectedChildren.length === 0) {
@@ -48,6 +72,32 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
   const handleGenerateRecipes = () => {
     navigate('/dashboard/generate');
   };
+
+  // Vérifie si chaque enfant a au moins une recette disponible
+  const checkRecipesForChildren = () => {
+    if (!children.length || !recipes.length) return false;
+
+    // Pour chaque enfant, vérifie s'il existe au moins une recette adaptée
+    return children.every(child => {
+      const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
+      
+      // Vérifie si au moins une recette est adaptée à l'âge de l'enfant
+      return recipes.some(recipe => {
+        const isAgeAppropriate = (recipe.min_age || 0) <= childAge && 
+                                (recipe.max_age || 18) >= childAge;
+        
+        // Vérifie les allergies si elles existent
+        const hasNoAllergens = !child.allergies?.length || 
+                              !recipe.allergens?.some(allergen => 
+                                child.allergies?.includes(allergen));
+        
+        return isAgeAppropriate && hasNoAllergens;
+      });
+    });
+  };
+
+  // Calcule le statut actuel de l'étape
+  const currentStep = checkRecipesForChildren() ? 3 : 1;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -74,7 +124,7 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
         </div>
       </Card>
 
-      <Timeline currentStep={1} onSectionChange={onSectionChange} />
+      <Timeline currentStep={currentStep} onSectionChange={onSectionChange} />
 
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2">
