@@ -3,6 +3,7 @@ import { Recipe, ChildProfile } from '../../types';
 import { usePlannedRecipes } from './usePlannedRecipes';
 import { useRecipePlanning } from './useRecipePlanning';
 import { format } from 'date-fns';
+import { useRecipes } from '../../recipe/hooks/useRecipes';
 
 export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[]) => {
   const [selectedDate, setSelectedDate] = useState(new Date());

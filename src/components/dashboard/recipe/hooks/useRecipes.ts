@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Recipe } from '../../types';
+import { Recipe, MealType, Difficulty } from '../../types';
 import { useToast } from '@/hooks/use-toast';
 
 export const useRecipes = (userId: string) => {
@@ -18,7 +18,7 @@ export const useRecipes = (userId: string) => {
 
       if (error) throw error;
 
-      setRecipes((data || []).map(recipe => ({
+      const typedRecipes: Recipe[] = (data || []).map(recipe => ({
         ...recipe,
         ingredients: typeof recipe.ingredients === 'string'
           ? JSON.parse(recipe.ingredients)
@@ -29,8 +29,8 @@ export const useRecipes = (userId: string) => {
         instructions: Array.isArray(recipe.instructions)
           ? recipe.instructions
           : [recipe.instructions].filter(Boolean),
-        meal_type: recipe.meal_type,
-        difficulty: recipe.difficulty,
+        meal_type: recipe.meal_type as MealType,
+        difficulty: recipe.difficulty as Difficulty,
         is_generated: recipe.is_generated || false,
         image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
         health_benefits: recipe.health_benefits ? 
@@ -43,7 +43,9 @@ export const useRecipes = (userId: string) => {
             ? JSON.parse(recipe.cooking_steps)
             : recipe.cooking_steps)
           : []
-      })));
+      }));
+
+      setRecipes(typedRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
       toast({
