@@ -12,7 +12,6 @@ import {
   Home
 } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface DashboardNavigationProps {
   activeSection: string;
@@ -24,74 +23,84 @@ export const DashboardNavigation = ({
   setActiveSection 
 }: DashboardNavigationProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const navigate = useNavigate();
 
   const quickActions = [
     {
       label: 'Accueil',
       icon: Home,
-      path: '/dashboard/overview'
+      action: () => {
+        setActiveSection('overview');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Catégories',
       icon: Grid,
-      path: '/dashboard/categories'
+      action: () => {
+        setActiveSection('categories');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Recettes',
       icon: ChefHat,
-      path: '/dashboard/recipes'
+      action: () => {
+        setActiveSection('recipes');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Planificateur',
       icon: Calendar,
-      path: '/dashboard/planner'
+      action: () => {
+        setActiveSection('planner');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Voir le planning',
       icon: CalendarRange,
-      path: '/dashboard/view-planner'
+      action: () => {
+        setActiveSection('view-planner');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Profils enfants',
       icon: User,
-      path: '/dashboard/children'
+      action: () => {
+        setActiveSection('children');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Liste de courses',
       icon: ShoppingCart,
-      path: '/dashboard/shopping'
+      action: () => {
+        setActiveSection('shopping');
+        setIsOpen(false);
+      }
     },
     {
       label: 'Mes favoris',
       icon: Heart,
-      path: '/dashboard/favorites'
+      action: () => {
+        setActiveSection('favorites');
+        setIsOpen(false);
+      }
     }
   ];
 
-  const handleNavigation = (path: string, label: string) => {
-    navigate(path);
-    setActiveSection(label.toLowerCase());
-    setIsOpen(false);
-  };
-
   const NavigationContent = () => (
-    <div className="flex gap-2 overflow-x-auto pb-4">
+    <div className="flex gap-2 overflow-x-auto">
       {quickActions.map((action, index) => (
         <Button
           key={index}
-          onClick={() => handleNavigation(action.path, action.label)}
-          className={`whitespace-nowrap group hover:scale-105 transition-all duration-300 ${
-            activeSection === action.label.toLowerCase()
-            ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md'
-            : 'bg-white text-foreground hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white shadow-sm'
-          }`}
+          variant={activeSection === action.label.toLowerCase() ? 'default' : 'outline'}
+          onClick={action.action}
+          className="whitespace-nowrap flex items-center gap-2"
         >
-          <action.icon className={`w-4 h-4 mr-2 ${
-            activeSection === action.label.toLowerCase()
-            ? 'text-white'
-            : 'text-primary group-hover:text-white'
-          }`} />
+          <action.icon className="h-4 w-4" />
           <span>{action.label}</span>
         </Button>
       ))}
@@ -104,10 +113,7 @@ export const DashboardNavigation = ({
       <div className="md:hidden">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <Button 
-              className="w-full flex items-center gap-2 justify-start hover:scale-105 transition-all duration-300 bg-white text-foreground hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white shadow-sm"
-              size="lg"
-            >
+            <Button variant="outline" size="lg" className="w-full flex items-center gap-2 justify-start">
               <Menu className="h-6 w-6" />
               <span>Menu</span>
             </Button>
@@ -117,18 +123,11 @@ export const DashboardNavigation = ({
               {quickActions.map((action, index) => (
                 <Button
                   key={index}
-                  onClick={() => handleNavigation(action.path, action.label)}
-                  className={`w-full justify-start gap-2 group hover:scale-105 transition-all duration-300 ${
-                    activeSection === action.label.toLowerCase()
-                    ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md'
-                    : 'bg-white text-foreground hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white shadow-sm'
-                  }`}
+                  variant={activeSection === action.label.toLowerCase() ? 'default' : 'outline'}
+                  onClick={action.action}
+                  className="w-full justify-start gap-2"
                 >
-                  <action.icon className={`h-4 w-4 ${
-                    activeSection === action.label.toLowerCase()
-                    ? 'text-white'
-                    : 'text-primary group-hover:text-white'
-                  }`} />
+                  <action.icon className="h-4 w-4" />
                   <span>{action.label}</span>
                 </Button>
               ))}

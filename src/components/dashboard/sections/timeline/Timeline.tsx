@@ -3,8 +3,6 @@ import { TimelineStep } from "./TimelineStep";
 import { ChefHat, Calendar, ShoppingCart, Check, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StepStatus } from "../../types/steps";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface TimelineProps {
   currentStep: number;
@@ -13,27 +11,6 @@ interface TimelineProps {
 
 export const Timeline = ({ currentStep, onSectionChange }: TimelineProps) => {
   const navigate = useNavigate();
-  const [hasChildren, setHasChildren] = useState(true);
-
-  useEffect(() => {
-    checkForChildren();
-  }, []);
-
-  const checkForChildren = async () => {
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user) return;
-
-      const { data: children } = await supabase
-        .from('children_profiles')
-        .select('id')
-        .eq('profile_id', session.session.user.id);
-
-      setHasChildren(children && children.length > 0);
-    } catch (error) {
-      console.error('Error checking for children:', error);
-    }
-  };
 
   const steps = [
     {
@@ -49,7 +26,6 @@ export const Timeline = ({ currentStep, onSectionChange }: TimelineProps) => {
       description: "Créez des recettes adaptées à vos enfants",
       route: "generate-recipes",
       actionLabel: "Générer maintenant",
-      requiresChildren: true,
     },
     {
       icon: Calendar,
@@ -105,11 +81,7 @@ export const Timeline = ({ currentStep, onSectionChange }: TimelineProps) => {
             actionLabel={step.actionLabel}
             onAction={() => navigate(`/dashboard/${step.route}`)}
             isLast={index === steps.length - 1}
-            disabled={step.requiresChildren && !hasChildren}
-            message={step.requiresChildren && !hasChildren ? 
-              "Vous devez d'abord configurer au moins un profil enfant" : 
-              undefined
-            }
+            disabled={index > currentStep}
           />
         ))}
       </div>
