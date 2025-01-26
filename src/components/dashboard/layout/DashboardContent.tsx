@@ -1,7 +1,6 @@
 import { Session } from '@supabase/auth-helpers-react';
 import { WelcomeSection } from '../sections/WelcomeSection';
 import { RecipeGenerator } from '../RecipeGenerator';
-import { MealPlanner } from '../MealPlanner';
 import { WeeklyPlanViewer } from '../WeeklyPlanViewer';
 import { ChildrenProfiles } from '../ChildrenProfiles';
 import { ShoppingList } from '../ShoppingList';
