@@ -13,6 +13,7 @@ import { useRecipeQuery } from './hooks/useRecipeQuery';
 import { useRecipeGeneration } from './hooks/useRecipeGeneration';
 import { useRecipeSaving } from './hooks/useRecipeSaving';
 import { Button } from '@/components/ui/button';
+import { useRecipeFilters } from './hooks/useRecipeFilters';
 
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
