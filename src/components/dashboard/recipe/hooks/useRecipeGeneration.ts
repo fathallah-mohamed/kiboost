@@ -1,41 +1,22 @@
-import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
-import { GenerationStep, StepStatus } from "../../types/steps";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSession } from "@supabase/auth-helpers-react";
-import { useRecipeSaving } from "./useRecipeSaving";
+import { useRecipeGenerationState } from "./useRecipeGenerationState";
+import { useRecipeSavingLogic } from "./useRecipeSavingLogic";
 
 export const useRecipeGeneration = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const session = useSession();
-  const { saveRecipe } = useRecipeSaving();
-  const [stepState, setStepState] = useState<GenerationStep>({
-    status: "not_started",
-    hasSelectedChild: false,
-    hasGeneratedRecipes: false,
-    hasInteractedWithRecipes: false,
-  });
-
-  const updateStepState = (updates: Partial<GenerationStep>) => {
-    setStepState(prev => {
-      const newState = { ...prev, ...updates };
-      
-      // Determine the overall status based on conditions
-      let status: StepStatus = "not_started";
-      
-      if (newState.hasSelectedChild && newState.hasGeneratedRecipes) {
-        status = "in_progress";
-      }
-      
-      if (newState.hasSelectedChild && newState.hasGeneratedRecipes && newState.hasInteractedWithRecipes) {
-        status = "completed";
-      }
-      
-      return { ...newState, status };
-    });
-  };
+  const { 
+    loading, 
+    setLoading, 
+    error, 
+    setError, 
+    stepState, 
+    updateStepState 
+  } = useRecipeGenerationState();
+  
+  const { saveGeneratedRecipes } = useRecipeSavingLogic(session?.user?.id);
 
   const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     try {
@@ -75,27 +56,7 @@ export const useRecipeGeneration = () => {
         throw new Error("Format de réponse invalide");
       }
 
-      // Save each generated recipe
-      const savedRecipes = await Promise.all(
-        response.recipes.map(async (recipe: Recipe) => {
-          try {
-            const recipeWithMetadata = {
-              ...recipe,
-              is_generated: true,
-              profile_id: session?.user?.id
-            };
-            
-            await saveRecipe(recipeWithMetadata);
-            return recipeWithMetadata;
-          } catch (error) {
-            console.error('Error saving generated recipe:', error);
-            toast.error(`Erreur lors de la sauvegarde de la recette ${recipe.name}`);
-            return null;
-          }
-        })
-      );
-
-      const successfullySavedRecipes = savedRecipes.filter((recipe): recipe is Recipe => recipe !== null);
+      const successfullySavedRecipes = await saveGeneratedRecipes(response.recipes);
 
       if (successfullySavedRecipes.length > 0) {
         toast.success(`${successfullySavedRecipes.length} recettes générées et sauvegardées`);
