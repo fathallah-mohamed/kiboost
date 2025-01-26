@@ -46,7 +46,7 @@ export const ProgressSteps = ({ onSectionChange }: ProgressStepsProps) => {
           title="Planifier les repas"
           description="Organisez votre semaine"
           status="in_progress"
-          onClick={() => onSectionChange?.('planner')}
+          onClick={() => navigate('/dashboard/planner')}
         />
         <TimelineStep
           step={4}
