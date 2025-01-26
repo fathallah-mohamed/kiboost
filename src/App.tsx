@@ -17,6 +17,7 @@ import { ShoppingList } from "./components/dashboard/ShoppingList";
 import { ChildrenProfiles } from "./components/dashboard/ChildrenProfiles";
 import { FavoriteRecipes } from "./components/dashboard/favorites/FavoriteRecipes";
 import { RecipeGeneratorPage } from "./components/dashboard/recipe/RecipeGeneratorPage";
+import { PlannerPage } from "./components/dashboard/planner/PlannerPage";
 
 const queryClient = new QueryClient();
 
@@ -49,7 +50,7 @@ const AppRoutes = () => {
         <Route path="recipes" element={<RecipeGenerator onSectionChange={() => {}} />} />
         <Route path="generate" element={<RecipeGeneratorPage />} />
         <Route path="generate-recipes" element={<RecipeGeneratorPage />} />
-        <Route path="planner" element={<MealPlanner userId={session?.user?.id || ''} onSectionChange={() => {}} />} />
+        <Route path="planner" element={<PlannerPage userId={session?.user?.id || ''} />} />
         <Route path="shopping" element={<ShoppingList userId={session?.user?.id || ''} onSectionChange={() => {}} />} />
         <Route path="children" element={<ChildrenProfiles userId={session?.user?.id || ''} onSelectChild={() => {}} />} />
         <Route path="favorites" element={<FavoriteRecipes onSectionChange={() => {}} />} />
