@@ -13,7 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Timeline } from '../dashboard/sections/timeline/Timeline';
-import { startOfToday, isAfter, startOfDay, format, addDays, startOfWeek } from 'date-fns';
+import { startOfToday, isAfter, startOfDay, format, addDays, startOfWeek, isSameDay } from 'date-fns';
 
 interface MealPlannerProps {
   userId: string;
@@ -58,10 +58,10 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
     const daysToCheck = [];
 
-    // Créer un tableau des jours à vérifier (jours futurs de la semaine)
+    // Créer un tableau des jours à vérifier (jours futurs et jour actuel de la semaine)
     for (let i = 0; i < 7; i++) {
       const currentDay = addDays(weekStart, i);
-      if (isAfter(startOfDay(currentDay), today) || format(currentDay, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) {
+      if (isAfter(startOfDay(currentDay), today) || isSameDay(currentDay, today)) {
         daysToCheck.push(format(currentDay, 'yyyy-MM-dd'));
       }
     }
