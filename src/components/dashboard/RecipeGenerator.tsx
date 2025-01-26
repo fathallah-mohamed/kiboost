@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, AlertCircle, Info } from 'lucide-react';
 import { BackToDashboard } from './BackToDashboard';
 import { toast } from 'sonner';
+import { Timeline } from './sections/timeline/Timeline';
 import { useRecipeGeneration } from './recipe/useRecipeGeneration';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useNavigate } from 'react-router-dom';
@@ -72,6 +73,32 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
     navigate('/dashboard/generate');
   };
 
+  // Vérifie si chaque enfant a au moins une recette disponible
+  const checkRecipesForChildren = () => {
+    if (!children.length || !recipes.length) return false;
+
+    // Pour chaque enfant, vérifie s'il existe au moins une recette adaptée
+    return children.every(child => {
+      const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
+      
+      // Vérifie si au moins une recette est adaptée à l'âge de l'enfant
+      return recipes.some(recipe => {
+        const isAgeAppropriate = (recipe.min_age || 0) <= childAge && 
+                                (recipe.max_age || 18) >= childAge;
+        
+        // Vérifie les allergies si elles existent
+        const hasNoAllergens = !child.allergies?.length || 
+                              !recipe.allergens?.some(allergen => 
+                                child.allergies?.includes(allergen));
+        
+        return isAgeAppropriate && hasNoAllergens;
+      });
+    });
+  };
+
+  // Calcule le statut actuel de l'étape
+  const currentStep = checkRecipesForChildren() ? 3 : 1;
+
   return (
     <div className="space-y-6 animate-fade-in">
       <BackToDashboard onBack={() => onSectionChange('categories')} />
@@ -96,6 +123,8 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
           </Button>
         </div>
       </Card>
+
+      <Timeline currentStep={currentStep} onSectionChange={onSectionChange} />
 
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2">
