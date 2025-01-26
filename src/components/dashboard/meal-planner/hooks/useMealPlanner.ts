@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useRecipes } from '../hooks/useRecipes';
-import { usePlannedRecipes } from '../hooks/usePlannedRecipes';
-import { useRecipePlanning } from '../hooks/useRecipePlanning';
+import { useRecipes } from './useRecipes';
+import { usePlannedRecipes } from './usePlannedRecipes';
+import { useRecipePlanning } from './useRecipePlanning';
 import { Recipe, ChildProfile } from '../../types';
 import { format } from 'date-fns';
 
@@ -37,13 +37,15 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
   const handlePlanRecipe = async (recipe: Recipe, children: ChildProfile[]) => {
     await planRecipe(recipe, children, selectedDate, userId);
     const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-    updateLocalPlannedRecipes(formattedDate, recipe);
+    for (const child of children) {
+      updateLocalPlannedRecipes(formattedDate, recipe, child.id);
+    }
     await fetchPlannedRecipes();
   };
 
   const handleRemoveRecipe = async (date: string, childId: string) => {
     await removePlannedRecipe(date, childId, userId);
-    removePlannedRecipeFromState(date);
+    removePlannedRecipeFromState(date, childId);
     await fetchPlannedRecipes();
   };
 
