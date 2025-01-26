@@ -7,6 +7,7 @@ import { ChildrenProfiles } from '../ChildrenProfiles';
 import { ShoppingList } from '../ShoppingList';
 import { FavoriteRecipes } from '../favorites/FavoriteRecipes';
 import { CategoriesGrid } from '../categories/CategoriesGrid';
+import { PlannerPage } from '../planner/PlannerPage';
 
 interface DashboardContentProps {
   session: Session;
@@ -33,7 +34,7 @@ export const DashboardContent = ({
       case 'recipes':
         return <RecipeGenerator onSectionChange={setActiveSection} />;
       case 'planner':
-        return <MealPlanner userId={session.user.id} onSectionChange={setActiveSection} />;
+        return <PlannerPage userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'view-planner':
         return <WeeklyPlanViewer userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'children':
