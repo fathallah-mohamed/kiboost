@@ -37,15 +37,17 @@ const stepContentVariants = cva(
 );
 
 interface TimelineStepProps {
-  icon: LucideIcon;
+  icon?: LucideIcon;
   title: string;
   description: string;
   status: StepStatus;
   message?: string;
-  actionLabel: string;
-  onAction: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
   isLast?: boolean;
   disabled?: boolean;
+  step?: number;
+  onClick?: () => void;
 }
 
 export const TimelineStep = ({
@@ -58,6 +60,8 @@ export const TimelineStep = ({
   onAction,
   isLast,
   disabled,
+  step,
+  onClick,
 }: TimelineStepProps) => {
   const statusLabels = {
     completed: "✓ Terminé",
@@ -78,7 +82,7 @@ export const TimelineStep = ({
   };
 
   return (
-    <div className="relative flex">
+    <div className="relative flex" onClick={onClick}>
       {!isLast && (
         <div className="absolute left-5 top-10 bottom-0 w-0.5 -ml-px">
           <div className="h-full">
@@ -97,7 +101,7 @@ export const TimelineStep = ({
       )}
 
       <div className={stepIconVariants({ status })}>
-        <Icon className="w-5 h-5" />
+        {Icon ? <Icon className="w-5 h-5" /> : <span>{step}</span>}
       </div>
 
       <div className={cn(stepContentVariants({ status }), "mb-8 ml-6")}>
@@ -112,16 +116,18 @@ export const TimelineStep = ({
               <p className="text-sm mt-1 text-muted-foreground">{message}</p>
             )}
           </div>
-          <Button
-            onClick={onAction}
-            disabled={disabled}
-            className={cn(
-              "whitespace-nowrap transition-all duration-300",
-              buttonVariants[status]
-            )}
-          >
-            {actionLabel}
-          </Button>
+          {actionLabel && onAction && (
+            <Button
+              onClick={onAction}
+              disabled={disabled}
+              className={cn(
+                "whitespace-nowrap transition-all duration-300",
+                buttonVariants[status]
+              )}
+            >
+              {actionLabel}
+            </Button>
+          )}
         </div>
       </div>
     </div>
