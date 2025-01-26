@@ -12,6 +12,7 @@ import {
   Home
 } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardNavigationProps {
   activeSection: string;
@@ -23,84 +24,70 @@ export const DashboardNavigation = ({
   setActiveSection 
 }: DashboardNavigationProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const quickActions = [
     {
       label: 'Accueil',
       icon: Home,
-      action: () => {
-        setActiveSection('overview');
-        setIsOpen(false);
-      }
+      path: '/dashboard/overview'
     },
     {
       label: 'Catégories',
       icon: Grid,
-      action: () => {
-        setActiveSection('categories');
-        setIsOpen(false);
-      }
+      path: '/dashboard/categories'
     },
     {
       label: 'Recettes',
       icon: ChefHat,
-      action: () => {
-        setActiveSection('recipes');
-        setIsOpen(false);
-      }
+      path: '/dashboard/recipes'
     },
     {
       label: 'Planificateur',
       icon: Calendar,
-      action: () => {
-        setActiveSection('planner');
-        setIsOpen(false);
-      }
+      path: '/dashboard/planner'
     },
     {
       label: 'Voir le planning',
       icon: CalendarRange,
-      action: () => {
-        setActiveSection('view-planner');
-        setIsOpen(false);
-      }
+      path: '/dashboard/view-planner'
     },
     {
       label: 'Profils enfants',
       icon: User,
-      action: () => {
-        setActiveSection('children');
-        setIsOpen(false);
-      }
+      path: '/dashboard/children'
     },
     {
       label: 'Liste de courses',
       icon: ShoppingCart,
-      action: () => {
-        setActiveSection('shopping');
-        setIsOpen(false);
-      }
+      path: '/dashboard/shopping'
     },
     {
       label: 'Mes favoris',
       icon: Heart,
-      action: () => {
-        setActiveSection('favorites');
-        setIsOpen(false);
-      }
+      path: '/dashboard/favorites'
     }
   ];
 
+  const handleNavigation = (path: string, label: string) => {
+    navigate(path);
+    setActiveSection(label.toLowerCase());
+    setIsOpen(false);
+  };
+
   const NavigationContent = () => (
-    <div className="flex gap-2 overflow-x-auto">
+    <div className="flex gap-2 overflow-x-auto pb-4">
       {quickActions.map((action, index) => (
         <Button
           key={index}
-          variant={activeSection === action.label.toLowerCase() ? 'default' : 'outline'}
-          onClick={action.action}
-          className="whitespace-nowrap flex items-center gap-2"
+          onClick={() => handleNavigation(action.path, action.label)}
+          className={`whitespace-nowrap group hover:scale-105 transition-all duration-300 ${
+            activeSection === action.label.toLowerCase()
+            ? 'bg-gradient-to-r from-primary to-accent text-white'
+            : 'bg-gradient-to-r from-secondary/50 to-accent/50 hover:from-primary/80 hover:to-accent/80'
+          }`}
         >
-          <action.icon className="h-4 w-4" />
+          <action.icon className="w-4 h-4 mr-2 group-hover:text-white transition-colors" />
           <span>{action.label}</span>
         </Button>
       ))}
@@ -113,7 +100,11 @@ export const DashboardNavigation = ({
       <div className="md:hidden">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" size="lg" className="w-full flex items-center gap-2 justify-start">
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="w-full flex items-center gap-2 justify-start hover:scale-105 transition-all duration-300"
+            >
               <Menu className="h-6 w-6" />
               <span>Menu</span>
             </Button>
@@ -123,11 +114,14 @@ export const DashboardNavigation = ({
               {quickActions.map((action, index) => (
                 <Button
                   key={index}
-                  variant={activeSection === action.label.toLowerCase() ? 'default' : 'outline'}
-                  onClick={action.action}
-                  className="w-full justify-start gap-2"
+                  onClick={() => handleNavigation(action.path, action.label)}
+                  className={`w-full justify-start gap-2 group hover:scale-105 transition-all duration-300 ${
+                    activeSection === action.label.toLowerCase()
+                    ? 'bg-gradient-to-r from-primary to-accent text-white'
+                    : 'bg-gradient-to-r from-secondary/50 to-accent/50 hover:from-primary/80 hover:to-accent/80'
+                  }`}
                 >
-                  <action.icon className="h-4 w-4" />
+                  <action.icon className="h-4 w-4 group-hover:text-white transition-colors" />
                   <span>{action.label}</span>
                 </Button>
               ))}
