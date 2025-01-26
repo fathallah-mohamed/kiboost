@@ -25,9 +25,9 @@ const stepContentVariants = cva(
   {
     variants: {
       status: {
-        completed: "opacity-75",
+        completed: "opacity-100",
         in_progress: "opacity-100",
-        not_started: "opacity-50",
+        not_started: "opacity-75",
       },
     },
     defaultVariants: {
@@ -61,14 +61,20 @@ export const TimelineStep = ({
 }: TimelineStepProps) => {
   const statusLabels = {
     completed: "✓ Terminé",
-    in_progress: "⚠ En cours",
-    not_started: "○ Non commencé",
+    in_progress: "En cours",
+    not_started: "Non commencé",
   };
 
   const statusColors = {
     completed: "text-green-600",
     in_progress: "text-orange-600",
     not_started: "text-gray-400",
+  };
+
+  const buttonVariants = {
+    completed: "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white",
+    in_progress: "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white",
+    not_started: "bg-gray-100 text-gray-700 hover:bg-gray-200",
   };
 
   return (
@@ -109,8 +115,10 @@ export const TimelineStep = ({
           <Button
             onClick={onAction}
             disabled={disabled}
-            variant={status === "completed" ? "outline" : "default"}
-            className="whitespace-nowrap"
+            className={cn(
+              "whitespace-nowrap transition-all duration-300",
+              buttonVariants[status]
+            )}
           >
             {actionLabel}
           </Button>
