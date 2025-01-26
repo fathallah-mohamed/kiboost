@@ -47,7 +47,7 @@ export const useRecipeGeneration = () => {
       }
 
       // Générer une image pour chaque recette de manière séquentielle
-      const recipesWithImages = [];
+      const savedRecipes = [];
       for (const recipe of response.recipes) {
         try {
           console.log("Generating image for recipe:", recipe.name);
@@ -64,11 +64,7 @@ export const useRecipeGeneration = () => {
 
           if (imageError) {
             console.error('Error generating image:', imageError);
-            recipesWithImages.push({
-              ...recipe,
-              image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
-            });
-            continue;
+            throw imageError;
           }
 
           console.log('Generated image data for', recipe.name, ':', imageData);
@@ -80,7 +76,9 @@ export const useRecipeGeneration = () => {
               ...recipe,
               profile_id: session.user.id,
               is_generated: true,
-              image_url: imageData.imageUrl
+              image_url: imageData.imageUrl,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             })
             .select('*')
             .single();
@@ -91,17 +89,20 @@ export const useRecipeGeneration = () => {
             continue;
           }
 
-          recipesWithImages.push(savedRecipe);
+          savedRecipes.push(savedRecipe);
           
-        } catch (imageError) {
-          console.error('Error generating image for recipe:', recipe.name, imageError);
+        } catch (error) {
+          console.error('Error processing recipe:', recipe.name, error);
+          // En cas d'erreur, on essaie quand même de sauvegarder la recette avec une image par défaut
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
             .insert({
               ...recipe,
               profile_id: session.user.id,
               is_generated: true,
-              image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
+              image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             })
             .select('*')
             .single();
@@ -111,12 +112,12 @@ export const useRecipeGeneration = () => {
             continue;
           }
 
-          recipesWithImages.push(savedRecipe);
+          savedRecipes.push(savedRecipe);
         }
       }
 
-      console.log("Final recipes with images:", recipesWithImages);
-      return recipesWithImages;
+      console.log("Final saved recipes:", savedRecipes);
+      return savedRecipes;
 
     } catch (err) {
       console.error("Error generating recipes:", err);
