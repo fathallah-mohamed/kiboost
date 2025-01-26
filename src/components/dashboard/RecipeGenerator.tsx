@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
   ChefHat, Calendar, ShoppingCart, 
-  Check, AlertCircle, Sparkles, ArrowRight, Circle
+  Sparkles, AlertCircle, Info
 } from 'lucide-react';
 import { BackToDashboard } from './BackToDashboard';
 import { toast } from 'sonner';
@@ -12,24 +12,44 @@ import { ProgressSteps } from './sections/ProgressSteps';
 import { useRecipeGeneration } from './recipe/useRecipeGeneration';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useNavigate } from 'react-router-dom';
+import { MultiChildSelector } from './recipe/MultiChildSelector';
+import { ChildProfile } from './types';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface RecipeGeneratorProps {
   onSectionChange: (section: string) => void;
 }
 
 export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const session = useSession();
   const navigate = useNavigate();
   const { generateRecipes, loading, error } = useRecipeGeneration();
 
-  const handleQuickPlan = () => {
-    console.log('Staying on recipes section...');
-    onSectionChange('recipes');
+  const handleQuickPlan = async () => {
+    if (selectedChildren.length === 0) {
+      toast.error("Veuillez sélectionner au moins un enfant");
+      return;
+    }
+
+    toast.promise(
+      generateRecipes(selectedChildren[0], {}),
+      {
+        loading: 'Génération de votre planning express...',
+        success: () => {
+          onSectionChange('planner');
+          return 'Planning express généré avec succès !';
+        },
+        error: 'Une erreur est survenue lors de la génération'
+      }
+    );
   };
 
   const handleGenerateRecipes = () => {
-    console.log('Navigating to recipe generation page...');
     navigate('/dashboard/generate');
   };
 
@@ -49,37 +69,71 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
           </div>
           <Button 
             onClick={handleQuickPlan}
-            className="whitespace-nowrap group hover:scale-105 transition-all duration-300"
+            size="lg"
+            className="whitespace-nowrap group hover:scale-105 transition-all duration-300 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
           >
-            <Sparkles className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
+            <Sparkles className="w-5 h-5 mr-2 group-hover:text-yellow-200" />
             Planning express
           </Button>
         </div>
       </Card>
 
+      <Card className="p-4">
+        <MultiChildSelector 
+          onSelectChildren={setSelectedChildren}
+          selectedChildren={selectedChildren}
+        />
+      </Card>
+
       <ProgressSteps onSectionChange={onSectionChange} />
 
       <Card className="p-6 space-y-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-primary" />
-          Tâches prioritaires
-        </h3>
+          <h3 className="text-lg font-semibold">Tâches prioritaires</h3>
+        </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 border-red-100 border">
-            <p className="text-sm">Vous n'avez pas encore planifié vos repas pour cette semaine</p>
+            <div className="flex items-start gap-2">
+              <p className="text-sm">Vous n'avez pas encore planifié vos repas pour cette semaine</p>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="w-4 h-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="w-[200px] text-sm">
+                    Générez des recettes adaptées aux besoins de vos enfants pour la semaine
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <Button 
               onClick={handleGenerateRecipes}
+              className="whitespace-nowrap"
             >
               Générer maintenant
             </Button>
           </div>
 
           <div className="flex items-center justify-between p-4 rounded-lg bg-orange-50 border-orange-100 border">
-            <p className="text-sm">Votre liste de courses n'est pas à jour</p>
+            <div className="flex items-start gap-2">
+              <p className="text-sm">Votre liste de courses n'est pas à jour</p>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="w-4 h-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="w-[200px] text-sm">
+                    Mettez à jour votre liste de courses pour la semaine en fonction des recettes sélectionnées
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <Button 
               variant="outline" 
               onClick={() => navigate('/dashboard/shopping')}
+              className="whitespace-nowrap"
             >
               Mettre à jour
             </Button>
