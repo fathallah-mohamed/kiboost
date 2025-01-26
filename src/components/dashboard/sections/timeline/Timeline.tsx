@@ -1,7 +1,8 @@
 import { Progress } from "@/components/ui/progress";
-import { TimelineStep, StepStatus } from "./TimelineStep";
+import { TimelineStep } from "./TimelineStep";
 import { ChefHat, Calendar, ShoppingCart, Check, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { StepStatus } from "../../types/steps";
 
 interface TimelineProps {
   currentStep: number;
@@ -51,8 +52,8 @@ export const Timeline = ({ currentStep, onSectionChange }: TimelineProps) => {
 
   const getStepStatus = (index: number): StepStatus => {
     if (index < currentStep) return "completed";
-    if (index === currentStep) return "current";
-    return "upcoming";
+    if (index === currentStep) return "in_progress";
+    return "not_started";
   };
 
   const progress = Math.round((currentStep / steps.length) * 100);
