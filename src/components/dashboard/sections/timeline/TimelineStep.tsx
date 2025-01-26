@@ -103,7 +103,7 @@ export const TimelineStep = ({
               {statusLabels[status]}
             </span>
             {message && (
-              <p className="text-sm mt-1 text-muted-foreground">{message}</p>
+              <p className="text-sm mt-1 text-red-500">{message}</p>
             )}
           </div>
           <Button
