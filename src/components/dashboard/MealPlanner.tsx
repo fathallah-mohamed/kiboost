@@ -9,6 +9,7 @@ import { MultiChildSelector } from './recipe/MultiChildSelector';
 import { ChildProfile } from './types';
 import { BackToDashboard } from './BackToDashboard';
 import { StepNavigation } from './navigation/StepNavigation';
+import { format } from 'date-fns';
 
 interface MealPlannerProps {
   userId: string;
@@ -30,6 +31,10 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     viewMode,
     setViewMode
   } = useMealPlanner(userId, selectedChildren);
+
+  const handleRemoveRecipe = (date: Date, childId: string) => {
+    removeRecipe(format(date, 'yyyy-MM-dd'), childId);
+  };
 
   return (
     <div className="space-y-6">
@@ -66,7 +71,7 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
             plannedRecipes={plannedRecipes}
             viewMode={viewMode}
             selectedChildren={selectedChildren}
-            onRemoveRecipe={removeRecipe}
+            onRemoveRecipe={handleRemoveRecipe}
           />
         </Card>
 
