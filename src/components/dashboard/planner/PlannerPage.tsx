@@ -10,9 +10,10 @@ import { useNavigate } from 'react-router-dom';
 
 interface PlannerPageProps {
   userId: string;
+  onSectionChange?: (section: string) => void;
 }
 
-export const PlannerPage = ({ userId }: PlannerPageProps) => {
+export const PlannerPage = ({ userId, onSectionChange }: PlannerPageProps) => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const navigate = useNavigate();
   

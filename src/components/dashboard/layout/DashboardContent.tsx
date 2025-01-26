@@ -33,7 +33,7 @@ export const DashboardContent = ({
       case 'recipes':
         return <RecipeGenerator onSectionChange={setActiveSection} />;
       case 'planner':
-        return <PlannerPage userId={session.user.id} onSectionChange={setActiveSection} />;
+        return <PlannerPage userId={session.user.id} />;
       case 'view-planner':
         return <WeeklyPlanViewer userId={session.user.id} onSectionChange={setActiveSection} />;
       case 'children':
