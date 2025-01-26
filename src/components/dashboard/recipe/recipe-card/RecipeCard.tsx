@@ -1,30 +1,29 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Recipe } from "../types";
+import { Recipe } from "../../types";
 import { 
   Utensils, Clock, Heart, Beef, Wheat, 
   Flame, Cookie, Star, ChevronDown
 } from "lucide-react";
-import { RecipeRating } from "./RecipeRating";
+import { RecipeRating } from "../RecipeRating";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { RecipeHealthBenefits } from "./recipe-card/RecipeHealthBenefits";
-import { useRecipeGeneration } from "../hooks/useRecipeGeneration";
+import { RecipeHealthBenefits } from "../RecipeHealthBenefits";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isPlanned?: boolean;
+  isNew?: boolean;
   onAdd?: (recipe: Recipe) => void;
 }
 
-export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, isPlanned, isNew, onAdd }: RecipeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const { toast } = useToast();
-  const { markRecipeInteraction } = useRecipeGeneration();
 
   const toggleFavorite = async () => {
     try {
@@ -44,7 +43,6 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
       }
 
       setIsFavorite(!isFavorite);
-      markRecipeInteraction();
       toast({
         title: isFavorite ? "Retiré des favoris" : "Ajouté aux favoris",
         description: isFavorite 
@@ -61,15 +59,8 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
     }
   };
 
-  const handleAdd = (recipe: Recipe) => {
-    if (onAdd) {
-      onAdd(recipe);
-      markRecipeInteraction();
-    }
-  };
-
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden ${isNew ? 'ring-2 ring-primary animate-pulse' : ''}`}>
       <div className="relative">
         <img 
           src={recipe.image_url} 
@@ -93,7 +84,7 @@ export const RecipeCard = ({ recipe, isPlanned, onAdd }: RecipeCardProps) => {
                 <Heart className="w-4 h-4" fill={isFavorite ? "currentColor" : "none"} />
               </Button>
               {onAdd && (
-                <Button onClick={() => handleAdd(recipe)} disabled={isPlanned}>
+                <Button onClick={() => onAdd(recipe)} disabled={isPlanned}>
                   {isPlanned ? 'Déjà planifiée' : 'Planifier'}
                 </Button>
               )}
