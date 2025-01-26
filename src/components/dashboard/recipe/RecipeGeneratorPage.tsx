@@ -14,6 +14,8 @@ import { useRecipeGeneration } from './hooks/useRecipeGeneration';
 import { useRecipeSaving } from './hooks/useRecipeSaving';
 import { Button } from '@/components/ui/button';
 import { useRecipeFilters } from './hooks/useRecipeFilters';
+import { Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
@@ -27,10 +29,10 @@ export const RecipeGeneratorPage = () => {
   const { generateRecipes } = useRecipeGeneration();
   const { saveRecipe } = useRecipeSaving();
 
-  const recipes = useRecipeQuery(
+  const { data: recipes = [], refetch } = useRecipeQuery(
     session?.user?.id,
     filters.getFilters()
-  ).data || [];
+  );
 
   const handleGenerateRecipes = async () => {
     if (!selectedChildren.length) {
@@ -69,6 +71,29 @@ export const RecipeGeneratorPage = () => {
     setDisplayCount(prev => Math.min(prev + 5, recipes.length));
   };
 
+  const handleDeleteAllRecipes = async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('recipes')
+        .delete()
+        .eq('profile_id', session.user.id)
+        .eq('is_generated', true);
+
+      if (error) throw error;
+
+      toast.success('Toutes les recettes générées ont été supprimées');
+      refetch(); // Refresh the recipes list
+    } catch (error) {
+      console.error('Error deleting recipes:', error);
+      toast.error('Une erreur est survenue lors de la suppression des recettes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       {loading && <LoadingOverlay />}
@@ -83,12 +108,24 @@ export const RecipeGeneratorPage = () => {
               Générez des recettes personnalisées adaptées aux besoins de vos enfants
             </p>
           </div>
-          <Button 
-            onClick={() => navigate('/dashboard/planner')}
-            className="bg-primary hover:bg-primary/90"
-          >
-            Commencer à planifier
-          </Button>
+          <div className="flex gap-4">
+            {recipes.length > 0 && (
+              <Button 
+                variant="destructive"
+                onClick={handleDeleteAllRecipes}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Supprimer toutes les recettes
+              </Button>
+            )}
+            <Button 
+              onClick={() => navigate('/dashboard/planner')}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Commencer à planifier
+            </Button>
+          </div>
         </div>
 
         <GenerationSection
