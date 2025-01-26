@@ -19,9 +19,10 @@ serve(async (req) => {
       throw new Error("Recipe name and ingredients are required");
     }
     
-    console.log('Generating image with prompt for recipe:', recipeName);
+    console.log('Generating image for recipe:', recipeName);
+    console.log('With ingredients:', ingredients);
 
-    const prompt = `A professional food photography shot of ${recipeName}. The dish contains ${ingredients}. The photo should be well-lit, appetizing, and styled like a professional cookbook photo. Top-down view on a clean background.`;
+    const prompt = `A professional food photography shot of ${recipeName}, which is made with ${ingredients}. The photo should be a close-up, well-lit shot that clearly shows the dish described, styled like a professional cookbook photo. The image must accurately represent the dish name and ingredients.`;
 
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAiKey) {
@@ -40,6 +41,7 @@ serve(async (req) => {
         n: 1,
         size: "1024x1024",
         quality: "standard",
+        style: "natural",
       }),
     });
 
