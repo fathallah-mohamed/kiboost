@@ -9,7 +9,6 @@ import { MultiChildSelector } from './recipe/MultiChildSelector';
 import { ChildProfile } from './types';
 import { BackToDashboard } from './BackToDashboard';
 import { StepNavigation } from './navigation/StepNavigation';
-import { format } from 'date-fns';
 
 interface MealPlannerProps {
   userId: string;

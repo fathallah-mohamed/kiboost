@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Recipe, MealType, Difficulty, HealthBenefit } from '../../types';
+import { Recipe, MealType, Difficulty } from '../../types';
 import { useToast } from '@/components/ui/use-toast';
 
 export const useRecipes = (userId: string) => {
@@ -36,17 +36,12 @@ export const useRecipes = (userId: string) => {
         health_benefits: recipe.health_benefits ? 
           (typeof recipe.health_benefits === 'string' 
             ? JSON.parse(recipe.health_benefits) 
-            : recipe.health_benefits) as HealthBenefit[]
+            : recipe.health_benefits)
           : undefined,
         cooking_steps: recipe.cooking_steps ? 
           (typeof recipe.cooking_steps === 'string'
             ? JSON.parse(recipe.cooking_steps)
-            : recipe.cooking_steps) as { 
-              step: number; 
-              description: string; 
-              duration?: number; 
-              tips?: string; 
-            }[]
+            : recipe.cooking_steps)
           : []
       })));
     } catch (error) {
@@ -61,14 +56,9 @@ export const useRecipes = (userId: string) => {
     }
   };
 
-  const clearRecipes = () => {
-    setRecipes([]);
-    setLoading(false);
-  };
-
   useEffect(() => {
     fetchRecipes();
   }, [userId]);
 
-  return { recipes, loading, clearRecipes };
+  return { recipes, loading };
 };

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Recipe, ChildProfile } from '../../types';
-import { useRecipes } from '../../recipe/hooks/useRecipes';
 import { usePlannedRecipes } from './usePlannedRecipes';
 import { useRecipePlanning } from './useRecipePlanning';
 import { format } from 'date-fns';
@@ -8,6 +7,7 @@ import { format } from 'date-fns';
 export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[]) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  
   const { recipes, loading: recipesLoading } = useRecipes(userId);
   const { 
     plannedRecipes, 
@@ -15,6 +15,7 @@ export const useMealPlanner = (userId: string, selectedChildren: ChildProfile[])
     updateLocalPlannedRecipes,
     removePlannedRecipeFromState
   } = usePlannedRecipes(userId, selectedDate, viewMode, selectedChildren);
+  
   const { planRecipe: planSingleRecipe, saving: planningRecipe } = useRecipePlanning();
 
   const loading = recipesLoading || plannedRecipesLoading;
