@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -12,25 +12,25 @@ import { ProgressSteps } from './sections/ProgressSteps';
 import { useRecipeGeneration } from './recipe/useRecipeGeneration';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useNavigate } from 'react-router-dom';
-import { MultiChildSelector } from './recipe/MultiChildSelector';
 import { ChildProfile } from './types';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { QuickPlanDialog } from './recipe/QuickPlanDialog';
 
 interface RecipeGeneratorProps {
   onSectionChange: (section: string) => void;
 }
 
 export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
-  const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
+  const [showQuickPlanDialog, setShowQuickPlanDialog] = useState(false);
   const session = useSession();
   const navigate = useNavigate();
   const { generateRecipes, loading, error } = useRecipeGeneration();
 
-  const handleQuickPlan = async () => {
+  const handleQuickPlan = async (selectedChildren: ChildProfile[]) => {
     if (selectedChildren.length === 0) {
       toast.error("Veuillez sélectionner au moins un enfant");
       return;
@@ -68,7 +68,7 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
             </p>
           </div>
           <Button 
-            onClick={handleQuickPlan}
+            onClick={() => setShowQuickPlanDialog(true)}
             size="lg"
             className="whitespace-nowrap group hover:scale-105 transition-all duration-300 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
           >
@@ -76,13 +76,6 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
             Planning express
           </Button>
         </div>
-      </Card>
-
-      <Card className="p-4">
-        <MultiChildSelector 
-          onSelectChildren={setSelectedChildren}
-          selectedChildren={selectedChildren}
-        />
       </Card>
 
       <ProgressSteps onSectionChange={onSectionChange} />
@@ -140,6 +133,12 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
           </div>
         </div>
       </Card>
+
+      <QuickPlanDialog
+        open={showQuickPlanDialog}
+        onOpenChange={setShowQuickPlanDialog}
+        onConfirm={handleQuickPlan}
+      />
     </div>
   );
 };
