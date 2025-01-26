@@ -6,7 +6,7 @@ import { PriorityTasks } from "./PriorityTasks";
 import { WeeklyOverview } from "./WeeklyOverview";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Zap } from "lucide-react";
-import { toast } from "sonner";
+import { useQuickPlan } from "../meal-planner/hooks/useQuickPlan";
 
 interface WelcomeSectionProps {
   userId: string;
@@ -15,6 +15,7 @@ interface WelcomeSectionProps {
 
 export const WelcomeSection = ({ userId, onSectionChange }: WelcomeSectionProps) => {
   const [username, setUsername] = useState<string>("");
+  const { generateQuickPlan, loading } = useQuickPlan(userId);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -25,18 +26,6 @@ export const WelcomeSection = ({ userId, onSectionChange }: WelcomeSectionProps)
     };
     fetchUsername();
   }, []);
-
-  const handleQuickPlan = async () => {
-    toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 2000)),
-      {
-        loading: 'Génération de votre planning express...',
-        success: 'Votre planning express est prêt !',
-        error: 'Une erreur est survenue',
-      }
-    );
-    onSectionChange('planner');
-  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -51,10 +40,15 @@ export const WelcomeSection = ({ userId, onSectionChange }: WelcomeSectionProps)
             </p>
           </div>
           <Button 
-            onClick={handleQuickPlan}
+            onClick={generateQuickPlan}
+            disabled={loading}
             className="whitespace-nowrap group hover:scale-105 transition-all duration-300"
           >
-            <Zap className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
+            {loading ? (
+              <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Zap className="w-4 h-4 mr-2 group-hover:text-yellow-400" />
+            )}
             Planning express
           </Button>
         </div>

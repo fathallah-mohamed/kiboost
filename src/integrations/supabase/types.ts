@@ -134,30 +134,39 @@ export type Database = {
       }
       meal_plans: {
         Row: {
+          auto_generation_feedback: string | null
+          auto_generation_rating: number | null
           child_id: string | null
           created_at: string
           date: string
           id: string
+          is_auto_generated: boolean | null
           meal_time: string
           profile_id: string
           recipe_id: string
           updated_at: string
         }
         Insert: {
+          auto_generation_feedback?: string | null
+          auto_generation_rating?: number | null
           child_id?: string | null
           created_at?: string
           date: string
           id?: string
+          is_auto_generated?: boolean | null
           meal_time?: string
           profile_id: string
           recipe_id: string
           updated_at?: string
         }
         Update: {
+          auto_generation_feedback?: string | null
+          auto_generation_rating?: number | null
           child_id?: string | null
           created_at?: string
           date?: string
           id?: string
+          is_auto_generated?: boolean | null
           meal_time?: string
           profile_id?: string
           recipe_id?: string
@@ -497,6 +506,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_meal_plan_requirements: {
+        Args: {
+          profile_id: string
+        }
+        Returns: {
+          can_generate: boolean
+          message: string
+        }[]
+      }
       validate_health_benefit_categories: {
         Args: {
           benefits: Json
