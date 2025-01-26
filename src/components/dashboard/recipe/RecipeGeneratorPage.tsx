@@ -73,7 +73,7 @@ export const RecipeGeneratorPage = () => {
     <div className="container mx-auto px-4 py-8 space-y-6">
       {loading && <LoadingOverlay />}
       
-      <BackToDashboard onBack={() => navigate('/dashboard')} />
+      <BackToDashboard />
       
       <div className="space-y-6">
         <div className="flex justify-between items-center">
