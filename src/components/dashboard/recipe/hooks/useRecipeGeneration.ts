@@ -73,37 +73,49 @@ export const useRecipeGeneration = () => {
 
           console.log('Generated image data for', recipe.name, ':', imageData);
           
-          recipesWithImages.push({
-            ...recipe,
-            image_url: imageData.imageUrl
-          });
+          // Sauvegarder la recette avec l'image générée
+          const { data: savedRecipe, error: saveError } = await supabase
+            .from('recipes')
+            .insert({
+              ...recipe,
+              profile_id: session.user.id,
+              is_generated: true,
+              image_url: imageData.imageUrl
+            })
+            .select('*')
+            .single();
+
+          if (saveError) {
+            console.error('Error saving recipe:', saveError);
+            toast.error(`Erreur lors de la sauvegarde de la recette ${recipe.name}`);
+            continue;
+          }
+
+          recipesWithImages.push(savedRecipe);
+          
         } catch (imageError) {
           console.error('Error generating image for recipe:', recipe.name, imageError);
-          recipesWithImages.push({
-            ...recipe,
-            image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
-          });
+          const { data: savedRecipe, error: saveError } = await supabase
+            .from('recipes')
+            .insert({
+              ...recipe,
+              profile_id: session.user.id,
+              is_generated: true,
+              image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
+            })
+            .select('*')
+            .single();
+
+          if (saveError) {
+            console.error('Error saving recipe:', saveError);
+            continue;
+          }
+
+          recipesWithImages.push(savedRecipe);
         }
       }
 
       console.log("Final recipes with images:", recipesWithImages);
-
-      // Sauvegarder les recettes générées dans la base de données
-      for (const recipe of recipesWithImages) {
-        const { error: saveError } = await supabase
-          .from('recipes')
-          .insert({
-            ...recipe,
-            profile_id: session.user.id,
-            is_generated: true
-          });
-
-        if (saveError) {
-          console.error('Error saving recipe:', saveError);
-          toast.error(`Erreur lors de la sauvegarde de la recette ${recipe.name}`);
-        }
-      }
-
       return recipesWithImages;
 
     } catch (err) {
