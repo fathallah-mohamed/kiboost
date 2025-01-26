@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Recipe, ChildProfile } from "../types";
 import { StepNavigation } from '../navigation/StepNavigation';
-import { useRecipeFilters } from './hooks/useRecipeFilters';
 import { useInView } from 'react-intersection-observer';
 import { LoadingOverlay } from './LoadingOverlay';
 import { GenerationSection } from './sections/GenerationSection';
@@ -13,6 +12,7 @@ import { ResultsSection } from './sections/ResultsSection';
 import { useRecipeQuery } from './hooks/useRecipeQuery';
 import { useRecipeGeneration } from './hooks/useRecipeGeneration';
 import { useRecipeSaving } from './hooks/useRecipeSaving';
+import { Button } from '@/components/ui/button';
 
 export const RecipeGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
@@ -26,11 +26,10 @@ export const RecipeGeneratorPage = () => {
   const { generateRecipes } = useRecipeGeneration();
   const { saveRecipe } = useRecipeSaving();
 
-  // Only fetch recipes if we have a session
-  const { data: recipes = [] } = useRecipeQuery(
+  const recipes = useRecipeQuery(
     session?.user?.id,
     filters.getFilters()
-  );
+  ).data || [];
 
   const handleGenerateRecipes = async () => {
     if (!selectedChildren.length) {
@@ -76,6 +75,21 @@ export const RecipeGeneratorPage = () => {
       <BackToDashboard onBack={() => navigate('/dashboard')} />
       
       <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Générateur de Recettes</h2>
+            <p className="text-muted-foreground mt-2">
+              Générez des recettes personnalisées adaptées aux besoins de vos enfants
+            </p>
+          </div>
+          <Button 
+            onClick={() => navigate('/dashboard/planner')}
+            className="bg-primary hover:bg-primary/90"
+          >
+            Commencer à planifier
+          </Button>
+        </div>
+
         <GenerationSection
           loading={loading}
           saving={false}
