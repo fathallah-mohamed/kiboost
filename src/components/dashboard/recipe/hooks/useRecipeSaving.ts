@@ -32,8 +32,11 @@ export const useRecipeSaving = () => {
         ? JSON.parse(recipe.health_benefits)
         : recipe.health_benefits;
 
+      // Create a new object without the id field
+      const { id, ...recipeWithoutId } = recipe;
+
       const recipeToSave = {
-        ...recipe,
+        ...recipeWithoutId,
         profile_id: session.user.id,
         ingredients: ingredients,
         instructions: Array.isArray(recipe.instructions) 
