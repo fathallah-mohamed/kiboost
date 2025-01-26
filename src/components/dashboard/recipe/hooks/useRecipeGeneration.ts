@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
-import { GenerationStep } from "../../types/steps";
+import { GenerationStep, StepStatus } from "../../types/steps";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSession } from "@supabase/auth-helpers-react";
