@@ -14,7 +14,9 @@ serve(async (req) => {
   try {
     const { recipeName, ingredients } = await req.json();
     
-    const prompt = `A professional food photography shot of ${recipeName}. The dish contains ${ingredients.join(', ')}. The photo should be well-lit, appetizing, and styled like a professional cookbook photo. Top-down view on a clean background.`;
+    const prompt = `A professional food photography shot of ${recipeName}. The dish contains ${ingredients}. The photo should be well-lit, appetizing, and styled like a professional cookbook photo. Top-down view on a clean background.`;
+
+    console.log('Generating image with prompt:', prompt);
 
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -34,8 +36,11 @@ serve(async (req) => {
     const data = await response.json();
     
     if (data.error) {
+      console.error('OpenAI API error:', data.error);
       throw new Error(data.error.message);
     }
+
+    console.log('Generated image URL:', data.data[0].url);
 
     return new Response(
       JSON.stringify({ imageUrl: data.data[0].url }),

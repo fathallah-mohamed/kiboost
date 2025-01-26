@@ -48,12 +48,17 @@ export const useRecipeGeneration = () => {
               {
                 body: {
                   recipeName: recipe.name,
-                  ingredients: recipe.ingredients.map(ing => ing.item)
+                  ingredients: recipe.ingredients.map(ing => ing.item).join(', ')
                 }
               }
             );
 
-            if (imageError) throw imageError;
+            if (imageError) {
+              console.error('Error generating image:', imageError);
+              return recipe;
+            }
+
+            console.log('Generated image data:', imageData);
             
             return {
               ...recipe,
@@ -61,11 +66,12 @@ export const useRecipeGeneration = () => {
             };
           } catch (imageError) {
             console.error('Error generating image for recipe:', imageError);
-            return recipe; // Retourner la recette sans image personnalisée
+            return recipe;
           }
         })
       );
 
+      console.log("Recipes with images:", recipesWithImages);
       return recipesWithImages;
 
     } catch (err) {
