@@ -92,7 +92,7 @@ export const DashboardNavigation = ({
   ];
 
   const NavigationContent = () => (
-    <div className="flex gap-2 overflow-x-auto">
+    <div className="flex gap-2 overflow-x-auto pb-2">
       {quickActions.map((action, index) => (
         <Button
           key={index}

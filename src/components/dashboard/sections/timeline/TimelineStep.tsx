@@ -10,7 +10,7 @@ const stepIconVariants = cva(
     variants: {
       status: {
         completed: "bg-green-100 text-green-600",
-        in_progress: "bg-orange-100 text-orange-600",
+        in_progress: "bg-accent/20 text-accent",
         not_started: "bg-gray-100 text-gray-400",
       },
     },
@@ -67,13 +67,13 @@ export const TimelineStep = ({
 
   const statusColors = {
     completed: "text-green-600",
-    in_progress: "text-orange-600",
+    in_progress: "text-accent",
     not_started: "text-gray-400",
   };
 
   const buttonVariants = {
     completed: "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white",
-    in_progress: "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white",
+    in_progress: "bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 text-white",
     not_started: "bg-gray-100 text-gray-700 hover:bg-gray-200",
   };
 
