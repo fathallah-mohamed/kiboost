@@ -2,12 +2,19 @@ import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSession } from "@supabase/auth-helpers-react";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const session = useSession();
 
   const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
+    if (!session?.user?.id) {
+      toast.error("Vous devez être connecté pour générer des recettes");
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -87,7 +94,7 @@ export const useRecipeGeneration = () => {
           .from('recipes')
           .insert({
             ...recipe,
-            profile_id: child.profile_id,
+            profile_id: session.user.id,
             is_generated: true
           });
 
