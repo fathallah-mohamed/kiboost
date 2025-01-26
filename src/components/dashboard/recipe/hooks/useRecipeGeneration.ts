@@ -39,39 +39,64 @@ export const useRecipeGeneration = () => {
         throw new Error("Format de réponse invalide");
       }
 
-      // Générer une image pour chaque recette
-      const recipesWithImages = await Promise.all(
-        response.recipes.map(async (recipe: Recipe) => {
-          try {
-            const { data: imageData, error: imageError } = await supabase.functions.invoke(
-              'generate-recipe-image',
-              {
-                body: {
-                  recipeName: recipe.name,
-                  ingredients: recipe.ingredients.map(ing => ing.item).join(', ')
-                }
+      // Générer une image pour chaque recette de manière séquentielle
+      const recipesWithImages = [];
+      for (const recipe of response.recipes) {
+        try {
+          console.log("Generating image for recipe:", recipe.name);
+          
+          const { data: imageData, error: imageError } = await supabase.functions.invoke(
+            'generate-recipe-image',
+            {
+              body: {
+                recipeName: recipe.name,
+                ingredients: recipe.ingredients.map(ing => ing.item).join(', ')
               }
-            );
-
-            if (imageError) {
-              console.error('Error generating image:', imageError);
-              return recipe;
             }
+          );
 
-            console.log('Generated image data:', imageData);
-            
-            return {
+          if (imageError) {
+            console.error('Error generating image:', imageError);
+            recipesWithImages.push({
               ...recipe,
-              image_url: imageData.imageUrl
-            };
-          } catch (imageError) {
-            console.error('Error generating image for recipe:', imageError);
-            return recipe;
+              image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
+            });
+            continue;
           }
-        })
-      );
 
-      console.log("Recipes with images:", recipesWithImages);
+          console.log('Generated image data for', recipe.name, ':', imageData);
+          
+          recipesWithImages.push({
+            ...recipe,
+            image_url: imageData.imageUrl
+          });
+        } catch (imageError) {
+          console.error('Error generating image for recipe:', recipe.name, imageError);
+          recipesWithImages.push({
+            ...recipe,
+            image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
+          });
+        }
+      }
+
+      console.log("Final recipes with images:", recipesWithImages);
+
+      // Sauvegarder les recettes générées dans la base de données
+      for (const recipe of recipesWithImages) {
+        const { error: saveError } = await supabase
+          .from('recipes')
+          .insert({
+            ...recipe,
+            profile_id: child.profile_id,
+            is_generated: true
+          });
+
+        if (saveError) {
+          console.error('Error saving recipe:', saveError);
+          toast.error(`Erreur lors de la sauvegarde de la recette ${recipe.name}`);
+        }
+      }
+
       return recipesWithImages;
 
     } catch (err) {
