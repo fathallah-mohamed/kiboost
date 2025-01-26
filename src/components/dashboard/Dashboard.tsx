@@ -40,11 +40,14 @@ export const Dashboard = ({ session }: DashboardProps) => {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader handleLogout={handleLogout} />
-      <DashboardContent 
-        session={session} 
-        activeSection={location.pathname.split('/')[2] || 'overview'} 
-        setActiveSection={(section) => navigate(`/dashboard/${section}`)}
-      />
+      {location.pathname === '/dashboard' || location.pathname === '/dashboard/overview' ? (
+        <div className="container mx-auto px-4 py-8">
+          <h2 className="text-2xl font-bold mb-6">Bienvenue sur Kiboost</h2>
+          <CategoriesGrid onSectionChange={(section) => navigate(`/dashboard/${section}`)} />
+        </div>
+      ) : (
+        <Outlet />
+      )}
     </div>
   );
 };
