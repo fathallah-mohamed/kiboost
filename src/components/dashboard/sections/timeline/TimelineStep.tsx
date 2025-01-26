@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
 import { cva } from "class-variance-authority";
+import { StepStatus } from "../../types/steps";
 
 const stepIconVariants = cva(
   "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
@@ -9,12 +10,12 @@ const stepIconVariants = cva(
     variants: {
       status: {
         completed: "bg-green-100 text-green-600",
-        current: "bg-orange-100 text-orange-600",
-        upcoming: "bg-gray-100 text-gray-400",
+        in_progress: "bg-orange-100 text-orange-600",
+        not_started: "bg-gray-100 text-gray-400",
       },
     },
     defaultVariants: {
-      status: "upcoming",
+      status: "not_started",
     },
   }
 );
@@ -25,23 +26,22 @@ const stepContentVariants = cva(
     variants: {
       status: {
         completed: "opacity-75",
-        current: "opacity-100",
-        upcoming: "opacity-50",
+        in_progress: "opacity-100",
+        not_started: "opacity-50",
       },
     },
     defaultVariants: {
-      status: "upcoming",
+      status: "not_started",
     },
   }
 );
-
-export type StepStatus = "completed" | "current" | "upcoming";
 
 interface TimelineStepProps {
   icon: LucideIcon;
   title: string;
   description: string;
   status: StepStatus;
+  message?: string;
   actionLabel: string;
   onAction: () => void;
   isLast?: boolean;
@@ -53,6 +53,7 @@ export const TimelineStep = ({
   title,
   description,
   status,
+  message,
   actionLabel,
   onAction,
   isLast,
@@ -60,19 +61,18 @@ export const TimelineStep = ({
 }: TimelineStepProps) => {
   const statusLabels = {
     completed: "✓ Terminé",
-    current: "⚠ En cours",
-    upcoming: "○ Non commencé",
+    in_progress: "⚠ En cours",
+    not_started: "○ Non commencé",
   };
 
   const statusColors = {
     completed: "text-green-600",
-    current: "text-orange-600",
-    upcoming: "text-gray-400",
+    in_progress: "text-orange-600",
+    not_started: "text-gray-400",
   };
 
   return (
     <div className="relative flex">
-      {/* Vertical line */}
       {!isLast && (
         <div className="absolute left-5 top-10 bottom-0 w-0.5 -ml-px">
           <div className="h-full">
@@ -81,7 +81,7 @@ export const TimelineStep = ({
                 "h-full w-full transition-all duration-500",
                 status === "completed"
                   ? "bg-green-500"
-                  : status === "current"
+                  : status === "in_progress"
                   ? "bg-gradient-to-b from-green-500 to-gray-200"
                   : "bg-gray-200"
               )}
@@ -90,12 +90,10 @@ export const TimelineStep = ({
         </div>
       )}
 
-      {/* Icon */}
       <div className={stepIconVariants({ status })}>
         <Icon className="w-5 h-5" />
       </div>
 
-      {/* Content */}
       <div className={cn(stepContentVariants({ status }), "mb-8 ml-6")}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -104,6 +102,9 @@ export const TimelineStep = ({
             <span className={cn("text-sm mt-2 block", statusColors[status])}>
               {statusLabels[status]}
             </span>
+            {message && (
+              <p className="text-sm mt-1 text-muted-foreground">{message}</p>
+            )}
           </div>
           <Button
             onClick={onAction}

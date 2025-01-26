@@ -1,52 +1,52 @@
 import { useState } from "react";
-import { Recipe, ChildProfile, RecipeFilters } from "../../types";
+import { Recipe, RecipeFilters, ChildProfile } from "../../types";
+import { GenerationStep } from "../../types/steps";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useRecipeSaving } from "./useRecipeSaving";
-
-const normalizeString = (str: string) => {
-  return str.toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-};
-
-const areRecipesSimilar = (recipe1: Recipe, recipe2: Recipe) => {
-  const name1 = normalizeString(recipe1.name);
-  const name2 = normalizeString(recipe2.name);
-  return name1 === name2 || 
-    (name1.includes(name2) && name2.length > 5) || 
-    (name2.includes(name1) && name1.length > 5);
-};
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const session = useSession();
   const { saveRecipe } = useRecipeSaving();
+  const [stepState, setStepState] = useState<GenerationStep>({
+    status: "not_started",
+    hasSelectedChild: false,
+    hasGeneratedRecipes: false,
+    hasInteractedWithRecipes: false,
+  });
 
-  const checkExistingRecipe = async (recipeName: string): Promise<boolean> => {
-    if (!session?.user?.id) return false;
-
-    const { data: existingRecipes } = await supabase
-      .from('recipes')
-      .select('name')
-      .eq('profile_id', session.user.id)
-      .eq('is_generated', true);
-
-    if (!existingRecipes) return false;
-
-    const normalizedNewName = normalizeString(recipeName);
-    return existingRecipes.some(recipe => 
-      normalizeString(recipe.name) === normalizedNewName
-    );
+  const updateStepState = (updates: Partial<GenerationStep>) => {
+    setStepState(prev => {
+      const newState = { ...prev, ...updates };
+      
+      // Determine the overall status based on conditions
+      let status: StepStatus = "not_started";
+      
+      if (newState.hasSelectedChild && newState.hasGeneratedRecipes) {
+        status = "in_progress";
+      }
+      
+      if (newState.hasSelectedChild && newState.hasGeneratedRecipes && newState.hasInteractedWithRecipes) {
+        status = "completed";
+      }
+      
+      return { ...newState, status };
+    });
   };
 
   const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     try {
+      if (!child) {
+        toast.error("Veuillez sélectionner au moins un enfant");
+        return [];
+      }
+
       setLoading(true);
       setError(null);
+      updateStepState({ hasSelectedChild: true });
 
       console.log("Generating recipes for child:", child);
       console.log("Using filters:", filters);
@@ -75,33 +75,16 @@ export const useRecipeGeneration = () => {
         throw new Error("Format de réponse invalide");
       }
 
-      // Filter out duplicates from the generated recipes
-      const uniqueRecipes = response.recipes.reduce((acc: Recipe[], recipe: Recipe) => {
-        const isDuplicate = acc.some(existingRecipe => 
-          areRecipesSimilar(existingRecipe, recipe)
-        );
-        if (!isDuplicate) {
-          acc.push(recipe);
-        }
-        return acc;
-      }, []);
-
-      // Save each unique generated recipe to the database
+      // Save each generated recipe
       const savedRecipes = await Promise.all(
-        uniqueRecipes.map(async (recipe: Recipe) => {
-          const exists = await checkExistingRecipe(recipe.name);
-          if (exists) {
-            console.log(`Recipe "${recipe.name}" already exists, skipping...`);
-            return null;
-          }
-
-          const recipeWithMetadata = {
-            ...recipe,
-            is_generated: true,
-            profile_id: session?.user?.id
-          };
-          
+        response.recipes.map(async (recipe: Recipe) => {
           try {
+            const recipeWithMetadata = {
+              ...recipe,
+              is_generated: true,
+              profile_id: session?.user?.id
+            };
+            
             await saveRecipe(recipeWithMetadata);
             return recipeWithMetadata;
           } catch (error) {
@@ -112,11 +95,20 @@ export const useRecipeGeneration = () => {
         })
       );
 
-      // Filter out any recipes that failed to save
       const successfullySavedRecipes = savedRecipes.filter((recipe): recipe is Recipe => recipe !== null);
 
       if (successfullySavedRecipes.length > 0) {
         toast.success(`${successfullySavedRecipes.length} recettes générées et sauvegardées`);
+        updateStepState({ 
+          hasGeneratedRecipes: true,
+          message: `${successfullySavedRecipes.length} recettes adaptées à vos enfants ont été générées !`
+        });
+      } else {
+        toast.error("Aucune recette n'a pu être générée avec les paramètres actuels");
+        updateStepState({
+          hasGeneratedRecipes: false,
+          message: "Aucune recette ne correspond à vos critères. Essayez d'élargir vos filtres."
+        });
       }
 
       return successfullySavedRecipes;
@@ -132,9 +124,18 @@ export const useRecipeGeneration = () => {
     }
   };
 
+  const markRecipeInteraction = () => {
+    updateStepState({ 
+      hasInteractedWithRecipes: true,
+      message: "Étape terminée : Recettes générées avec succès !"
+    });
+  };
+
   return {
     generateRecipes,
+    markRecipeInteraction,
     loading,
-    error
+    error,
+    stepState
   };
 };
