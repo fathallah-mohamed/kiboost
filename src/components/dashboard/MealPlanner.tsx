@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { AvailableRecipes } from './meal-planner/AvailableRecipes';
 import { WeeklyCalendar } from './meal-planner/WeeklyCalendar';
@@ -12,6 +12,8 @@ import { StepNavigation } from './navigation/StepNavigation';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { Timeline } from '../dashboard/sections/timeline/Timeline';
+import { startOfToday, isAfter, startOfDay, format, addDays, startOfWeek } from 'date-fns';
 
 interface MealPlannerProps {
   userId: string;
@@ -20,6 +22,7 @@ interface MealPlannerProps {
 
 export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
+  const [currentStep, setCurrentStep] = useState(3);
   const navigate = useNavigate();
   
   const {
@@ -45,6 +48,46 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     await validatePlanning();
     navigate('/dashboard/shopping');
   };
+
+  // Vérifie si tous les jours futurs de la semaine sont planifiés
+  const checkWeekPlanning = () => {
+    if (!selectedChildren.length) return false;
+    if (Object.keys(plannedRecipes).length === 0) return false;
+
+    const today = startOfToday();
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const daysToCheck = [];
+
+    // Créer un tableau des jours à vérifier (jours futurs de la semaine)
+    for (let i = 0; i < 7; i++) {
+      const currentDay = addDays(weekStart, i);
+      if (isAfter(startOfDay(currentDay), today) || format(currentDay, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) {
+        daysToCheck.push(format(currentDay, 'yyyy-MM-dd'));
+      }
+    }
+
+    // Vérifie si chaque jour futur a une recette planifiée pour chaque enfant
+    return daysToCheck.every(date => {
+      const dayRecipes = plannedRecipes[date] || {};
+      return selectedChildren.every(child => 
+        Object.keys(dayRecipes).includes(child.id)
+      );
+    });
+  };
+
+  // Met à jour le statut de l'étape en fonction de la planification
+  useEffect(() => {
+    const isFullyPlanned = checkWeekPlanning();
+    const hasAnyPlanning = Object.keys(plannedRecipes).length > 0;
+    
+    if (isFullyPlanned) {
+      setCurrentStep(4); // Étape terminée
+    } else if (hasAnyPlanning) {
+      setCurrentStep(3); // En cours
+    } else {
+      setCurrentStep(3); // Pas commencé
+    }
+  }, [plannedRecipes, selectedChildren]);
 
   return (
     <div className="space-y-6">
@@ -75,6 +118,8 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
           </AlertDescription>
         </Alert>
       )}
+
+      <Timeline currentStep={currentStep} onSectionChange={onSectionChange} />
 
       <Card className="p-4">
         <MultiChildSelector 
