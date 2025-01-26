@@ -34,7 +34,7 @@ export const ShoppingList = ({ userId, onSectionChange }: ShoppingListProps) => 
 
   return (
     <div className="space-y-6">
-      <BackToDashboard onBack={() => onSectionChange?.('overview')} />
+      <BackToDashboard />
       
       <Card className="p-6">
         <div className="space-y-4">

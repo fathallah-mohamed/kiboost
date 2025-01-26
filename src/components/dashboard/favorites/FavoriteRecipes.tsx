@@ -5,6 +5,7 @@ import { RecipeCard } from '../recipe/RecipeCard';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useFavorites } from '../recipe/hooks/useFavorites';
+import { BackToDashboard } from '../BackToDashboard';
 
 interface FavoriteRecipesProps {
   onSectionChange: (section: string) => void;
@@ -99,6 +100,8 @@ export const FavoriteRecipes = ({ onSectionChange }: FavoriteRecipesProps) => {
 
   return (
     <div className="space-y-6">
+      <BackToDashboard />
+      
       <h2 className="text-2xl font-bold">Mes recettes favorites</h2>
       {recipes.length === 0 ? (
         <div className="text-center py-12">

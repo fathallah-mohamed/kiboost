@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ChildProfile } from './types';
 import { AddChildForm } from './children/AddChildForm';
 import { ChildCard } from './children/ChildCard';
+import { BackToDashboard } from './BackToDashboard';
 
 interface ChildrenProfilesProps {
   userId: string;
@@ -80,6 +81,8 @@ export const ChildrenProfiles = ({ userId, onSelectChild }: ChildrenProfilesProp
 
   return (
     <div className="space-y-6">
+      <BackToDashboard />
+      
       <h2 className="text-2xl font-bold">Profils des enfants</h2>
       <AddChildForm userId={userId} onChildAdded={fetchProfiles} />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

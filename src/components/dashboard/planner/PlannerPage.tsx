@@ -6,7 +6,6 @@ import { ChildProfile } from '../types';
 import { useMealPlanner } from '../meal-planner/hooks/useMealPlanner';
 import { PlannerCalendar } from './PlannerCalendar';
 import { PlannerRecipes } from './PlannerRecipes';
-import { useNavigate } from 'react-router-dom';
 
 interface PlannerPageProps {
   userId: string;
@@ -15,7 +14,6 @@ interface PlannerPageProps {
 
 export const PlannerPage = ({ userId, onSectionChange }: PlannerPageProps) => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
-  const navigate = useNavigate();
   
   const {
     selectedDate,
@@ -37,7 +35,7 @@ export const PlannerPage = ({ userId, onSectionChange }: PlannerPageProps) => {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
-      <BackToDashboard onBack={() => navigate('/dashboard')} />
+      <BackToDashboard />
       
       <div className="space-y-6">
         <div>
