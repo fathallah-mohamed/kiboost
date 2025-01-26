@@ -83,11 +83,15 @@ export const DashboardNavigation = ({
           onClick={() => handleNavigation(action.path, action.label)}
           className={`whitespace-nowrap group hover:scale-105 transition-all duration-300 ${
             activeSection === action.label.toLowerCase()
-            ? 'bg-gradient-to-r from-primary to-accent text-white'
-            : 'bg-gradient-to-r from-secondary/50 to-accent/50 hover:from-primary/80 hover:to-accent/80'
+            ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md'
+            : 'bg-white text-foreground hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white shadow-sm'
           }`}
         >
-          <action.icon className="w-4 h-4 mr-2 group-hover:text-white transition-colors" />
+          <action.icon className={`w-4 h-4 mr-2 ${
+            activeSection === action.label.toLowerCase()
+            ? 'text-white'
+            : 'text-primary group-hover:text-white'
+          }`} />
           <span>{action.label}</span>
         </Button>
       ))}
@@ -101,9 +105,8 @@ export const DashboardNavigation = ({
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button 
-              variant="outline" 
-              size="lg" 
-              className="w-full flex items-center gap-2 justify-start hover:scale-105 transition-all duration-300"
+              className="w-full flex items-center gap-2 justify-start hover:scale-105 transition-all duration-300 bg-white text-foreground hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white shadow-sm"
+              size="lg"
             >
               <Menu className="h-6 w-6" />
               <span>Menu</span>
@@ -117,11 +120,15 @@ export const DashboardNavigation = ({
                   onClick={() => handleNavigation(action.path, action.label)}
                   className={`w-full justify-start gap-2 group hover:scale-105 transition-all duration-300 ${
                     activeSection === action.label.toLowerCase()
-                    ? 'bg-gradient-to-r from-primary to-accent text-white'
-                    : 'bg-gradient-to-r from-secondary/50 to-accent/50 hover:from-primary/80 hover:to-accent/80'
+                    ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md'
+                    : 'bg-white text-foreground hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white shadow-sm'
                   }`}
                 >
-                  <action.icon className="h-4 w-4 group-hover:text-white transition-colors" />
+                  <action.icon className={`h-4 w-4 ${
+                    activeSection === action.label.toLowerCase()
+                    ? 'text-white'
+                    : 'text-primary group-hover:text-white'
+                  }`} />
                   <span>{action.label}</span>
                 </Button>
               ))}
