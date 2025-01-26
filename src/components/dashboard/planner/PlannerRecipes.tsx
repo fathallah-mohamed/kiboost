@@ -4,7 +4,7 @@ import { Recipe } from '../types';
 interface PlannerRecipesProps {
   recipes: Recipe[];
   loading: boolean;
-  planningRecipe: string | null;
+  planningRecipe: boolean | null;
   onPlanRecipe: (recipe: Recipe) => void;
 }
 
