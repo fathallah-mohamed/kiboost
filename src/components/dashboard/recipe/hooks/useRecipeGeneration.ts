@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useSession } from "@supabase/auth-helpers-react";
+import { toast } from "sonner";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -46,18 +46,20 @@ export const useRecipeGeneration = () => {
         throw new Error("Format de réponse invalide");
       }
 
-      // Générer une image pour chaque recette de manière séquentielle
       const savedRecipes = [];
+      
       for (const recipe of response.recipes) {
         try {
           console.log("Generating image for recipe:", recipe.name);
+          
+          const ingredients = recipe.ingredients.map(ing => ing.item).join(', ');
           
           const { data: imageData, error: imageError } = await supabase.functions.invoke(
             'generate-recipe-image',
             {
               body: {
                 recipeName: recipe.name,
-                ingredients: recipe.ingredients.map(ing => ing.item).join(', ')
+                ingredients: ingredients
               }
             }
           );
@@ -67,9 +69,14 @@ export const useRecipeGeneration = () => {
             throw imageError;
           }
 
-          console.log('Generated image data for', recipe.name, ':', imageData);
+          if (!imageData?.imageUrl) {
+            throw new Error('No image URL returned');
+          }
+
+          console.log('Generated image URL:', imageData.imageUrl);
+
+          const timestamp = new Date().toISOString();
           
-          // Sauvegarder la recette avec l'image générée
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
             .insert({
@@ -77,23 +84,25 @@ export const useRecipeGeneration = () => {
               profile_id: session.user.id,
               is_generated: true,
               image_url: imageData.imageUrl,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              created_at: timestamp,
+              updated_at: timestamp
             })
             .select('*')
             .single();
 
           if (saveError) {
             console.error('Error saving recipe:', saveError);
-            toast.error(`Erreur lors de la sauvegarde de la recette ${recipe.name}`);
-            continue;
+            throw saveError;
           }
 
+          console.log('Successfully saved recipe:', savedRecipe);
           savedRecipes.push(savedRecipe);
           
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
-          // En cas d'erreur, on essaie quand même de sauvegarder la recette avec une image par défaut
+          
+          // Try to save with default image if image generation fails
+          const timestamp = new Date().toISOString();
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
             .insert({
@@ -101,14 +110,14 @@ export const useRecipeGeneration = () => {
               profile_id: session.user.id,
               is_generated: true,
               image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              created_at: timestamp,
+              updated_at: timestamp
             })
             .select('*')
             .single();
 
           if (saveError) {
-            console.error('Error saving recipe:', saveError);
+            console.error('Error saving recipe with default image:', saveError);
             continue;
           }
 

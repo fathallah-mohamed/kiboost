@@ -14,14 +14,23 @@ serve(async (req) => {
   try {
     const { recipeName, ingredients } = await req.json();
     
+    if (!recipeName || !ingredients) {
+      throw new Error("Recipe name and ingredients are required");
+    }
+    
+    console.log('Generating image with prompt for recipe:', recipeName);
+
     const prompt = `A professional food photography shot of ${recipeName}. The dish contains ${ingredients}. The photo should be well-lit, appetizing, and styled like a professional cookbook photo. Top-down view on a clean background.`;
 
-    console.log('Generating image with prompt:', prompt);
+    const openAiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAiKey) {
+      throw new Error('OpenAI API key is missing');
+    }
 
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -33,14 +42,19 @@ serve(async (req) => {
       }),
     });
 
-    const data = await response.json();
-    
-    if (data.error) {
-      console.error('OpenAI API error:', data.error);
-      throw new Error(data.error.message);
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('OpenAI API error:', error);
+      throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
     }
 
-    console.log('Generated image URL:', data.data[0].url);
+    const data = await response.json();
+    
+    if (!data.data?.[0]?.url) {
+      throw new Error('No image URL in OpenAI response');
+    }
+
+    console.log('Successfully generated image URL:', data.data[0].url);
 
     return new Response(
       JSON.stringify({ imageUrl: data.data[0].url }),
@@ -49,8 +63,14 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error generating image:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      },
     );
   }
 });
