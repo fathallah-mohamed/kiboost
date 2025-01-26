@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WeeklyCalendar } from './meal-planner/WeeklyCalendar';
-import { useMealPlanner } from './meal-planner/useMealPlanner';
+import { useMealPlanner } from './meal-planner/hooks/useMealPlanner';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CalendarDays, CalendarRange } from "lucide-react";
 import { MultiChildSelector } from './recipe/MultiChildSelector';
