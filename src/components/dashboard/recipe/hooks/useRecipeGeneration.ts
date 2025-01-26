@@ -1,33 +1,16 @@
+import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useSession } from "@supabase/auth-helpers-react";
-import { useRecipeGenerationState } from "./useRecipeGenerationState";
-import { useRecipeSavingLogic } from "./useRecipeSavingLogic";
 
 export const useRecipeGeneration = () => {
-  const session = useSession();
-  const { 
-    loading, 
-    setLoading, 
-    error, 
-    setError, 
-    stepState, 
-    updateStepState 
-  } = useRecipeGenerationState();
-  
-  const { saveGeneratedRecipes } = useRecipeSavingLogic(session?.user?.id);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     try {
-      if (!child) {
-        toast.error("Veuillez sélectionner au moins un enfant");
-        return [];
-      }
-
       setLoading(true);
       setError(null);
-      updateStepState({ hasSelectedChild: true });
 
       console.log("Generating recipes for child:", child);
       console.log("Using filters:", filters);
@@ -56,23 +39,34 @@ export const useRecipeGeneration = () => {
         throw new Error("Format de réponse invalide");
       }
 
-      const successfullySavedRecipes = await saveGeneratedRecipes(response.recipes);
+      // Générer une image pour chaque recette
+      const recipesWithImages = await Promise.all(
+        response.recipes.map(async (recipe: Recipe) => {
+          try {
+            const { data: imageData, error: imageError } = await supabase.functions.invoke(
+              'generate-recipe-image',
+              {
+                body: {
+                  recipeName: recipe.name,
+                  ingredients: recipe.ingredients.map(ing => ing.item)
+                }
+              }
+            );
 
-      if (successfullySavedRecipes.length > 0) {
-        toast.success(`${successfullySavedRecipes.length} recettes générées et sauvegardées`);
-        updateStepState({ 
-          hasGeneratedRecipes: true,
-          message: `${successfullySavedRecipes.length} recettes adaptées à vos enfants ont été générées !`
-        });
-      } else {
-        toast.error("Aucune recette n'a pu être générée avec les paramètres actuels");
-        updateStepState({
-          hasGeneratedRecipes: false,
-          message: "Aucune recette ne correspond à vos critères. Essayez d'élargir vos filtres."
-        });
-      }
+            if (imageError) throw imageError;
+            
+            return {
+              ...recipe,
+              image_url: imageData.imageUrl
+            };
+          } catch (imageError) {
+            console.error('Error generating image for recipe:', imageError);
+            return recipe; // Retourner la recette sans image personnalisée
+          }
+        })
+      );
 
-      return successfullySavedRecipes;
+      return recipesWithImages;
 
     } catch (err) {
       console.error("Error generating recipes:", err);
@@ -85,18 +79,9 @@ export const useRecipeGeneration = () => {
     }
   };
 
-  const markRecipeInteraction = () => {
-    updateStepState({ 
-      hasInteractedWithRecipes: true,
-      message: "Étape terminée : Recettes générées avec succès !"
-    });
-  };
-
   return {
     generateRecipes,
-    markRecipeInteraction,
     loading,
-    error,
-    stepState
+    error
   };
 };
