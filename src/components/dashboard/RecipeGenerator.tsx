@@ -1,14 +1,10 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { 
-  ChefHat, Calendar, ShoppingCart, 
-  Sparkles, AlertCircle, Info
-} from 'lucide-react';
+import { Sparkles, AlertCircle, Info } from 'lucide-react';
 import { BackToDashboard } from './BackToDashboard';
 import { toast } from 'sonner';
-import { ProgressSteps } from './sections/ProgressSteps';
+import { Timeline } from './sections/timeline/Timeline';
 import { useRecipeGeneration } from './recipe/useRecipeGeneration';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useNavigate } from 'react-router-dom';
@@ -78,7 +74,7 @@ export const RecipeGenerator = ({ onSectionChange }: RecipeGeneratorProps) => {
         </div>
       </Card>
 
-      <ProgressSteps onSectionChange={onSectionChange} />
+      <Timeline currentStep={1} onSectionChange={onSectionChange} />
 
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2">
