@@ -32,8 +32,8 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     setViewMode
   } = useMealPlanner(userId, selectedChildren);
 
-  const handleRemoveRecipe = (date: Date, childId: string) => {
-    removeRecipe(format(date, 'yyyy-MM-dd'), childId);
+  const handleRemoveRecipe = (date: string, childId: string) => {
+    removeRecipe(date, childId);
   };
 
   return (
