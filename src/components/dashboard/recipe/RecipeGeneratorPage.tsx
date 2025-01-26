@@ -26,8 +26,11 @@ export const RecipeGeneratorPage = () => {
   const { generateRecipes } = useRecipeGeneration();
   const { saveRecipe } = useRecipeSaving();
 
-  // Fetch existing generated recipes
-  const { data: recipes = [] } = useRecipeQuery(session?.user?.id, filters.getFilters());
+  // Only fetch recipes if we have a session
+  const { data: recipes = [] } = useRecipeQuery(
+    session?.user?.id,
+    filters.getFilters()
+  );
 
   const handleGenerateRecipes = async () => {
     if (!selectedChildren.length) {

@@ -24,6 +24,9 @@ export const useRecipeQuery = (userId: string | undefined, filters: RecipeFilter
     queryFn: async () => {
       if (!userId) return [];
       
+      console.log('Fetching recipes for user:', userId);
+      console.log('Using filters:', filters);
+      
       let query = supabase
         .from('recipes')
         .select('*')
@@ -49,6 +52,8 @@ export const useRecipeQuery = (userId: string | undefined, filters: RecipeFilter
         throw error;
       }
 
+      console.log('Raw recipes data:', data);
+
       const parsedRecipes = data.map(recipe => ({
         ...recipe,
         meal_type: recipe.meal_type as MealType,
@@ -71,10 +76,14 @@ export const useRecipeQuery = (userId: string | undefined, filters: RecipeFilter
           : recipe.cooking_steps || []
       })) as Recipe[];
 
+      console.log('Parsed recipes:', parsedRecipes);
       return removeDuplicateRecipes(parsedRecipes);
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     gcTime: 1000 * 60 * 15, // Keep unused data for 15 minutes
+    retry: false, // Disable retries to prevent unnecessary state updates
+    refetchOnWindowFocus: false, // Disable automatic refetching on window focus
+    refetchOnMount: false, // Disable automatic refetching on mount
   });
 };
