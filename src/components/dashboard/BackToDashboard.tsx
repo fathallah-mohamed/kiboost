@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface BackToDashboardProps {
   onBack?: () => void;
@@ -9,6 +9,12 @@ interface BackToDashboardProps {
 
 export const BackToDashboard = ({ onBack, className = "" }: BackToDashboardProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Don't render the button on the recipes page
+  if (location.pathname === '/dashboard/recipes') {
+    return null;
+  }
 
   const handleBack = () => {
     if (onBack) {
