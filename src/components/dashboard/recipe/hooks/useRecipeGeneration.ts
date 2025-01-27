@@ -50,31 +50,6 @@ export const useRecipeGeneration = () => {
       
       for (const recipe of response.recipes) {
         try {
-          console.log("Generating image for recipe:", recipe.name);
-          
-          const ingredients = recipe.ingredients.map(ing => ing.item).join(', ');
-          
-          const { data: imageData, error: imageError } = await supabase.functions.invoke(
-            'generate-recipe-image',
-            {
-              body: {
-                recipeName: recipe.name,
-                ingredients: ingredients
-              }
-            }
-          );
-
-          if (imageError) {
-            console.error('Error generating image:', imageError);
-            throw imageError;
-          }
-
-          if (!imageData?.imageUrl) {
-            throw new Error('No image URL returned');
-          }
-
-          console.log('Generated image URL:', imageData.imageUrl);
-
           const timestamp = new Date().toISOString();
           
           const { data: savedRecipe, error: saveError } = await supabase
@@ -83,7 +58,6 @@ export const useRecipeGeneration = () => {
               ...recipe,
               profile_id: session.user.id,
               is_generated: true,
-              image_url: imageData.imageUrl,
               created_at: timestamp,
               updated_at: timestamp
             })
@@ -100,28 +74,7 @@ export const useRecipeGeneration = () => {
           
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
-          
-          // Try to save with default image if image generation fails
-          const timestamp = new Date().toISOString();
-          const { data: savedRecipe, error: saveError } = await supabase
-            .from('recipes')
-            .insert({
-              ...recipe,
-              profile_id: session.user.id,
-              is_generated: true,
-              image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
-              created_at: timestamp,
-              updated_at: timestamp
-            })
-            .select('*')
-            .single();
-
-          if (saveError) {
-            console.error('Error saving recipe with default image:', saveError);
-            continue;
-          }
-
-          savedRecipes.push(savedRecipe);
+          continue;
         }
       }
 
