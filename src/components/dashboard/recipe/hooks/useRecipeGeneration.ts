@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Recipe, RecipeFilters, ChildProfile } from "../../types";
+import { Recipe, RecipeFilters, ChildProfile, MealType } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -74,29 +74,35 @@ export const useRecipeGeneration = () => {
             ? recipe.ingredients 
             : [];
 
+          // Ensure meal_type is a valid MealType
+          const validMealType = (type: string): type is MealType => 
+            ['breakfast', 'lunch', 'dinner', 'snack'].includes(type);
+
+          const mealType = validMealType(recipe.meal_type) ? recipe.meal_type : 'dinner';
+
           const recipeToInsert = {
             profile_id: child.profile_id,
             name: recipe.name,
             ingredients: JSON.stringify(ingredients.map((ing: any) => ({
-              item: ing.item || '',
-              quantity: ing.quantity || '',
-              unit: ing.unit || ''
+              item: String(ing.item || ''),
+              quantity: String(ing.quantity || ''),
+              unit: String(ing.unit || '')
             }))),
             instructions: Array.isArray(recipe.instructions) 
-              ? recipe.instructions 
-              : [recipe.instructions],
+              ? recipe.instructions.map(String)
+              : [String(recipe.instructions)],
             nutritional_info: JSON.stringify(recipe.nutritional_info),
-            meal_type: recipe.meal_type,
-            preparation_time: recipe.preparation_time,
-            difficulty: recipe.difficulty,
-            servings: recipe.servings,
+            meal_type: mealType,
+            preparation_time: Number(recipe.preparation_time) || 30,
+            difficulty: String(recipe.difficulty) || 'medium',
+            servings: Number(recipe.servings) || 4,
             is_generated: true,
-            health_benefits: JSON.stringify(recipe.health_benefits),
-            min_age: recipe.min_age || 0,
-            max_age: recipe.max_age || 18,
+            health_benefits: JSON.stringify(recipe.health_benefits || []),
+            min_age: Number(recipe.min_age) || 0,
+            max_age: Number(recipe.max_age) || 18,
             dietary_preferences: recipe.dietary_preferences || [],
             allergens: recipe.allergens || [],
-            cost_estimate: recipe.cost_estimate || 0,
+            cost_estimate: Number(recipe.cost_estimate) || 0,
             seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
             cooking_steps: JSON.stringify(recipe.cooking_steps || [])
           };
@@ -114,8 +120,8 @@ export const useRecipeGeneration = () => {
             ...savedRecipe,
             ingredients: JSON.parse(savedRecipe.ingredients),
             instructions: Array.isArray(savedRecipe.instructions) 
-              ? savedRecipe.instructions 
-              : [savedRecipe.instructions],
+              ? savedRecipe.instructions.map(String)
+              : [String(savedRecipe.instructions)],
             nutritional_info: typeof savedRecipe.nutritional_info === 'string' 
               ? JSON.parse(savedRecipe.nutritional_info)
               : savedRecipe.nutritional_info,
@@ -124,7 +130,8 @@ export const useRecipeGeneration = () => {
               : savedRecipe.health_benefits,
             cooking_steps: typeof savedRecipe.cooking_steps === 'string'
               ? JSON.parse(savedRecipe.cooking_steps)
-              : savedRecipe.cooking_steps
+              : savedRecipe.cooking_steps,
+            meal_type: savedRecipe.meal_type as MealType,
           };
 
           console.log('Successfully saved recipe:', transformedRecipe);
