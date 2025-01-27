@@ -12,12 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { child, filters, existingRecipes } = await req.json();
+    const { child, filters, existingRecipes = [] } = await req.json();
+    console.log("Received request with:", { child, filters, existingRecipesCount: existingRecipes.length });
 
     // Format existing recipe names for the prompt
-    const existingRecipeNames = existingRecipes
-      .map((recipe: any) => recipe.name)
-      .join(", ");
+    const existingRecipeNames = existingRecipes?.map((recipe: any) => recipe.name).join(", ") || "None";
 
     const prompt = `Generate 5 unique, healthy recipes for a child with the following characteristics:
       - Name: ${child.name}
@@ -42,6 +41,8 @@ serve(async (req) => {
       - Seasonal availability
       
       Format the response as a JSON array of recipe objects.`;
+
+    console.log("Sending prompt to OpenAI:", prompt);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -75,6 +76,7 @@ serve(async (req) => {
     let recipes;
     try {
       recipes = JSON.parse(data.choices[0].message.content);
+      console.log("Successfully parsed recipes:", recipes);
     } catch (e) {
       console.error("Error parsing OpenAI response:", e);
       throw new Error("Failed to parse recipe data");
