@@ -42,9 +42,7 @@ export const useRecipeGeneration = () => {
         throw new Error("Format de réponse invalide");
       }
 
-      const savedRecipes: Recipe[] = [];
-
-      // Supprimer d'abord toutes les recettes générées précédemment
+      // Delete all previously generated recipes for this user
       const { error: deleteError } = await supabase
         .from('recipes')
         .delete()
@@ -56,13 +54,24 @@ export const useRecipeGeneration = () => {
         throw deleteError;
       }
 
+      const savedRecipes: Recipe[] = [];
+
       // Sauvegarder les nouvelles recettes
       for (const recipe of response.recipes) {
         try {
+          // Ensure ingredients is properly formatted
+          const ingredients = Array.isArray(recipe.ingredients) 
+            ? recipe.ingredients 
+            : [];
+
           const recipeToInsert = {
             profile_id: child.profile_id,
             name: recipe.name,
-            ingredients: recipe.ingredients,
+            ingredients: JSON.stringify(ingredients.map((ing: any) => ({
+              item: ing.item || '',
+              quantity: ing.quantity || '',
+              unit: ing.unit || ''
+            }))),
             instructions: recipe.instructions,
             nutritional_info: recipe.nutritional_info,
             meal_type: recipe.meal_type,
@@ -88,8 +97,23 @@ export const useRecipeGeneration = () => {
 
           if (saveError) throw saveError;
 
-          console.log('Successfully saved recipe:', savedRecipe);
-          savedRecipes.push(savedRecipe as Recipe);
+          // Transform the saved recipe to match the Recipe type
+          const transformedRecipe: Recipe = {
+            ...savedRecipe,
+            ingredients: JSON.parse(savedRecipe.ingredients),
+            nutritional_info: typeof savedRecipe.nutritional_info === 'string' 
+              ? JSON.parse(savedRecipe.nutritional_info)
+              : savedRecipe.nutritional_info,
+            health_benefits: typeof savedRecipe.health_benefits === 'string'
+              ? JSON.parse(savedRecipe.health_benefits)
+              : savedRecipe.health_benefits,
+            cooking_steps: typeof savedRecipe.cooking_steps === 'string'
+              ? JSON.parse(savedRecipe.cooking_steps)
+              : savedRecipe.cooking_steps
+          };
+
+          console.log('Successfully saved recipe:', transformedRecipe);
+          savedRecipes.push(transformedRecipe);
           
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
