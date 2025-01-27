@@ -61,20 +61,6 @@ export const RecipeCard = ({ recipe, isPlanned, isNew, onAdd }: RecipeCardProps)
 
   return (
     <Card className={`overflow-hidden ${isNew ? 'ring-2 ring-primary animate-pulse' : ''}`}>
-      <div className="relative">
-        <img 
-          src={recipe.image_url} 
-          alt={recipe.name}
-          className="w-full h-48 object-cover"
-        />
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-          <div className="flex items-center gap-2 text-white">
-            <Clock className="w-4 h-4" />
-            <span>{recipe.preparation_time} min</span>
-          </div>
-        </div>
-      </div>
-
       <div className="p-6">
         <div className="space-y-4">
           <div className="flex justify-between items-start">
@@ -92,6 +78,10 @@ export const RecipeCard = ({ recipe, isPlanned, isNew, onAdd }: RecipeCardProps)
           </div>
 
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {recipe.preparation_time} min
+            </span>
             <span className="flex items-center gap-1">
               <Utensils className="w-4 h-4" />
               {recipe.difficulty}
