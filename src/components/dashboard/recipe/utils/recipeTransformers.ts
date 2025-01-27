@@ -40,6 +40,13 @@ export interface GeneratedRecipe {
   cooking_steps?: any[];
 }
 
+export const parseJsonField = <T>(field: Json | string | null): T => {
+  if (typeof field === 'string') {
+    return JSON.parse(field) as T;
+  }
+  return field as T;
+};
+
 export const transformToRecipeData = (recipe: GeneratedRecipe, profileId: string) => {
   return {
     profile_id: profileId,
@@ -61,5 +68,18 @@ export const transformToRecipeData = (recipe: GeneratedRecipe, profileId: string
     cost_estimate: Number(recipe.cost_estimate) || 0,
     seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
     cooking_steps: JSON.stringify(recipe.cooking_steps || [])
+  };
+};
+
+export const transformDatabaseToRecipe = (dbRecipe: any): Recipe => {
+  return {
+    ...dbRecipe,
+    ingredients: parseJsonField<Array<{ item: string; quantity: string; unit: string; }>>(dbRecipe.ingredients),
+    instructions: parseJsonField<string[]>(dbRecipe.instructions),
+    nutritional_info: parseJsonField(dbRecipe.nutritional_info),
+    health_benefits: parseJsonField(dbRecipe.health_benefits),
+    cooking_steps: parseJsonField(dbRecipe.cooking_steps),
+    meal_type: validateMealType(dbRecipe.meal_type),
+    difficulty: validateDifficulty(dbRecipe.difficulty)
   };
 };

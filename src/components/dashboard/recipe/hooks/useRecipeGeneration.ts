@@ -2,7 +2,11 @@ import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { transformToRecipeData, GeneratedRecipe } from "../utils/recipeTransformers";
+import { 
+  transformToRecipeData, 
+  transformDatabaseToRecipe, 
+  GeneratedRecipe 
+} from "../utils/recipeTransformers";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -75,7 +79,7 @@ export const useRecipeGeneration = () => {
 
           if (saveError) throw saveError;
           if (savedRecipe) {
-            savedRecipes.push(savedRecipe as Recipe);
+            savedRecipes.push(transformDatabaseToRecipe(savedRecipe));
           }
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
