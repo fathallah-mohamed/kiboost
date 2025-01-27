@@ -18,6 +18,15 @@ export const useRecipeGeneration = () => {
       console.log("Generating recipes for child:", child);
       console.log("Using filters:", filters);
 
+      // Récupérer d'abord les recettes existantes
+      const { data: existingRecipes, error: fetchError } = await supabase
+        .from('recipes')
+        .select('*')
+        .eq('profile_id', child.profile_id)
+        .eq('is_generated', true);
+
+      if (fetchError) throw fetchError;
+
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
         {
@@ -30,7 +39,8 @@ export const useRecipeGeneration = () => {
               allergies: child.allergies || [],
               preferences: child.preferences || []
             },
-            filters
+            filters,
+            existingRecipes: existingRecipes || []
           }
         }
       );
@@ -72,21 +82,23 @@ export const useRecipeGeneration = () => {
               quantity: ing.quantity || '',
               unit: ing.unit || ''
             }))),
-            instructions: recipe.instructions,
-            nutritional_info: recipe.nutritional_info,
+            instructions: Array.isArray(recipe.instructions) 
+              ? recipe.instructions 
+              : [recipe.instructions],
+            nutritional_info: JSON.stringify(recipe.nutritional_info),
             meal_type: recipe.meal_type,
             preparation_time: recipe.preparation_time,
             difficulty: recipe.difficulty,
             servings: recipe.servings,
             is_generated: true,
-            health_benefits: recipe.health_benefits,
+            health_benefits: JSON.stringify(recipe.health_benefits),
             min_age: recipe.min_age || 0,
             max_age: recipe.max_age || 18,
             dietary_preferences: recipe.dietary_preferences || [],
             allergens: recipe.allergens || [],
             cost_estimate: recipe.cost_estimate || 0,
             seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
-            cooking_steps: recipe.cooking_steps || []
+            cooking_steps: JSON.stringify(recipe.cooking_steps || [])
           };
 
           const { data: savedRecipe, error: saveError } = await supabase
@@ -101,6 +113,9 @@ export const useRecipeGeneration = () => {
           const transformedRecipe: Recipe = {
             ...savedRecipe,
             ingredients: JSON.parse(savedRecipe.ingredients),
+            instructions: Array.isArray(savedRecipe.instructions) 
+              ? savedRecipe.instructions 
+              : [savedRecipe.instructions],
             nutritional_info: typeof savedRecipe.nutritional_info === 'string' 
               ? JSON.parse(savedRecipe.nutritional_info)
               : savedRecipe.nutritional_info,

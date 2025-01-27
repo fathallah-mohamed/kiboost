@@ -13,8 +13,9 @@ const VALID_CATEGORIES = [
   'prevention', 'global'
 ];
 
-const generatePrompt = (child: any, filters: any) => {
+const generatePrompt = (child: any, filters: any, existingRecipes: any[]) => {
   console.log('Generating prompt for child:', child);
+  console.log('Existing recipes:', existingRecipes);
   
   const allergiesText = child.allergies?.length > 0 
     ? `Allergies à éviter : ${child.allergies.join(', ')}`
@@ -24,15 +25,19 @@ const generatePrompt = (child: any, filters: any) => {
     ? `Préférences alimentaires : ${child.preferences.join(', ')}`
     : 'Aucune préférence particulière';
 
-  return `Génère UNIQUEMENT un objet JSON valide (sans formatage markdown) contenant 3 recettes UNIQUES et TRÈS DIFFÉRENTES les unes des autres:
+  const existingRecipeNames = existingRecipes.map(r => r.name).join(', ');
+
+  return `Génère UNIQUEMENT un objet JSON valide (sans formatage markdown) contenant 3 recettes UNIQUES et TRÈS DIFFÉRENTES des recettes existantes suivantes: ${existingRecipeNames}
+
 Age: ${child.birth_date}
 ${allergiesText}
 ${preferencesText}
 
 RÈGLES IMPORTANTES:
-- Les 3 recettes DOIVENT être COMPLÈTEMENT DIFFÉRENTES (pas de variations sur un même thème)
-- ÉVITE les recettes trop similaires
-- DIVERSIFIE les ingrédients principaux entre les recettes
+- Les recettes DOIVENT être COMPLÈTEMENT DIFFÉRENTES des recettes existantes listées ci-dessus
+- Les 3 recettes DOIVENT être COMPLÈTEMENT DIFFÉRENTES entre elles (pas de variations sur un même thème)
+- ÉVITE ABSOLUMENT les recettes similaires ou avec les mêmes ingrédients principaux
+- DIVERSIFIE au maximum les ingrédients principaux entre les recettes
 - VARIE les textures et les modes de préparation
 - Pour chaque recette, ajoute 3 bienfaits santé parmi UNIQUEMENT: ${VALID_CATEGORIES.join(', ')}
 - Les icônes doivent être parmi: brain, energy, heart, shield, leaf, sun, sparkles
@@ -86,8 +91,8 @@ serve(async (req) => {
   }
 
   try {
-    const { child, filters } = await req.json();
-    console.log('Generating recipes for:', { child, filters });
+    const { child, filters, existingRecipes } = await req.json();
+    console.log('Generating recipes for:', { child, filters, existingRecipes });
 
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAiKey) throw new Error('OpenAI API key missing');
@@ -95,19 +100,19 @@ serve(async (req) => {
     const configuration = new Configuration({ apiKey: openAiKey });
     const openai = new OpenAIApi(configuration);
 
-    const prompt = generatePrompt(child, filters);
+    const prompt = generatePrompt(child, filters, existingRecipes);
     console.log('Using prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4',
+      model: 'gpt-4o',
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef créatif spécialisé en recettes pour enfants. Tu dois générer UNIQUEMENT un objet JSON valide avec des recettes UNIQUES et DIFFÉRENTES.' 
+          content: 'Tu es un chef créatif spécialisé en recettes pour enfants. Tu dois générer UNIQUEMENT un objet JSON valide avec des recettes UNIQUES et DIFFÉRENTES des recettes existantes.' 
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.7,
+      temperature: 0.9,
       max_tokens: 2000,
     });
 
