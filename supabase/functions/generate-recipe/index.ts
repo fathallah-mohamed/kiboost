@@ -15,14 +15,28 @@ serve(async (req) => {
     const { child, filters, existingRecipes = [] } = await req.json();
     console.log("Received request with:", { child, filters, existingRecipesCount: existingRecipes.length });
 
+    // Validate required data
+    if (!child || !child.name || !child.birth_date) {
+      console.error("Invalid child data:", child);
+      throw new Error("Invalid child data: name and birth_date are required");
+    }
+
+    // Calculate age
+    const birthDate = new Date(child.birth_date);
+    const age = new Date().getFullYear() - birthDate.getFullYear();
+
     // Format existing recipe names for the prompt
     const existingRecipeNames = existingRecipes?.map((recipe: any) => recipe.name).join(", ") || "None";
+    
+    // Format allergies and preferences
+    const allergies = Array.isArray(child.allergies) ? child.allergies.filter(Boolean).join(", ") : "None";
+    const preferences = Array.isArray(child.preferences) ? child.preferences.filter(Boolean).join(", ") : "No specific preferences";
 
     const prompt = `Generate 5 unique, healthy recipes for a child with the following characteristics:
       - Name: ${child.name}
-      - Age: ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} years old
-      - Allergies: ${child.allergies?.join(", ") || "None"}
-      - Preferences: ${child.preferences?.join(", ") || "No specific preferences"}
+      - Age: ${age} years old
+      - Allergies: ${allergies}
+      - Preferences: ${preferences}
       
       Please avoid these existing recipes: ${existingRecipeNames}
       
