@@ -61,10 +61,12 @@ export const useRecipeGeneration = () => {
               }))
             : [];
 
-          const typedRecipe: Partial<Recipe> = {
-            ...recipe,
+          // Create the recipe object with required fields
+          const recipeToInsert = {
+            name: String(recipe.name || ''),
             ingredients: typedIngredients,
-            health_benefits: typedHealthBenefits,
+            instructions: String(recipe.instructions || ''),
+            nutritional_info: recipe.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 },
             profile_id: session.user.id,
             is_generated: true,
             created_at: timestamp,
@@ -79,12 +81,13 @@ export const useRecipeGeneration = () => {
             allergens: recipe.allergens || [],
             cost_estimate: recipe.cost_estimate || 0,
             seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
-            cooking_steps: recipe.cooking_steps || []
+            cooking_steps: recipe.cooking_steps || [],
+            health_benefits: typedHealthBenefits
           };
 
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
-            .insert(typedRecipe)
+            .insert(recipeToInsert)
             .select('*')
             .single();
 
@@ -94,7 +97,9 @@ export const useRecipeGeneration = () => {
           }
 
           console.log('Successfully saved recipe:', savedRecipe);
-          savedRecipes.push(savedRecipe as Recipe);
+          // Cast the saved recipe to ensure type safety
+          const typedSavedRecipe = savedRecipe as unknown as Recipe;
+          savedRecipes.push(typedSavedRecipe);
           
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
