@@ -1,88 +1,83 @@
 import { useState } from "react";
-import { Recipe, ChildProfile, RecipeFilters } from "../../types";
+import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@supabase/auth-helpers-react";
 import { toast } from "sonner";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const session = useSession();
 
   const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
-    if (!session?.user?.id) {
-      toast.error("Vous devez être connecté pour générer des recettes");
-      return;
+    if (!child.name || !child.birth_date) {
+      throw new Error("Les informations de l'enfant sont incomplètes");
     }
 
     try {
       setLoading(true);
       setError(null);
-      console.log("Starting recipe generation for child:", child.name);
+      console.log("Generating recipes for child:", child);
+      console.log("Using filters:", filters);
 
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
         {
-          body: { child, filters }
+          body: { 
+            child: {
+              ...child,
+              id: child.id,
+              name: child.name,
+              birth_date: child.birth_date,
+              allergies: child.allergies || [],
+              preferences: child.preferences || []
+            },
+            filters
+          }
         }
       );
 
-      if (generateError) {
-        console.error("Error from generate-recipe function:", generateError);
-        throw generateError;
-      }
+      if (generateError) throw generateError;
+      console.log("Generated recipe response:", response);
 
       if (!response.recipes || !Array.isArray(response.recipes)) {
         throw new Error("Format de réponse invalide");
       }
 
-      console.log("Successfully generated recipes:", response.recipes);
-
       const savedRecipes: Recipe[] = [];
-      const timestamp = new Date().toISOString();
 
+      // Supprimer d'abord toutes les recettes générées précédemment
+      const { error: deleteError } = await supabase
+        .from('recipes')
+        .delete()
+        .eq('profile_id', child.profile_id)
+        .eq('is_generated', true);
+
+      if (deleteError) {
+        console.error("Error deleting old recipes:", deleteError);
+        throw deleteError;
+      }
+
+      // Sauvegarder les nouvelles recettes
       for (const recipe of response.recipes) {
         try {
-          // Ensure ingredients are properly typed
-          const typedIngredients = Array.isArray(recipe.ingredients) 
-            ? recipe.ingredients.map(ing => ({
-                item: String(ing.item || ''),
-                quantity: String(ing.quantity || ''),
-                unit: String(ing.unit || '')
-              }))
-            : [];
-
-          // Ensure health_benefits are properly typed
-          const typedHealthBenefits = Array.isArray(recipe.health_benefits)
-            ? recipe.health_benefits.map(benefit => ({
-                icon: String(benefit.icon || ''),
-                category: benefit.category || 'global',
-                description: String(benefit.description || '')
-              }))
-            : [];
-
-          // Create the recipe object with required fields
           const recipeToInsert = {
-            name: String(recipe.name || ''),
-            ingredients: typedIngredients,
-            instructions: String(recipe.instructions || ''),
-            nutritional_info: recipe.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 },
-            profile_id: session.user.id,
+            profile_id: child.profile_id,
+            name: recipe.name,
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            nutritional_info: recipe.nutritional_info,
+            meal_type: recipe.meal_type,
+            preparation_time: recipe.preparation_time,
+            difficulty: recipe.difficulty,
+            servings: recipe.servings,
             is_generated: true,
-            created_at: timestamp,
-            updated_at: timestamp,
-            meal_type: recipe.meal_type || 'dinner',
-            preparation_time: recipe.preparation_time || 30,
-            difficulty: recipe.difficulty || 'medium',
-            servings: recipe.servings || 4,
+            health_benefits: recipe.health_benefits,
             min_age: recipe.min_age || 0,
             max_age: recipe.max_age || 18,
             dietary_preferences: recipe.dietary_preferences || [],
             allergens: recipe.allergens || [],
             cost_estimate: recipe.cost_estimate || 0,
             seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
-            cooking_steps: recipe.cooking_steps || [],
-            health_benefits: typedHealthBenefits
+            cooking_steps: recipe.cooking_steps || []
           };
 
           const { data: savedRecipe, error: saveError } = await supabase
@@ -91,15 +86,10 @@ export const useRecipeGeneration = () => {
             .select('*')
             .single();
 
-          if (saveError) {
-            console.error('Error saving recipe:', saveError);
-            continue;
-          }
+          if (saveError) throw saveError;
 
           console.log('Successfully saved recipe:', savedRecipe);
-          // Cast the saved recipe to ensure type safety
-          const typedSavedRecipe = savedRecipe as unknown as Recipe;
-          savedRecipes.push(typedSavedRecipe);
+          savedRecipes.push(savedRecipe as Recipe);
           
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
@@ -111,7 +101,7 @@ export const useRecipeGeneration = () => {
         throw new Error("Aucune recette n'a pu être sauvegardée");
       }
 
-      toast.success(`${savedRecipes.length} recettes ont été générées avec succès !`);
+      toast.success(`${savedRecipes.length} nouvelles recettes ont été générées !`);
       return savedRecipes;
 
     } catch (err) {
