@@ -1,17 +1,7 @@
 import { MealType, Difficulty, Recipe } from "../../types";
 import { Json } from "@/integrations/supabase/types";
 
-export const validateMealType = (type: string): MealType => {
-  const validTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
-  return validTypes.includes(type as MealType) ? type as MealType : 'dinner';
-};
-
-export const validateDifficulty = (level: string): Difficulty => {
-  const validLevels: Difficulty[] = ['easy', 'medium', 'hard'];
-  return validLevels.includes(level as Difficulty) ? level as Difficulty : 'medium';
-};
-
-export interface GeneratedRecipe {
+export type GeneratedRecipe = {
   name: string;
   ingredients: Array<{
     item: string;
@@ -40,9 +30,23 @@ export interface GeneratedRecipe {
   cooking_steps?: any[];
 }
 
+export const validateMealType = (type: string): MealType => {
+  const validTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+  return validTypes.includes(type as MealType) ? type as MealType : 'dinner';
+};
+
+export const validateDifficulty = (level: string): Difficulty => {
+  const validLevels: Difficulty[] = ['easy', 'medium', 'hard'];
+  return validLevels.includes(level as Difficulty) ? level as Difficulty : 'medium';
+};
+
 export const parseJsonField = <T>(field: Json | string | null): T => {
   if (typeof field === 'string') {
-    return JSON.parse(field) as T;
+    try {
+      return JSON.parse(field) as T;
+    } catch {
+      return field as unknown as T;
+    }
   }
   return field as T;
 };
