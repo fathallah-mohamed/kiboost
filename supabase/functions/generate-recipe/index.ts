@@ -24,31 +24,10 @@ const generatePrompt = (child: any, filters: any) => {
     'prevention', 'global'
   ];
 
-  let constraints = [];
-  if (filters.mealType && filters.mealType !== 'all') {
-    constraints.push(`Type de repas : ${filters.mealType}`);
-  }
-  if (filters.maxPrepTime) {
-    constraints.push(`Temps maximum : ${filters.maxPrepTime}min`);
-  }
-  if (filters.difficulty && filters.difficulty !== 'all') {
-    constraints.push(`Difficulté : ${filters.difficulty}`);
-  }
-  if (filters.maxCost) {
-    constraints.push(`Coût maximum par portion : ${filters.maxCost}€`);
-  }
-  if (filters.healthBenefits?.length > 0) {
-    constraints.push(`Bienfaits santé souhaités : ${filters.healthBenefits.join(', ')}`);
-  }
-  if (filters.season) {
-    constraints.push(`Saison : ${filters.season}`);
-  }
-
   return `Génère UNIQUEMENT un objet JSON valide (sans formatage markdown) contenant 3 recettes UNIQUES et TRÈS DIFFÉRENTES les unes des autres:
 Age: ${child.birth_date}
 ${allergiesText}
 ${preferencesText}
-${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
 
 RÈGLES IMPORTANTES:
 - Les 3 recettes DOIVENT être COMPLÈTEMENT DIFFÉRENTES (pas de variations sur un même thème)
@@ -56,7 +35,7 @@ RÈGLES IMPORTANTES:
 - DIVERSIFIE les ingrédients principaux entre les recettes
 - VARIE les textures et les modes de préparation
 - Pour chaque recette, ajoute 3 bienfaits santé parmi: ${validCategories.join(', ')}
-- Le temps de préparation doit être RÉALISTE et respecter la contrainte de temps
+- Le temps de préparation doit être RÉALISTE
 - Utilise des ingrédients simples et prêts à l'emploi
 - Les étapes doivent être courtes et efficaces
 - UTILISE UNIQUEMENT des guillemets doubles (") pour le JSON
@@ -84,9 +63,9 @@ FORMAT JSON REQUIS:
         "carbs": 0,
         "fat": 0
       },
-      "meal_type": "breakfast",
-      "preparation_time": 15,
-      "difficulty": "easy",
+      "meal_type": "dinner",
+      "preparation_time": 30,
+      "difficulty": "medium",
       "servings": 4,
       "health_benefits": [
         {
@@ -127,8 +106,8 @@ serve(async (req) => {
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.8,
-      max_tokens: 1500,
+      temperature: 0.7,
+      max_tokens: 2000,
     });
 
     const content = completion.data.choices[0]?.message?.content;

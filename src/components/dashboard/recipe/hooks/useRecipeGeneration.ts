@@ -43,15 +43,48 @@ export const useRecipeGeneration = () => {
 
       for (const recipe of response.recipes) {
         try {
+          // Ensure ingredients are properly typed
+          const typedIngredients = Array.isArray(recipe.ingredients) 
+            ? recipe.ingredients.map(ing => ({
+                item: String(ing.item || ''),
+                quantity: String(ing.quantity || ''),
+                unit: String(ing.unit || '')
+              }))
+            : [];
+
+          // Ensure health_benefits are properly typed
+          const typedHealthBenefits = Array.isArray(recipe.health_benefits)
+            ? recipe.health_benefits.map(benefit => ({
+                icon: String(benefit.icon || ''),
+                category: benefit.category || 'global',
+                description: String(benefit.description || '')
+              }))
+            : [];
+
+          const typedRecipe: Partial<Recipe> = {
+            ...recipe,
+            ingredients: typedIngredients,
+            health_benefits: typedHealthBenefits,
+            profile_id: session.user.id,
+            is_generated: true,
+            created_at: timestamp,
+            updated_at: timestamp,
+            meal_type: recipe.meal_type || 'dinner',
+            preparation_time: recipe.preparation_time || 30,
+            difficulty: recipe.difficulty || 'medium',
+            servings: recipe.servings || 4,
+            min_age: recipe.min_age || 0,
+            max_age: recipe.max_age || 18,
+            dietary_preferences: recipe.dietary_preferences || [],
+            allergens: recipe.allergens || [],
+            cost_estimate: recipe.cost_estimate || 0,
+            seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
+            cooking_steps: recipe.cooking_steps || []
+          };
+
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
-            .insert({
-              ...recipe,
-              profile_id: session.user.id,
-              is_generated: true,
-              created_at: timestamp,
-              updated_at: timestamp
-            })
+            .insert(typedRecipe)
             .select('*')
             .single();
 
@@ -61,7 +94,7 @@ export const useRecipeGeneration = () => {
           }
 
           console.log('Successfully saved recipe:', savedRecipe);
-          savedRecipes.push(savedRecipe);
+          savedRecipes.push(savedRecipe as Recipe);
           
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
