@@ -69,14 +69,12 @@ export const MealPlanner = ({ userId, onSectionChange }: MealPlannerProps) => {
     if (daysToCheck.length === 0) return false;
 
     // Vérifie si chaque jour futur a une recette planifiée pour chaque enfant
-    const allDaysPlanned = daysToCheck.every(date => {
+    return daysToCheck.every(date => {
       const dayRecipes = plannedRecipes[date] || {};
       return selectedChildren.every(child => 
         Object.keys(dayRecipes).includes(child.id)
       );
     });
-
-    return allDaysPlanned;
   };
 
   // Met à jour le statut de l'étape en fonction de la planification
