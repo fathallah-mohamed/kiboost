@@ -44,7 +44,7 @@ const generatePrompt = (child: any, filters: any) => {
     constraints.push(`Saison : ${filters.season}`);
   }
 
-  return `Retourne UNIQUEMENT un objet JSON valide (sans formatage markdown) contenant 3 recettes UNIQUES et TRÈS DIFFÉRENTES les unes des autres pour petit-déjeuner:
+  return `Génère UNIQUEMENT un objet JSON valide (sans formatage markdown) contenant 3 recettes UNIQUES et TRÈS DIFFÉRENTES les unes des autres:
 Age: ${child.birth_date}
 ${allergiesText}
 ${preferencesText}
@@ -52,7 +52,7 @@ ${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
 
 RÈGLES IMPORTANTES:
 - Les 3 recettes DOIVENT être COMPLÈTEMENT DIFFÉRENTES (pas de variations sur un même thème)
-- ÉVITE les recettes trop similaires (ex: ne pas faire plusieurs smoothies ou plusieurs types de porridge)
+- ÉVITE les recettes trop similaires
 - DIVERSIFIE les ingrédients principaux entre les recettes
 - VARIE les textures et les modes de préparation
 - Pour chaque recette, ajoute 3 bienfaits santé parmi: ${validCategories.join(', ')}
@@ -123,12 +123,12 @@ serve(async (req) => {
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un chef créatif spécialisé en recettes pour enfants. Tu dois générer UNIQUEMENT un objet JSON valide (sans formatage markdown) avec des recettes UNIQUES et DIFFÉRENTES les unes des autres. Évite absolument les répétitions ou les variations sur un même thème.' 
+          content: 'Tu es un chef créatif spécialisé en recettes pour enfants. Tu dois générer UNIQUEMENT un objet JSON valide avec des recettes UNIQUES et DIFFÉRENTES.' 
         },
         { role: 'user', content: prompt }
       ],
-      temperature: 1.2,
-      max_tokens: 2000,
+      temperature: 0.8,
+      max_tokens: 1500,
     });
 
     const content = completion.data.choices[0]?.message?.content;
@@ -137,7 +137,6 @@ serve(async (req) => {
     console.log('Raw OpenAI response:', content);
 
     try {
-      // Remove any potential markdown formatting
       const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
       const parsedContent = JSON.parse(cleanedContent);
       
@@ -148,16 +147,8 @@ serve(async (req) => {
       const recipes = parsedContent.recipes;
       console.log('Parsed recipes:', recipes);
 
-      // Vérification supplémentaire pour s'assurer que les recettes sont uniques
-      const uniqueRecipes = recipes.filter((recipe, index, self) =>
-        index === self.findIndex((r) => (
-          r.name.toLowerCase().includes(recipe.name.toLowerCase()) ||
-          recipe.name.toLowerCase().includes(r.name.toLowerCase())
-        ))
-      );
-
       return new Response(
-        JSON.stringify({ recipes: uniqueRecipes }),
+        JSON.stringify({ recipes }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
 
