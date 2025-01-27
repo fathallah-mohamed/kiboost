@@ -7,6 +7,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const VALID_CATEGORIES = [
+  'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
+  'growth', 'mental', 'organs', 'beauty', 'physical',
+  'prevention', 'global'
+];
+
 const generatePrompt = (child: any, filters: any) => {
   console.log('Generating prompt for child:', child);
   
@@ -18,12 +24,6 @@ const generatePrompt = (child: any, filters: any) => {
     ? `Préférences alimentaires : ${child.preferences.join(', ')}`
     : 'Aucune préférence particulière';
 
-  const validCategories = [
-    'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
-    'growth', 'mental', 'organs', 'beauty', 'physical',
-    'prevention', 'global'
-  ];
-
   return `Génère UNIQUEMENT un objet JSON valide (sans formatage markdown) contenant 3 recettes UNIQUES et TRÈS DIFFÉRENTES les unes des autres:
 Age: ${child.birth_date}
 ${allergiesText}
@@ -34,7 +34,8 @@ RÈGLES IMPORTANTES:
 - ÉVITE les recettes trop similaires
 - DIVERSIFIE les ingrédients principaux entre les recettes
 - VARIE les textures et les modes de préparation
-- Pour chaque recette, ajoute 3 bienfaits santé parmi: ${validCategories.join(', ')}
+- Pour chaque recette, ajoute 3 bienfaits santé parmi UNIQUEMENT: ${VALID_CATEGORIES.join(', ')}
+- Les icônes doivent être parmi: brain, energy, heart, shield, leaf, sun, sparkles
 - Le temps de préparation doit être RÉALISTE
 - Utilise des ingrédients simples et prêts à l'emploi
 - Les étapes doivent être courtes et efficaces
@@ -98,7 +99,7 @@ serve(async (req) => {
     console.log('Using prompt:', prompt);
 
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4',
       messages: [
         { 
           role: 'system', 
@@ -123,8 +124,19 @@ serve(async (req) => {
         throw new Error('Format de réponse invalide');
       }
 
-      const recipes = parsedContent.recipes;
-      console.log('Parsed recipes:', recipes);
+      // Validate health benefit categories
+      const recipes = parsedContent.recipes.map((recipe: any) => ({
+        ...recipe,
+        health_benefits: recipe.health_benefits?.map((benefit: any) => ({
+          ...benefit,
+          category: VALID_CATEGORIES.includes(benefit.category) ? benefit.category : 'global',
+          icon: ['brain', 'energy', 'heart', 'shield', 'leaf', 'sun', 'sparkles'].includes(benefit.icon) 
+            ? benefit.icon 
+            : 'sparkles'
+        }))
+      }));
+
+      console.log('Validated recipes:', recipes);
 
       return new Response(
         JSON.stringify({ recipes }),
