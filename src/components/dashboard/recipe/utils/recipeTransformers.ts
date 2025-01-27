@@ -1,4 +1,6 @@
 import { MealType, Difficulty, Recipe } from "../../types";
+import { validateMealType, validateDifficulty } from "./validationUtils";
+import { parseJsonField } from "./jsonUtils";
 import { Json } from "@/integrations/supabase/types";
 
 export type GeneratedRecipe = {
@@ -29,27 +31,6 @@ export type GeneratedRecipe = {
   seasonal_months?: number[];
   cooking_steps?: any[];
 }
-
-export const validateMealType = (type: string): MealType => {
-  const validTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
-  return validTypes.includes(type as MealType) ? type as MealType : 'dinner';
-};
-
-export const validateDifficulty = (level: string): Difficulty => {
-  const validLevels: Difficulty[] = ['easy', 'medium', 'hard'];
-  return validLevels.includes(level as Difficulty) ? level as Difficulty : 'medium';
-};
-
-export const parseJsonField = <T>(field: Json | string | null): T => {
-  if (typeof field === 'string') {
-    try {
-      return JSON.parse(field) as T;
-    } catch {
-      return field as unknown as T;
-    }
-  }
-  return field as T;
-};
 
 export const transformToRecipeData = (recipe: GeneratedRecipe, profileId: string) => {
   return {
