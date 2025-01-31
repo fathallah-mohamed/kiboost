@@ -19,7 +19,7 @@ serve(async (req) => {
       ?.map((recipe: any) => recipe.name)
       .join(", ") || "None";
 
-    const prompt = `Generate 5 unique, healthy recipes for a child with the following characteristics:
+    const prompt = `You are a professional chef specialized in children's nutrition. Generate 5 unique, healthy recipes for a child with the following characteristics:
       - Name: ${child.name}
       - Age: ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} years old
       - Allergies: ${child.allergies?.join(", ") || "None"}
@@ -27,23 +27,7 @@ serve(async (req) => {
       
       Please avoid these existing recipes: ${existingRecipeNames}
       
-      Each recipe should include:
-      - A unique and creative name
-      - List of ingredients with quantities
-      - Step by step instructions
-      - Nutritional information (calories, protein, carbs, fat)
-      - Preparation time
-      - Difficulty level (easy, medium, hard)
-      - Number of servings
-      - Health benefits for children
-      - Age recommendations (min and max age)
-      - Any allergens present
-      - Estimated cost
-      - Seasonal availability
-      
-      Format the response as a JSON array of recipe objects.
-      
-      Important: Make sure each recipe follows this exact structure:
+      Return ONLY a JSON array of recipe objects with NO additional text or formatting. Each recipe must follow this exact structure:
       {
         "name": "string",
         "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
@@ -75,7 +59,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a professional chef specialized in children's nutrition. You create unique, healthy, and appealing recipes for children."
+            content: "You are a professional chef specialized in children's nutrition. You create unique, healthy, and appealing recipes for children. Always return data in pure JSON format with no markdown or additional text."
           },
           {
             role: "user",
@@ -96,8 +80,13 @@ serve(async (req) => {
     let recipes;
     try {
       const content = data.choices[0].message.content;
-      console.log("Attempting to parse recipe data:", content);
-      recipes = JSON.parse(content);
+      console.log("Raw OpenAI response content:", content);
+      
+      // Clean up the content by removing any markdown formatting
+      const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
+      console.log("Cleaned content:", cleanContent);
+      
+      recipes = JSON.parse(cleanContent);
       
       // Validate recipe structure
       if (!Array.isArray(recipes)) {
