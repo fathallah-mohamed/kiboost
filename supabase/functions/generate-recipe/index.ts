@@ -12,12 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { child, filters, existingRecipes } = await req.json();
+    const { child, filters, existingRecipes = [] } = await req.json();
 
     // Format existing recipe names for the prompt
     const existingRecipeNames = existingRecipes
-      .map((recipe: any) => recipe.name)
-      .join(", ");
+      ?.map((recipe: any) => recipe.name)
+      .join(", ") || "None";
 
     const prompt = `Generate 5 unique, healthy recipes for a child with the following characteristics:
       - Name: ${child.name}
@@ -41,7 +41,28 @@ serve(async (req) => {
       - Estimated cost
       - Seasonal availability
       
-      Format the response as a JSON array of recipe objects.`;
+      Format the response as a JSON array of recipe objects.
+      
+      Important: Make sure each recipe follows this exact structure:
+      {
+        "name": "string",
+        "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
+        "instructions": ["string"],
+        "nutritional_info": {"calories": number, "protein": number, "carbs": number, "fat": number},
+        "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
+        "preparation_time": number,
+        "difficulty": "easy" | "medium" | "hard",
+        "servings": number,
+        "health_benefits": [{"icon": "string", "category": "string", "description": "string"}],
+        "min_age": number,
+        "max_age": number,
+        "dietary_preferences": ["string"],
+        "allergens": ["string"],
+        "cost_estimate": number,
+        "seasonal_months": [number]
+      }`;
+
+    console.log("Sending prompt to OpenAI:", prompt);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -74,10 +95,26 @@ serve(async (req) => {
 
     let recipes;
     try {
-      recipes = JSON.parse(data.choices[0].message.content);
+      const content = data.choices[0].message.content;
+      console.log("Attempting to parse recipe data:", content);
+      recipes = JSON.parse(content);
+      
+      // Validate recipe structure
+      if (!Array.isArray(recipes)) {
+        throw new Error("Recipes must be an array");
+      }
+
+      recipes = recipes.map(recipe => ({
+        ...recipe,
+        is_generated: true,
+        profile_id: child.profile_id,
+        image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
+      }));
+
+      console.log("Successfully parsed and processed recipes:", recipes);
     } catch (e) {
-      console.error("Error parsing OpenAI response:", e);
-      throw new Error("Failed to parse recipe data");
+      console.error("Error parsing recipe data:", e);
+      throw new Error(`Failed to parse recipe data: ${e.message}`);
     }
 
     return new Response(
@@ -91,7 +128,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error in generate-recipe function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
