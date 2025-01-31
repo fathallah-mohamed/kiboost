@@ -12,31 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    const { child, filters, existingRecipes = [] } = await req.json();
-    console.log("Received request with:", { child, filters, existingRecipesCount: existingRecipes.length });
-
-    // Validate required data
-    if (!child || !child.name || !child.birth_date) {
-      console.error("Invalid child data:", child);
-      throw new Error("Invalid child data: name and birth_date are required");
-    }
-
-    // Calculate age
-    const birthDate = new Date(child.birth_date);
-    const age = new Date().getFullYear() - birthDate.getFullYear();
+    const { child, filters, existingRecipes } = await req.json();
 
     // Format existing recipe names for the prompt
-    const existingRecipeNames = existingRecipes?.map((recipe: any) => recipe.name).join(", ") || "None";
-    
-    // Format allergies and preferences
-    const allergies = Array.isArray(child.allergies) ? child.allergies.filter(Boolean).join(", ") : "None";
-    const preferences = Array.isArray(child.preferences) ? child.preferences.filter(Boolean).join(", ") : "No specific preferences";
+    const existingRecipeNames = existingRecipes
+      .map((recipe: any) => recipe.name)
+      .join(", ");
 
     const prompt = `Generate 5 unique, healthy recipes for a child with the following characteristics:
       - Name: ${child.name}
-      - Age: ${age} years old
-      - Allergies: ${allergies}
-      - Preferences: ${preferences}
+      - Age: ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} years old
+      - Allergies: ${child.allergies?.join(", ") || "None"}
+      - Preferences: ${child.preferences?.join(", ") || "No specific preferences"}
       
       Please avoid these existing recipes: ${existingRecipeNames}
       
@@ -55,8 +42,6 @@ serve(async (req) => {
       - Seasonal availability
       
       Format the response as a JSON array of recipe objects.`;
-
-    console.log("Sending prompt to OpenAI:", prompt);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -90,7 +75,6 @@ serve(async (req) => {
     let recipes;
     try {
       recipes = JSON.parse(data.choices[0].message.content);
-      console.log("Successfully parsed recipes:", recipes);
     } catch (e) {
       console.error("Error parsing OpenAI response:", e);
       throw new Error("Failed to parse recipe data");

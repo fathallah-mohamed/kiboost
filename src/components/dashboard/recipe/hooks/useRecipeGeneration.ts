@@ -1,84 +1,105 @@
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
-import { Recipe, ChildProfile } from "../../types";
-import { transformToRecipeData, transformDatabaseToRecipe, GeneratedRecipe } from "../utils/recipeTransformers";
+import { toast } from "sonner";
+import { 
+  transformToRecipeData, 
+  transformDatabaseToRecipe, 
+  GeneratedRecipe 
+} from "../utils/recipeTransformers";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
-  const generateRecipes = async (child: ChildProfile, filters: any = {}) => {
+  const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
+    if (!child.name || !child.birth_date) {
+      throw new Error("Les informations de l'enfant sont incomplètes");
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      console.log("Generating recipes for child:", child);
-      console.log("Using filters:", filters);
+      // Récupérer les recettes existantes
+      const { data: existingRecipes, error: fetchError } = await supabase
+        .from('recipes')
+        .select('*')
+        .eq('profile_id', child.profile_id)
+        .eq('is_generated', true);
 
-      // Call the Edge Function to generate recipes
-      const { data: generatedData, error: generationError } = await supabase.functions.invoke(
+      if (fetchError) throw fetchError;
+
+      const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
         {
-          body: {
-            childName: child.name,
-            birthDate: child.birth_date,
-            allergies: child.allergies || [],
-            preferences: child.preferences || [],
-            ...filters
+          body: { 
+            child: {
+              ...child,
+              id: child.id,
+              name: child.name,
+              birth_date: child.birth_date,
+              allergies: child.allergies || [],
+              preferences: child.preferences || []
+            },
+            filters,
+            existingRecipes: existingRecipes || []
           }
         }
       );
 
-      if (generationError) {
-        console.error("Error generating recipes:", generationError);
-        throw new Error("Erreur lors de la génération des recettes");
+      if (generateError) throw generateError;
+      console.log("Generated recipe response:", response);
+
+      if (!response.recipes || !Array.isArray(response.recipes)) {
+        throw new Error("Format de réponse invalide");
       }
 
-      console.log("Generated recipe data:", generatedData);
+      // Supprimer les anciennes recettes générées
+      const { error: deleteError } = await supabase
+        .from('recipes')
+        .delete()
+        .eq('profile_id', child.profile_id)
+        .eq('is_generated', true);
 
-      if (!generatedData || !Array.isArray(generatedData)) {
-        throw new Error("Format de données invalide reçu du générateur");
-      }
+      if (deleteError) throw deleteError;
 
-      // Transform and save each recipe
       const savedRecipes: Recipe[] = [];
-      for (const recipeData of generatedData) {
-        const { data: savedRecipe, error: saveError } = await supabase
-          .from('recipes')
-          .insert(transformToRecipeData(recipeData, child.profile_id))
-          .select('*')
-          .single();
 
-        if (saveError) {
-          console.error("Error saving recipe:", saveError);
+      // Sauvegarder les nouvelles recettes
+      for (const recipe of response.recipes as GeneratedRecipe[]) {
+        try {
+          const recipeData = transformToRecipeData(recipe, child.profile_id);
+
+          const { data: savedRecipe, error: saveError } = await supabase
+            .from('recipes')
+            .insert(recipeData)
+            .select()
+            .single();
+
+          if (saveError) throw saveError;
+          if (savedRecipe) {
+            savedRecipes.push(transformDatabaseToRecipe(savedRecipe));
+          }
+        } catch (error) {
+          console.error('Error processing recipe:', recipe.name, error);
           continue;
         }
-
-        if (savedRecipe) {
-          savedRecipes.push(transformDatabaseToRecipe(savedRecipe as GeneratedRecipe));
-        }
       }
 
-      console.log("Saved recipes:", savedRecipes);
-      toast({
-        title: "Recettes générées avec succès",
-        description: `${savedRecipes.length} nouvelles recettes ont été créées.`
-      });
+      if (savedRecipes.length === 0) {
+        throw new Error("Aucune recette n'a pu être sauvegardée");
+      }
 
+      toast.success(`${savedRecipes.length} nouvelles recettes ont été générées !`);
       return savedRecipes;
 
     } catch (err) {
-      console.error("Error in generateRecipes:", err);
+      console.error("Error in recipe generation process:", err);
       const errorMessage = err instanceof Error ? err.message : "Une erreur est survenue";
       setError(errorMessage);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: errorMessage
-      });
-      return [];
+      toast.error(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
