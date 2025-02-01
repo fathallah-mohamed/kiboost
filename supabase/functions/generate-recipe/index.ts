@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Fonction de hachage pour comparer les recettes
+function hashRecipe(recipe: any) {
+  return `${recipe.name.toLowerCase()}-${recipe.ingredients.map((i: any) => i.item.toLowerCase()).join('-')}`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -26,7 +31,7 @@ serve(async (req) => {
     const maxPrepTime = filters?.maxPrepTime || 30;
     const difficulty = filters?.difficulty || 'medium';
 
-    const prompt = `Tu es un chef expert en nutrition infantile. Génère UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT:
+    const prompt = `Tu es un chef expert en nutrition infantile. Génère UNIQUEMENT un tableau JSON de 5 recettes UNIQUES avec ce format STRICT:
 
 [
   {
@@ -51,13 +56,14 @@ serve(async (req) => {
 - Allergies: ${child.allergies?.length ? child.allergies.join(", ") : "Aucune"}
 - Préférences: ${child.preferences?.length ? child.preferences.join(", ") : "Aucune"}
 
-⚠️ IMPORTANT: 
-- Génère EXACTEMENT 3 recettes
+⚠️ IMPORTANT:
+- Génère EXACTEMENT 5 recettes DIFFÉRENTES
 - RESPECTE le format JSON fourni
 - Temps max: ${maxPrepTime}min
 - Difficulté: ${difficulty}
-- Ingrédients simples
-- Adapté à l'âge: ${childAge} ans`;
+- Ingrédients simples et adaptés
+- Adapté à l'âge: ${childAge} ans
+- CHAQUE recette doit être UNIQUE avec des ingrédients principaux différents`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
@@ -77,15 +83,15 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "Tu es un chef qui génère UNIQUEMENT du JSON valide, sans texte ni markdown."
+            content: "Tu es un chef qui génère UNIQUEMENT du JSON valide, sans texte ni markdown. Chaque recette doit être unique et différente des autres."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        temperature: 0.7,
-        max_tokens: 2000,
+        temperature: 0.5,
+        max_tokens: 1500,
       }),
     });
 
@@ -108,56 +114,65 @@ serve(async (req) => {
       console.log("Raw content:", content);
       
       const cleanContent = content.trim();
-      console.log("Cleaned content:", cleanContent);
-      
       recipes = JSON.parse(cleanContent);
       
       if (!Array.isArray(recipes)) {
         throw new Error("Le format de réponse n'est pas un tableau");
       }
 
-      recipes = recipes.map(recipe => {
-        if (!recipe.name || !Array.isArray(recipe.ingredients)) {
-          throw new Error("Format de recette invalide");
+      // Vérification de l'unicité des recettes
+      const uniqueRecipes = [];
+      const seenHashes = new Set();
+
+      for (const recipe of recipes) {
+        const hash = hashRecipe(recipe);
+        if (!seenHashes.has(hash)) {
+          seenHashes.add(hash);
+          uniqueRecipes.push(recipe);
         }
+      }
 
-        return {
-          name: String(recipe.name),
-          ingredients: recipe.ingredients.map(ing => ({
-            item: String(ing.item || ''),
-            quantity: String(ing.quantity || ''),
-            unit: String(ing.unit || '')
-          })),
-          instructions: Array.isArray(recipe.instructions) 
-            ? recipe.instructions.map(String)
-            : [String(recipe.instructions || '')],
-          nutritional_info: {
-            calories: Number(recipe?.nutritional_info?.calories || 0),
-            protein: Number(recipe?.nutritional_info?.protein || 0),
-            carbs: Number(recipe?.nutritional_info?.carbs || 0),
-            fat: Number(recipe?.nutritional_info?.fat || 0)
-          },
-          meal_type: mealType,
-          preparation_time: Math.min(Number(recipe?.preparation_time || 30), maxPrepTime),
-          difficulty: difficulty,
-          servings: Number(recipe?.servings || 4),
-          health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
-          min_age: childAge - 2,
-          max_age: childAge + 2,
-          dietary_preferences: child.preferences || [],
-          allergens: child.allergies || [],
-          is_generated: true,
-          profile_id: child.profile_id,
-          child_id: child.id,
-          source: 'ia',
-          auto_generated: true
-        };
-      });
+      // Sélectionner les 3 premières recettes uniques
+      const finalRecipes = uniqueRecipes.slice(0, 3).map(recipe => ({
+        name: String(recipe.name),
+        ingredients: recipe.ingredients.map(ing => ({
+          item: String(ing.item || ''),
+          quantity: String(ing.quantity || ''),
+          unit: String(ing.unit || '')
+        })),
+        instructions: Array.isArray(recipe.instructions) 
+          ? recipe.instructions.map(String)
+          : [String(recipe.instructions || '')],
+        nutritional_info: {
+          calories: Number(recipe?.nutritional_info?.calories || 0),
+          protein: Number(recipe?.nutritional_info?.protein || 0),
+          carbs: Number(recipe?.nutritional_info?.carbs || 0),
+          fat: Number(recipe?.nutritional_info?.fat || 0)
+        },
+        meal_type: mealType,
+        preparation_time: Math.min(Number(recipe?.preparation_time || 30), maxPrepTime),
+        difficulty: difficulty,
+        servings: Number(recipe?.servings || 4),
+        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
+        min_age: childAge - 2,
+        max_age: childAge + 2,
+        dietary_preferences: child.preferences || [],
+        allergens: child.allergies || [],
+        is_generated: true,
+        profile_id: child.profile_id,
+        child_id: child.id,
+        source: 'ia',
+        auto_generated: true
+      }));
 
-      console.log("Processed recipes:", recipes);
+      if (finalRecipes.length < 3) {
+        throw new Error("Impossible de générer 3 recettes uniques");
+      }
+
+      console.log("Final unique recipes:", finalRecipes);
 
       return new Response(
-        JSON.stringify({ recipes }),
+        JSON.stringify({ recipes: finalRecipes }),
         { 
           headers: { 
             ...corsHeaders,
