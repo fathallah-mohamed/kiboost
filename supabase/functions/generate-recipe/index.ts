@@ -14,6 +14,10 @@ serve(async (req) => {
 
   try {
     const { child, filters } = await req.json();
+    
+    if (!child || !child.birth_date) {
+      throw new Error("Les informations de l'enfant sont requises");
+    }
 
     console.log("Generating recipes for child:", child);
     console.log("Using filters:", filters);
@@ -25,13 +29,13 @@ serve(async (req) => {
     ];
 
     let constraints = [];
-    if (filters.mealType && filters.mealType !== 'all') {
+    if (filters?.mealType && filters.mealType !== 'all') {
       constraints.push(`Type de repas : ${filters.mealType}`);
     }
-    if (filters.maxPrepTime) {
+    if (filters?.maxPrepTime) {
       constraints.push(`Temps maximum : ${filters.maxPrepTime}min`);
     }
-    if (filters.difficulty && filters.difficulty !== 'all') {
+    if (filters?.difficulty && filters.difficulty !== 'all') {
       constraints.push(`Difficulté : ${filters.difficulty}`);
     }
 
@@ -89,14 +93,19 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
 
     console.log("Sending prompt to OpenAI:", prompt);
 
+    const openAiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAiKey) {
+      throw new Error('OpenAI API key is missing');
+    }
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        Authorization: `Bearer ${openAiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
@@ -167,7 +176,10 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
   } catch (error) {
     console.error("Error in generate-recipe function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack
+      }),
       { 
         status: 500,
         headers: { 
