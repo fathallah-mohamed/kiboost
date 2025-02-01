@@ -7,18 +7,9 @@ const corsHeaders = {
 };
 
 const validCategories = [
-  'cognitive',
-  'energy',
-  'satiety',
-  'digestive',
-  'immunity',
-  'growth',
-  'mental',
-  'organs',
-  'beauty',
-  'physical',
-  'prevention',
-  'global'
+  'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
+  'growth', 'mental', 'organs', 'beauty', 'physical',
+  'prevention', 'global'
 ];
 
 serve(async (req) => {
@@ -139,21 +130,21 @@ Renvoie UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT, sans tex
         throw new Error("Le format de réponse n'est pas un tableau");
       }
 
-      // Transformation des recettes pour la base de données
+      // Transform recipes for database storage
       const processedRecipes = recipes.map(recipe => ({
         profile_id: child.profile_id,
         child_id: child.id,
         name: String(recipe.name),
-        ingredients: JSON.stringify(recipe.ingredients || []),
+        ingredients: recipe.ingredients || [],
         instructions: Array.isArray(recipe.instructions) 
           ? recipe.instructions.join('\n') 
           : String(recipe.instructions || ''),
-        nutritional_info: JSON.stringify(recipe.nutritional_info || {
+        nutritional_info: recipe.nutritional_info || {
           calories: 0,
           protein: 0,
           carbs: 0,
           fat: 0
-        }),
+        },
         meal_type: recipe.meal_type || filters.mealType || 'dinner',
         preparation_time: Number(recipe.preparation_time) || filters.maxPrepTime || 30,
         max_prep_time: Number(filters.maxPrepTime) || 30,
@@ -162,15 +153,15 @@ Renvoie UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT, sans tex
         is_generated: true,
         source: 'ia',
         auto_generated: true,
-        health_benefits: JSON.stringify(recipe.health_benefits || []),
-        image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
+        health_benefits: recipe.health_benefits || [],
+        image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
         min_age: childAge - 2,
         max_age: childAge + 2,
         dietary_preferences: child.preferences || [],
         allergens: child.allergies || [],
         cost_estimate: Number(recipe.cost_estimate) || 0,
         seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
-        cooking_steps: JSON.stringify(recipe.cooking_steps || [])
+        cooking_steps: recipe.cooking_steps || []
       }));
 
       console.log("Processed recipes:", processedRecipes);
