@@ -206,6 +206,9 @@ export const useRecipeGeneration = () => {
             const parsedRecipe: Recipe = {
               ...savedRecipe,
               ingredients: JSON.parse(savedRecipe.ingredients as string),
+              instructions: Array.isArray(savedRecipe.instructions) 
+                ? savedRecipe.instructions 
+                : [savedRecipe.instructions],
               nutritional_info: JSON.parse(savedRecipe.nutritional_info as string),
               health_benefits: savedRecipe.health_benefits ? JSON.parse(savedRecipe.health_benefits as string) : [],
               cooking_steps: savedRecipe.cooking_steps ? JSON.parse(savedRecipe.cooking_steps as string) : []
