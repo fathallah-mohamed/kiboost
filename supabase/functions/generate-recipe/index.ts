@@ -14,37 +14,61 @@ serve(async (req) => {
   try {
     const { child, filters, existingRecipes = [] } = await req.json();
 
-    // Format existing recipe names for the prompt
-    const existingRecipeNames = existingRecipes
-      ?.map((recipe: any) => recipe.name)
-      .join(", ") || "None";
+    const validCategories = [
+      'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
+      'growth', 'mental', 'organs', 'beauty', 'physical',
+      'prevention', 'global'
+    ];
 
-    const prompt = `You are a professional chef specialized in children's nutrition. Generate 5 unique, healthy recipes for a child with the following characteristics:
-      - Name: ${child.name}
-      - Age: ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} years old
-      - Allergies: ${child.allergies?.join(", ") || "None"}
-      - Preferences: ${child.preferences?.join(", ") || "No specific preferences"}
-      
-      Please avoid these existing recipes: ${existingRecipeNames}
-      
-      Return ONLY a JSON array of recipe objects with NO additional text or formatting. Each recipe must follow this exact structure:
-      {
-        "name": "string",
-        "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
-        "instructions": ["string"],
-        "nutritional_info": {"calories": number, "protein": number, "carbs": number, "fat": number},
-        "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
-        "preparation_time": number,
-        "difficulty": "easy" | "medium" | "hard",
-        "servings": number,
-        "health_benefits": [{"icon": "string", "category": "string", "description": "string"}],
-        "min_age": number,
-        "max_age": number,
-        "dietary_preferences": ["string"],
-        "allergens": ["string"],
-        "cost_estimate": number,
-        "seasonal_months": [number]
-      }`;
+    let constraints = [];
+    if (filters.mealType && filters.mealType !== 'all') {
+      constraints.push(`Type de repas : ${filters.mealType}`);
+    }
+    if (filters.maxPrepTime) {
+      constraints.push(`Temps maximum : ${filters.maxPrepTime}min`);
+    }
+    if (filters.difficulty && filters.difficulty !== 'all') {
+      constraints.push(`Difficulté : ${filters.difficulty}`);
+    }
+
+    const excludeRecipes = existingRecipes.length
+      ? `Exclure toute recette ayant des ingrédients, étapes ou noms similaires à : ${existingRecipes.map((recipe: any) => recipe.name).join(', ')}`
+      : '';
+
+    const prompt = `Tu es un chef spécialisé dans la nutrition infantile. Génère 5 recettes DIFFÉRENTES et CRÉATIVES pour enfant:
+
+Age: ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} ans
+Allergies: ${child.allergies?.join(", ") || "Aucune"}
+Préférences: ${child.preferences?.join(", ") || "Aucune préférence particulière"}
+${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
+${excludeRecipes}
+
+IMPORTANT:
+- 3 bienfaits santé PARFAITEMENT distincts parmi: ${validCategories.join(', ')} dans CHAQUE recette
+- Varies les ingrédients et évite la répétition (ex: différents légumes ou sources de protéines entre recettes)
+- Temps réaliste incluant préparation + cuisson
+- Utilise des ingrédients courants et accessibles
+- Étapes claires et concises, mais VARIÉES dans leur style d'écriture
+- CHAQUE recette doit être UNIQUE (pas de noms, ingrédients, ou structures similaires)
+
+Retourne UNIQUEMENT un tableau JSON de recettes SANS texte ou formatage supplémentaire. Chaque recette doit suivre EXACTEMENT cette structure:
+{
+  "name": "string",
+  "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
+  "instructions": ["string"],
+  "nutritional_info": {"calories": number, "protein": number, "carbs": number, "fat": number},
+  "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
+  "preparation_time": number,
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": number,
+  "health_benefits": [{"icon": "string", "category": "string", "description": "string"}],
+  "min_age": number,
+  "max_age": number,
+  "dietary_preferences": ["string"],
+  "allergens": ["string"],
+  "cost_estimate": number,
+  "seasonal_months": [number]
+}`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
@@ -59,7 +83,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a professional chef specialized in children's nutrition. You create unique, healthy, and appealing recipes for children. Always return data in pure JSON format with no markdown or additional text."
+            content: "Tu es un chef spécialisé dans la nutrition infantile. Tu crées des recettes uniques, saines et attrayantes pour les enfants. Retourne TOUJOURS les données au format JSON pur sans markdown ni texte supplémentaire."
           },
           {
             role: "user",
@@ -74,25 +98,26 @@ serve(async (req) => {
     console.log("OpenAI Response:", data);
 
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error("Invalid response from OpenAI");
+      throw new Error("Réponse invalide d'OpenAI");
     }
 
     let recipes;
     try {
       const content = data.choices[0].message.content;
-      console.log("Raw OpenAI response content:", content);
+      console.log("Contenu brut de la réponse OpenAI:", content);
       
-      // Clean up the content by removing any markdown formatting
+      // Nettoyer le contenu en retirant tout formatage markdown
       const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
-      console.log("Cleaned content:", cleanContent);
+      console.log("Contenu nettoyé:", cleanContent);
       
       recipes = JSON.parse(cleanContent);
       
-      // Validate recipe structure
+      // Valider la structure des recettes
       if (!Array.isArray(recipes)) {
-        throw new Error("Recipes must be an array");
+        throw new Error("Les recettes doivent être un tableau");
       }
 
+      // Vérifier l'unicité des bienfaits santé
       recipes = recipes.map(recipe => ({
         ...recipe,
         is_generated: true,
@@ -100,10 +125,10 @@ serve(async (req) => {
         image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
       }));
 
-      console.log("Successfully parsed and processed recipes:", recipes);
+      console.log("Recettes analysées et traitées avec succès:", recipes);
     } catch (e) {
-      console.error("Error parsing recipe data:", e);
-      throw new Error(`Failed to parse recipe data: ${e.message}`);
+      console.error("Erreur lors de l'analyse des données de recette:", e);
+      throw new Error(`Échec de l'analyse des données de recette: ${e.message}`);
     }
 
     return new Response(
@@ -117,7 +142,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Error in generate-recipe function:", error);
+    console.error("Erreur dans la fonction generate-recipe:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
