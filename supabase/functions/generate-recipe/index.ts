@@ -107,11 +107,10 @@ serve(async (req) => {
       const content = data.choices[0].message.content;
       console.log("Raw content:", content);
       
-      // Clean the content to ensure valid JSON
       const cleanContent = content
-        .replace(/```json\n?|\n?```/g, '') // Remove markdown code blocks
-        .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
-        .replace(/\n/g, ' ') // Remove newlines
+        .replace(/```json\n?|\n?```/g, '')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/\n/g, ' ')
         .trim();
       
       console.log("Cleaned content:", cleanContent);
@@ -122,7 +121,6 @@ serve(async (req) => {
         throw new Error("Le format de réponse n'est pas un tableau");
       }
 
-      // Validate and transform recipes
       recipes = recipes.map(recipe => ({
         name: String(recipe.name || ''),
         ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
@@ -137,7 +135,14 @@ serve(async (req) => {
         preparation_time: Math.min(Number(recipe?.preparation_time || 15), maxPrepTime),
         difficulty: difficulty,
         servings: Number(recipe?.servings || 4),
-        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : []
+        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
+        min_age: childAge - 2,
+        max_age: childAge + 2,
+        dietary_preferences: child.preferences || [],
+        allergens: child.allergies || [],
+        is_generated: true,
+        profile_id: child.profile_id,
+        child_id: child.id
       }));
 
       console.log("Processed recipes:", recipes);

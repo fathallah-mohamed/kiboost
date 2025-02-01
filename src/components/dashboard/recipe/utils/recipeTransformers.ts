@@ -1,5 +1,5 @@
 import { Json } from "@/integrations/supabase/types";
-import { Recipe, RecipeIngredient, NutritionalInfo } from "../../types";
+import { Recipe, RecipeIngredient, NutritionalInfo } from "../../types/recipe";
 
 type JsonObject = { [key: string]: Json };
 
@@ -75,13 +75,28 @@ export const parseNutritionalInfo = (info: Json): NutritionalInfo => {
   }
 };
 
+export const parseInstructions = (instructions: Json): string[] => {
+  try {
+    if (typeof instructions === 'string') {
+      return [instructions];
+    }
+    if (Array.isArray(instructions)) {
+      return instructions.map(String);
+    }
+    return [];
+  } catch (error) {
+    console.error('Error parsing instructions:', error);
+    return [];
+  }
+};
+
 export const transformToRecipe = (data: any): Recipe => {
   return {
     id: data.id,
     profile_id: data.profile_id,
     name: data.name,
     ingredients: parseIngredients(data.ingredients),
-    instructions: String(data.instructions || ''),
+    instructions: parseInstructions(data.instructions),
     nutritional_info: parseNutritionalInfo(data.nutritional_info),
     meal_type: data.meal_type || 'dinner',
     preparation_time: Number(data.preparation_time || 30),
@@ -96,7 +111,6 @@ export const transformToRecipe = (data: any): Recipe => {
     cost_estimate: Number(data.cost_estimate || 0),
     seasonal_months: Array.isArray(data.seasonal_months) ? data.seasonal_months : [1,2,3,4,5,6,7,8,9,10,11,12],
     cooking_steps: data.cooking_steps || [],
-    is_generated: Boolean(data.is_generated),
-    max_prep_time: Number(data.max_prep_time || 30)
+    is_generated: Boolean(data.is_generated)
   };
 };

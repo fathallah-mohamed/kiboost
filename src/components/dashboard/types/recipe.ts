@@ -7,22 +7,26 @@ export type SpecialOccasion = 'birthday' | 'school' | 'quick' | 'party' | 'holid
 export type FilterMealType = MealType | 'all';
 export type FilterDifficulty = Difficulty | 'all';
 
+export interface RecipeIngredient {
+  item: string;
+  quantity: string;
+  unit: string;
+}
+
+export interface NutritionalInfo {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 export interface Recipe {
   id: string;
   profile_id: string;
   name: string;
-  ingredients: Array<{
-    item: string;
-    quantity: string;
-    unit: string;
-  }>;
+  ingredients: RecipeIngredient[];
   instructions: string[];
-  nutritional_info: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
+  nutritional_info: NutritionalInfo;
   meal_type: MealType;
   preparation_time: number;
   difficulty: Difficulty;
