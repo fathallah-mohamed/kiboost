@@ -51,12 +51,15 @@ export const Timeline = ({ currentStep, onSectionChange }: TimelineProps) => {
   ];
 
   const getStepStatus = (index: number): StepStatus => {
-    if (index < currentStep) return "completed";
-    if (index === currentStep) return "in_progress";
+    // Une étape est complétée uniquement si elle est strictement inférieure à l'étape courante
+    if (index < currentStep - 1) return "completed";
+    // L'étape courante est "in_progress"
+    if (index === currentStep - 1) return "in_progress";
+    // Les étapes suivantes sont "not_started"
     return "not_started";
   };
 
-  const progress = Math.round((currentStep / steps.length) * 100);
+  const progress = Math.round(((currentStep - 1) / steps.length) * 100);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -81,7 +84,7 @@ export const Timeline = ({ currentStep, onSectionChange }: TimelineProps) => {
             actionLabel={step.actionLabel}
             onAction={() => navigate(`/dashboard/${step.route}`)}
             isLast={index === steps.length - 1}
-            disabled={index > currentStep}
+            disabled={index >= currentStep}
           />
         ))}
       </div>
