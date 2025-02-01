@@ -6,11 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Fonction de hachage pour comparer les recettes
-function hashRecipe(recipe: any) {
-  return `${recipe.name.toLowerCase()}-${recipe.ingredients.map((i: any) => i.item.toLowerCase()).join('-')}`;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -31,7 +26,7 @@ serve(async (req) => {
     const maxPrepTime = filters?.maxPrepTime || 30;
     const difficulty = filters?.difficulty || 'medium';
 
-    const prompt = `Tu es un chef expert en nutrition infantile. Génère UNIQUEMENT un tableau JSON de 5 recettes UNIQUES avec ce format STRICT:
+    const prompt = `Tu es un chef expert en nutrition infantile. Génère UNIQUEMENT un tableau JSON de 3 recettes UNIQUES avec ce format STRICT:
 
 [
   {
@@ -57,7 +52,7 @@ serve(async (req) => {
 - Préférences: ${child.preferences?.length ? child.preferences.join(", ") : "Aucune"}
 
 ⚠️ IMPORTANT:
-- Génère EXACTEMENT 5 recettes DIFFÉRENTES
+- Génère EXACTEMENT 3 recettes DIFFÉRENTES
 - RESPECTE le format JSON fourni
 - Temps max: ${maxPrepTime}min
 - Difficulté: ${difficulty}
@@ -120,59 +115,63 @@ serve(async (req) => {
         throw new Error("Le format de réponse n'est pas un tableau");
       }
 
-      // Vérification de l'unicité des recettes
-      const uniqueRecipes = [];
-      const seenHashes = new Set();
-
-      for (const recipe of recipes) {
-        const hash = hashRecipe(recipe);
-        if (!seenHashes.has(hash)) {
-          seenHashes.add(hash);
-          uniqueRecipes.push(recipe);
+      // Transformation et validation des recettes
+      const processedRecipes = recipes.map(recipe => {
+        // Validation des champs requis
+        if (!recipe.name || !Array.isArray(recipe.ingredients)) {
+          throw new Error("Format de recette invalide");
         }
-      }
 
-      // Sélectionner les 3 premières recettes uniques
-      const finalRecipes = uniqueRecipes.slice(0, 3).map(recipe => ({
-        name: String(recipe.name),
-        ingredients: recipe.ingredients.map(ing => ({
+        // S'assurer que les ingrédients sont au bon format
+        const ingredients = recipe.ingredients.map(ing => ({
           item: String(ing.item || ''),
           quantity: String(ing.quantity || ''),
           unit: String(ing.unit || '')
-        })),
-        instructions: Array.isArray(recipe.instructions) 
+        }));
+
+        // S'assurer que les instructions sont un tableau
+        const instructions = Array.isArray(recipe.instructions) 
           ? recipe.instructions.map(String)
-          : [String(recipe.instructions || '')],
-        nutritional_info: {
-          calories: Number(recipe?.nutritional_info?.calories || 0),
-          protein: Number(recipe?.nutritional_info?.protein || 0),
-          carbs: Number(recipe?.nutritional_info?.carbs || 0),
-          fat: Number(recipe?.nutritional_info?.fat || 0)
-        },
-        meal_type: mealType,
-        preparation_time: Math.min(Number(recipe?.preparation_time || 30), maxPrepTime),
-        difficulty: difficulty,
-        servings: Number(recipe?.servings || 4),
-        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
-        min_age: childAge - 2,
-        max_age: childAge + 2,
-        dietary_preferences: child.preferences || [],
-        allergens: child.allergies || [],
-        is_generated: true,
-        profile_id: child.profile_id,
-        child_id: child.id,
-        source: 'ia',
-        auto_generated: true
-      }));
+          : [String(recipe.instructions || '')];
 
-      if (finalRecipes.length < 3) {
-        throw new Error("Impossible de générer 3 recettes uniques");
-      }
+        // Créer l'objet recette avec tous les champs correctement formatés
+        return {
+          name: String(recipe.name),
+          ingredients: JSON.stringify(ingredients), // Convertir en chaîne JSON
+          instructions: instructions.join('\n'), // Convertir en chaîne avec sauts de ligne
+          nutritional_info: JSON.stringify({
+            calories: Number(recipe?.nutritional_info?.calories || 0),
+            protein: Number(recipe?.nutritional_info?.protein || 0),
+            carbs: Number(recipe?.nutritional_info?.carbs || 0),
+            fat: Number(recipe?.nutritional_info?.fat || 0)
+          }),
+          meal_type: mealType,
+          preparation_time: Math.min(Number(recipe?.preparation_time || 30), maxPrepTime),
+          max_prep_time: maxPrepTime,
+          difficulty: difficulty,
+          servings: Number(recipe?.servings || 4),
+          health_benefits: JSON.stringify(
+            Array.isArray(recipe.health_benefits) ? recipe.health_benefits : []
+          ),
+          min_age: childAge - 2,
+          max_age: childAge + 2,
+          dietary_preferences: child.preferences || [],
+          allergens: child.allergies || [],
+          cost_estimate: 0,
+          seasonal_months: [1,2,3,4,5,6,7,8,9,10,11,12],
+          cooking_steps: JSON.stringify([]),
+          is_generated: true,
+          profile_id: child.profile_id,
+          child_id: child.id,
+          source: 'ia',
+          auto_generated: true
+        };
+      });
 
-      console.log("Final unique recipes:", finalRecipes);
+      console.log("Processed recipes:", processedRecipes);
 
       return new Response(
-        JSON.stringify({ recipes: finalRecipes }),
+        JSON.stringify({ recipes: processedRecipes }),
         { 
           headers: { 
             ...corsHeaders,
