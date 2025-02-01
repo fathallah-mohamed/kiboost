@@ -2,10 +2,73 @@ import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
+
+interface DbRecipe {
+  id: string;
+  profile_id: string;
+  name: string;
+  ingredients: Json;
+  instructions: string;
+  nutritional_info: Json;
+  meal_type: string;
+  preparation_time: number;
+  difficulty: string;
+  servings: number;
+  is_generated: boolean;
+  image_url: string;
+  health_benefits: Json;
+  min_age: number;
+  max_age: number;
+  dietary_preferences: string[];
+  allergens: string[];
+  cost_estimate: number;
+  seasonal_months: number[];
+  cooking_steps: Json;
+  child_id: string;
+  max_prep_time: number;
+  source: string;
+  auto_generated: boolean;
+}
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const transformDbRecipeToRecipe = (dbRecipe: DbRecipe): Recipe => {
+    return {
+      ...dbRecipe,
+      ingredients: Array.isArray(dbRecipe.ingredients) 
+        ? dbRecipe.ingredients.map(ing => ({
+            item: String(ing.item || ''),
+            quantity: String(ing.quantity || ''),
+            unit: String(ing.unit || '')
+          }))
+        : [],
+      instructions: Array.isArray(dbRecipe.instructions) 
+        ? dbRecipe.instructions.map(String)
+        : [String(dbRecipe.instructions)],
+      nutritional_info: typeof dbRecipe.nutritional_info === 'object' 
+        ? {
+            calories: Number(dbRecipe.nutritional_info.calories || 0),
+            protein: Number(dbRecipe.nutritional_info.protein || 0),
+            carbs: Number(dbRecipe.nutritional_info.carbs || 0),
+            fat: Number(dbRecipe.nutritional_info.fat || 0)
+          }
+        : {
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0
+          },
+      health_benefits: Array.isArray(dbRecipe.health_benefits) 
+        ? dbRecipe.health_benefits
+        : [],
+      cooking_steps: Array.isArray(dbRecipe.cooking_steps) 
+        ? dbRecipe.cooking_steps
+        : []
+    };
+  };
 
   const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     if (!child.name || !child.birth_date) {
@@ -53,35 +116,28 @@ export const useRecipeGeneration = () => {
         try {
           console.log("Processing recipe:", recipe);
 
-          // Ensure ingredients is a proper JSON object
-          const ingredients = typeof recipe.ingredients === 'string' 
-            ? JSON.parse(recipe.ingredients) 
-            : recipe.ingredients;
-
-          // Ensure nutritional_info is a proper JSON object
-          const nutritionalInfo = typeof recipe.nutritional_info === 'string'
-            ? JSON.parse(recipe.nutritional_info)
-            : recipe.nutritional_info;
-
-          // Ensure health_benefits is a proper JSON array
-          const healthBenefits = typeof recipe.health_benefits === 'string'
-            ? JSON.parse(recipe.health_benefits)
-            : recipe.health_benefits || [];
-
-          // Ensure cooking_steps is a proper JSON array
-          const cookingSteps = typeof recipe.cooking_steps === 'string'
-            ? JSON.parse(recipe.cooking_steps)
-            : recipe.cooking_steps || [];
-
           const recipeData = {
             profile_id: child.profile_id,
             child_id: child.id,
             name: String(recipe.name),
-            ingredients: ingredients,
-            instructions: Array.isArray(recipe.instructions) 
+            ingredients: Array.isArray(recipe.ingredients) 
+              ? recipe.ingredients 
+              : typeof recipe.ingredients === 'string'
+                ? JSON.parse(recipe.ingredients)
+                : [],
+            instructions: Array.isArray(recipe.instructions)
               ? recipe.instructions
               : [String(recipe.instructions)],
-            nutritional_info: nutritionalInfo,
+            nutritional_info: typeof recipe.nutritional_info === 'object'
+              ? recipe.nutritional_info
+              : typeof recipe.nutritional_info === 'string'
+                ? JSON.parse(recipe.nutritional_info)
+                : {
+                    calories: 0,
+                    protein: 0,
+                    carbs: 0,
+                    fat: 0
+                  },
             meal_type: recipe.meal_type || 'dinner',
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
@@ -89,19 +145,27 @@ export const useRecipeGeneration = () => {
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
-            health_benefits: healthBenefits,
-            cooking_steps: cookingSteps,
+            health_benefits: Array.isArray(recipe.health_benefits)
+              ? recipe.health_benefits
+              : typeof recipe.health_benefits === 'string'
+                ? JSON.parse(recipe.health_benefits)
+                : [],
+            cooking_steps: Array.isArray(recipe.cooking_steps)
+              ? recipe.cooking_steps
+              : typeof recipe.cooking_steps === 'string'
+                ? JSON.parse(recipe.cooking_steps)
+                : [],
             image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
             min_age: Number(recipe.min_age) || 0,
             max_age: Number(recipe.max_age) || 18,
-            dietary_preferences: Array.isArray(recipe.dietary_preferences) 
+            dietary_preferences: Array.isArray(recipe.dietary_preferences)
               ? recipe.dietary_preferences
               : [],
-            allergens: Array.isArray(recipe.allergens) 
+            allergens: Array.isArray(recipe.allergens)
               ? recipe.allergens
               : [],
             cost_estimate: Number(recipe.cost_estimate) || 0,
-            seasonal_months: Array.isArray(recipe.seasonal_months) 
+            seasonal_months: Array.isArray(recipe.seasonal_months)
               ? recipe.seasonal_months
               : [1,2,3,4,5,6,7,8,9,10,11,12],
             is_generated: true
@@ -121,7 +185,7 @@ export const useRecipeGeneration = () => {
           }
 
           if (savedRecipe) {
-            savedRecipes.push(savedRecipe as Recipe);
+            savedRecipes.push(transformDbRecipeToRecipe(savedRecipe as DbRecipe));
           }
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
