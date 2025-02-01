@@ -1,7 +1,32 @@
 import { useState } from "react";
-import { Recipe, RecipeFilters, ChildProfile } from "../../types";
+import { Recipe, RecipeFilters, ChildProfile, MealType, Difficulty } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
+
+// Helper function to validate meal type
+const validateMealType = (type: string): MealType => {
+  const validTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+  return validTypes.includes(type as MealType) ? type as MealType : 'dinner';
+};
+
+// Helper function to validate difficulty
+const validateDifficulty = (level: string): Difficulty => {
+  const validLevels: Difficulty[] = ['easy', 'medium', 'hard'];
+  return validLevels.includes(level as Difficulty) ? level as Difficulty : 'medium';
+};
+
+// Helper function to safely parse JSON
+const safeParseJson = (value: Json | null): any => {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -19,7 +44,6 @@ export const useRecipeGeneration = () => {
       console.log("Generating recipes for child:", child);
       console.log("Using filters:", filters);
 
-      // Appel à la fonction Edge pour générer les recettes
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
         {
@@ -46,32 +70,39 @@ export const useRecipeGeneration = () => {
 
       const savedRecipes: Recipe[] = [];
 
-      // Sauvegarde de chaque recette
       for (const recipe of response.recipes) {
         try {
           const recipeData = {
             profile_id: child.profile_id,
             child_id: child.id,
-            name: recipe.name,
+            name: String(recipe.name),
             ingredients: JSON.stringify(recipe.ingredients),
-            instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [recipe.instructions],
+            instructions: Array.isArray(recipe.instructions) 
+              ? recipe.instructions.map(String)
+              : [String(recipe.instructions)],
             nutritional_info: JSON.stringify(recipe.nutritional_info),
-            meal_type: recipe.meal_type || 'dinner',
+            meal_type: validateMealType(recipe.meal_type),
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
-            difficulty: recipe.difficulty || 'medium',
+            difficulty: validateDifficulty(recipe.difficulty),
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
             health_benefits: JSON.stringify(recipe.health_benefits || []),
             cooking_steps: JSON.stringify(recipe.cooking_steps || []),
-            image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
+            image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
             min_age: Number(recipe.min_age) || 0,
             max_age: Number(recipe.max_age) || 18,
-            dietary_preferences: recipe.dietary_preferences || [],
-            allergens: recipe.allergens || [],
+            dietary_preferences: Array.isArray(recipe.dietary_preferences) 
+              ? recipe.dietary_preferences.map(String)
+              : [],
+            allergens: Array.isArray(recipe.allergens) 
+              ? recipe.allergens.map(String)
+              : [],
             cost_estimate: Number(recipe.cost_estimate) || 0,
-            seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
+            seasonal_months: Array.isArray(recipe.seasonal_months) 
+              ? recipe.seasonal_months.map(Number)
+              : [1,2,3,4,5,6,7,8,9,10,11,12],
             is_generated: true
           };
 
@@ -88,17 +119,18 @@ export const useRecipeGeneration = () => {
           if (savedRecipe) {
             const parsedRecipe: Recipe = {
               ...savedRecipe,
-              ingredients: JSON.parse(savedRecipe.ingredients),
-              nutritional_info: JSON.parse(savedRecipe.nutritional_info),
-              instructions: Array.isArray(savedRecipe.instructions) 
-                ? savedRecipe.instructions 
-                : [savedRecipe.instructions],
-              health_benefits: savedRecipe.health_benefits 
-                ? JSON.parse(savedRecipe.health_benefits)
-                : [],
-              cooking_steps: savedRecipe.cooking_steps 
-                ? JSON.parse(savedRecipe.cooking_steps)
-                : []
+              ingredients: safeParseJson(savedRecipe.ingredients),
+              nutritional_info: safeParseJson(savedRecipe.nutritional_info),
+              instructions: Array.isArray(savedRecipe.instructions)
+                ? savedRecipe.instructions
+                : [String(savedRecipe.instructions)],
+              health_benefits: safeParseJson(savedRecipe.health_benefits),
+              cooking_steps: safeParseJson(savedRecipe.cooking_steps),
+              meal_type: validateMealType(savedRecipe.meal_type),
+              difficulty: validateDifficulty(savedRecipe.difficulty),
+              allergens: savedRecipe.allergens || [],
+              dietary_preferences: savedRecipe.dietary_preferences || [],
+              seasonal_months: savedRecipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12]
             };
             savedRecipes.push(parsedRecipe);
           }
