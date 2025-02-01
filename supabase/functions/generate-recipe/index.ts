@@ -139,6 +139,7 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
       const content = data.choices[0].message.content;
       console.log("Raw OpenAI response content:", content);
       
+      // Clean the response to ensure it's valid JSON
       const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
       console.log("Cleaned content:", cleanContent);
       
@@ -148,14 +149,22 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
         recipes = [recipes];
       }
 
+      // Validate and transform each recipe
       recipes = recipes.map(recipe => ({
         ...recipe,
-        profile_id: child.profile_id,
-        child_id: child.id,
-        source: 'ia',
-        image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
-        is_generated: true,
-        auto_generated: true
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+        instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
+        nutritional_info: recipe.nutritional_info || {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0
+        },
+        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
+        cooking_steps: Array.isArray(recipe.cooking_steps) ? recipe.cooking_steps : [],
+        dietary_preferences: Array.isArray(recipe.dietary_preferences) ? recipe.dietary_preferences : [],
+        allergens: Array.isArray(recipe.allergens) ? recipe.allergens : [],
+        seasonal_months: Array.isArray(recipe.seasonal_months) ? recipe.seasonal_months : [1,2,3,4,5,6,7,8,9,10,11,12]
       }));
 
       console.log("Recipes processed successfully:", recipes);
