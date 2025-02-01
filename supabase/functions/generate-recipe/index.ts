@@ -4,12 +4,11 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -61,41 +60,40 @@ serve(async (req) => {
 
     const mealTypePrompt = mealTypePrompts[filters.mealType as keyof typeof mealTypePrompts] || mealTypePrompts.dinner;
 
-    const prompt = `Tu es un chef expert en nutrition infantile spécialisé dans la création de recettes ${isBreakfast ? 'de petit-déjeuner' : ''} ${isQuick ? 'rapides' : ''} ${isEasy ? 'et faciles' : ''} pour les enfants.
+    const prompt = `Tu es un chef expert en nutrition infantile. Génère UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT:
 
-🔹 **Profil de l'enfant:**
+[
+  {
+    "name": "Nom de la recette",
+    "ingredients": [
+      {"item": "Ingrédient", "quantity": "Valeur", "unit": "Unité"}
+    ],
+    "instructions": ["Étape 1", "Étape 2"],
+    "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
+    "meal_type": "${filters.mealType}",
+    "preparation_time": ${Math.min(filters.maxPrepTime || 30, 15)},
+    "difficulty": "${filters.difficulty}",
+    "servings": 1,
+    "health_benefits": [
+      {"icon": "🍳", "category": "energy", "description": "Description"}
+    ]
+  }
+]
+
+🔹 Profil enfant:
 - Âge: ${childAge} ans
 - Allergies: ${child.allergies?.length ? child.allergies.join(", ") : "Aucune"}
-- Préférences: ${child.preferences?.length ? child.preferences.join(", ") : "Aucune préférence"}
+- Préférences: ${child.preferences?.length ? child.preferences.join(", ") : "Aucune"}
 
 ${mealTypePrompt}
 
-🔹 **Critères stricts:**
-- Type de repas: ${filters.mealType}
-- Temps maximum: ${filters.maxPrepTime}min
-- Difficulté: ${filters.difficulty}
-
 ⚠️ IMPORTANT: 
-- Génère TOUJOURS au moins 3 recettes, même si certaines contraintes sont difficiles
-- Adapte les recettes plutôt que de ne rien renvoyer
-- RESPECTE STRICTEMENT le temps de préparation maximum
-- Utilise des ingrédients SIMPLES et FACILES à trouver
-- Assure-toi que les recettes sont adaptées à l'âge de l'enfant
-
-Retourne UNIQUEMENT un tableau JSON avec ce format STRICT:
-{
-  "name": "Nom descriptif",
-  "ingredients": [{"item": "Ingrédient", "quantity": "Valeur", "unit": "Unité"}],
-  "instructions": ["Étape 1", "Étape 2"],
-  "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
-  "meal_type": "${filters.mealType}",
-  "preparation_time": ${Math.min(filters.maxPrepTime || 30, 15)},
-  "difficulty": "${filters.difficulty}",
-  "servings": 1,
-  "health_benefits": [
-    {"icon": "emoji", "category": "catégorie", "description": "description"}
-  ]
-}`;
+- Génère EXACTEMENT 3 recettes
+- RESPECTE le format JSON fourni
+- Temps max: ${filters.maxPrepTime}min
+- Difficulté: ${filters.difficulty}
+- Ingrédients simples
+- Adapté à l'âge: ${childAge} ans`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
@@ -115,17 +113,15 @@ Retourne UNIQUEMENT un tableau JSON avec ce format STRICT:
         messages: [
           {
             role: "system",
-            content: "Tu es un chef expert qui génère UNIQUEMENT du JSON valide, sans texte ni markdown."
+            content: "Tu es un chef qui génère UNIQUEMENT du JSON valide, sans texte ni markdown."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        temperature: 0.8,
+        temperature: 0.7,
         max_tokens: 2000,
-        presence_penalty: 0.4,
-        frequency_penalty: 0.4
       }),
     });
 
@@ -145,16 +141,14 @@ Retourne UNIQUEMENT un tableau JSON avec ce format STRICT:
     let recipes;
     try {
       const content = data.choices[0].message.content;
-      console.log("Raw OpenAI response content:", content);
+      console.log("Raw content:", content);
       
-      // Clean the content and ensure it's valid JSON
+      // Clean the content to ensure valid JSON
       const cleanContent = content
-        .replace(/```json\n|\n```|```/g, '')
-        .trim()
-        .replace(/\n/g, ' ')
-        .replace(/,\s*}/g, '}')
-        .replace(/,\s*\]/g, ']')
-        .replace(/\s+/g, ' ');
+        .replace(/```json\n?|\n?```/g, '') // Remove markdown code blocks
+        .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
+        .replace(/\n/g, ' ') // Remove newlines
+        .trim();
       
       console.log("Cleaned content:", cleanContent);
       
@@ -164,15 +158,11 @@ Retourne UNIQUEMENT un tableau JSON avec ce format STRICT:
         recipes = [recipes];
       }
 
-      // Validation et transformation
+      // Validate and transform recipes
       recipes = recipes.map(recipe => ({
         ...recipe,
-        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({
-          item: String(ing.item || ''),
-          quantity: String(ing.quantity || ''),
-          unit: String(ing.unit || '')
-        })) : [],
-        instructions: Array.isArray(recipe.instructions) ? recipe.instructions.map(String) : [],
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+        instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
         nutritional_info: {
           calories: Number(recipe?.nutritional_info?.calories || 0),
           protein: Number(recipe?.nutritional_info?.protein || 0),
@@ -182,14 +172,10 @@ Retourne UNIQUEMENT un tableau JSON avec ce format STRICT:
         meal_type: filters.mealType,
         preparation_time: Math.min(Number(recipe?.preparation_time || 15), filters.maxPrepTime || 30),
         difficulty: filters.difficulty,
-        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits.map(benefit => ({
-          icon: String(benefit.icon || '🍳'),
-          category: String(benefit.category || 'energy'),
-          description: String(benefit.description || 'Apporte de l\'énergie')
-        })) : []
+        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : []
       }));
 
-      console.log("Recipes processed successfully:", recipes);
+      console.log("Processed recipes:", recipes);
     } catch (e) {
       console.error("Error processing recipe data:", e);
       throw new Error(`Failed to process recipe data: ${e.message}`);
