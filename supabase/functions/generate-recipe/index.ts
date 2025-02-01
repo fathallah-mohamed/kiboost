@@ -39,7 +39,7 @@ serve(async (req) => {
       constraints.push(`Difficulté : ${filters.difficulty}`);
     }
 
-    const prompt = `Tu es un chef expert en nutrition infantile spécialisé dans la création de recettes UNIQUES et ADAPTÉES. Ta mission est de générer 5 recettes DIFFÉRENTES qui respectent STRICTEMENT les critères suivants:
+    const prompt = `Tu es un chef expert en nutrition infantile spécialisé dans la création de recettes UNIQUES et ADAPTÉES. Ta mission est de générer 8 recettes DIFFÉRENTES qui respectent STRICTEMENT les critères suivants:
 
 🔹 **Profil de l'enfant :**
 - **Âge** : ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} ans
@@ -56,6 +56,7 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
 4. **SANTÉ** : Inclure EXACTEMENT 3 bienfaits santé distincts parmi : ${validCategories.join(", ")}.
 5. **PRATIQUE** : Utiliser des ingrédients courants qu'on trouve facilement en supermarché.
 6. **ADAPTABILITÉ** : La recette doit pouvoir être préparée par un parent même pressé.
+7. **DIVERSITÉ** : Varier les types de plats, les ingrédients et les techniques de cuisson.
 
 ⚠️ **Format JSON STRICT pour chaque recette :**
 {
@@ -81,7 +82,7 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
   ]
 }
 
-⚠️ IMPORTANT: Retourne UNIQUEMENT un tableau JSON avec 5 recettes UNIQUES, sans texte additionnel.`;
+⚠️ IMPORTANT: Retourne UNIQUEMENT un tableau JSON avec 8 recettes UNIQUES, sans texte additionnel.`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
@@ -97,7 +98,7 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -108,8 +109,10 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
             content: prompt
           }
         ],
-        temperature: 1.0, // Augmenté pour plus de créativité
-        max_tokens: 4000, // Augmenté pour permettre plus de recettes
+        temperature: 1.0,
+        max_tokens: 4000,
+        presence_penalty: 0.6,
+        frequency_penalty: 0.8
       }),
     });
 

@@ -50,29 +50,18 @@ export const useRecipeGeneration = () => {
         try {
           console.log("Processing recipe:", recipe);
 
-          // Ensure ingredients is an array and not a string
-          const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : 
-            (typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : []);
-
-          // Ensure instructions is an array
-          const instructions = Array.isArray(recipe.instructions) ? recipe.instructions :
-            (typeof recipe.instructions === 'string' ? JSON.parse(recipe.instructions) : []);
-
-          // Ensure health_benefits is an array
-          const healthBenefits = Array.isArray(recipe.health_benefits) ? recipe.health_benefits :
-            (typeof recipe.health_benefits === 'string' ? JSON.parse(recipe.health_benefits) : []);
-
-          // Ensure cooking_steps is an array
-          const cookingSteps = Array.isArray(recipe.cooking_steps) ? recipe.cooking_steps :
-            (typeof recipe.cooking_steps === 'string' ? JSON.parse(recipe.cooking_steps) : []);
-
           const recipeData = {
             profile_id: child.profile_id,
             child_id: child.id,
             name: String(recipe.name),
-            ingredients,
-            instructions,
-            nutritional_info: recipe.nutritional_info,
+            ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+            instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
+            nutritional_info: recipe.nutritional_info || {
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0
+            },
             meal_type: validateMealType(recipe.meal_type),
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
@@ -80,8 +69,7 @@ export const useRecipeGeneration = () => {
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
-            health_benefits: healthBenefits,
-            cooking_steps: cookingSteps,
+            health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
             image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
             min_age: Number(recipe.min_age) || 0,
             max_age: Number(recipe.max_age) || 18,
@@ -89,6 +77,7 @@ export const useRecipeGeneration = () => {
             allergens: Array.isArray(recipe.allergens) ? recipe.allergens : [],
             cost_estimate: Number(recipe.cost_estimate) || 0,
             seasonal_months: Array.isArray(recipe.seasonal_months) ? recipe.seasonal_months : [1,2,3,4,5,6,7,8,9,10,11,12],
+            cooking_steps: Array.isArray(recipe.cooking_steps) ? recipe.cooking_steps : [],
             is_generated: true
           };
 
@@ -106,19 +95,7 @@ export const useRecipeGeneration = () => {
           }
 
           if (savedRecipe) {
-            const parsedRecipe: Recipe = {
-              ...savedRecipe,
-              ingredients: Array.isArray(savedRecipe.ingredients) ? savedRecipe.ingredients : JSON.parse(String(savedRecipe.ingredients)),
-              instructions: Array.isArray(savedRecipe.instructions) ? savedRecipe.instructions : [savedRecipe.instructions],
-              nutritional_info: typeof savedRecipe.nutritional_info === 'string' ? JSON.parse(savedRecipe.nutritional_info) : savedRecipe.nutritional_info,
-              meal_type: validateMealType(savedRecipe.meal_type),
-              difficulty: validateDifficulty(savedRecipe.difficulty),
-              health_benefits: savedRecipe.health_benefits ? 
-                (typeof savedRecipe.health_benefits === 'string' ? JSON.parse(savedRecipe.health_benefits) : savedRecipe.health_benefits) : [],
-              cooking_steps: savedRecipe.cooking_steps ? 
-                (typeof savedRecipe.cooking_steps === 'string' ? JSON.parse(savedRecipe.cooking_steps) : savedRecipe.cooking_steps) : []
-            };
-            savedRecipes.push(parsedRecipe);
+            savedRecipes.push(savedRecipe as Recipe);
           }
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
@@ -130,6 +107,7 @@ export const useRecipeGeneration = () => {
         throw new Error("Aucune recette n'a pu être sauvegardée");
       }
 
+      toast.success(`${savedRecipes.length} nouvelles recettes ont été générées !`);
       return savedRecipes;
 
     } catch (err) {
