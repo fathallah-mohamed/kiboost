@@ -1,109 +1,21 @@
 import { useState } from "react";
-import { Recipe, RecipeFilters, HealthBenefitCategory, MealType } from "../../types";
+import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { validateMealType, validateDifficulty } from '../utils/validationUtils';
-import { Json } from "@/integrations/supabase/types";
-
-type RecipeIngredient = {
-  item: string;
-  quantity: string;
-  unit: string;
-};
-
-type JsonObject = { [key: string]: Json };
+import { transformToRecipe } from '../utils/recipeTransformers';
+import { useRecipeError } from './useRecipeError';
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { error, handleError } = useRecipeError();
 
-  const parseIngredients = (ingredients: Json): RecipeIngredient[] => {
-    if (Array.isArray(ingredients)) {
-      return ingredients.map(ing => {
-        const item = ing as JsonObject;
-        return {
-          item: String(item?.item || ''),
-          quantity: String(item?.quantity || ''),
-          unit: String(item?.unit || '')
-        };
-      });
-    }
-    return [];
-  };
-
-  const parseInstructions = (instructions: Json): string[] => {
-    if (Array.isArray(instructions)) {
-      return instructions.map(String);
-    }
-    if (typeof instructions === 'string') {
-      try {
-        const parsed = JSON.parse(instructions);
-        return Array.isArray(parsed) ? parsed.map(String) : [String(instructions)];
-      } catch {
-        return [String(instructions)];
-      }
-    }
-    return [];
-  };
-
-  const parseNutritionalInfo = (info: Json) => {
-    const defaultInfo = {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0
-    };
-
-    if (typeof info === 'object' && info !== null && !Array.isArray(info)) {
-      const nutritionalInfo = info as JsonObject;
-      return {
-        calories: Number(nutritionalInfo?.calories || 0),
-        protein: Number(nutritionalInfo?.protein || 0),
-        carbs: Number(nutritionalInfo?.carbs || 0),
-        fat: Number(nutritionalInfo?.fat || 0)
-      };
-    }
-    return defaultInfo;
-  };
-
-  const parseHealthBenefits = (benefits: Json) => {
-    if (Array.isArray(benefits)) {
-      return benefits.map(benefit => {
-        const b = benefit as JsonObject;
-        return {
-          icon: String(b?.icon || ''),
-          category: String(b?.category || '') as HealthBenefitCategory,
-          description: String(b?.description || '')
-        };
-      });
-    }
-    return [];
-  };
-
-  const parseCookingSteps = (steps: Json) => {
-    if (Array.isArray(steps)) {
-      return steps.map(step => {
-        const s = step as JsonObject;
-        return {
-          step: Number(s?.step || 0),
-          description: String(s?.description || ''),
-          duration: Number(s?.duration || 0),
-          tips: String(s?.tips || '')
-        };
-      });
-    }
-    return [];
-  };
-
-  const generateRecipes = async (child: { id: string; name: string; birth_date: string; allergies?: string[]; preferences?: string[]; profile_id: string }, filters: RecipeFilters) => {
+  const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     if (!child.name || !child.birth_date) {
       throw new Error("Les informations de l'enfant sont incomplètes");
     }
 
     try {
       setLoading(true);
-      setError(null);
-
       console.log("Generating recipes for child:", child);
       console.log("Using filters:", filters);
 
@@ -144,10 +56,10 @@ export const useRecipeGeneration = () => {
             ingredients: JSON.stringify(recipe.ingredients),
             instructions: JSON.stringify(recipe.instructions),
             nutritional_info: JSON.stringify(recipe.nutritional_info),
-            meal_type: validateMealType(recipe.meal_type) as MealType,
+            meal_type: recipe.meal_type,
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
-            difficulty: validateDifficulty(recipe.difficulty),
+            difficulty: recipe.difficulty,
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
@@ -174,15 +86,7 @@ export const useRecipeGeneration = () => {
           if (saveError) throw saveError;
 
           if (savedRecipe) {
-            const typedRecipe: Recipe = {
-              ...savedRecipe,
-              ingredients: parseIngredients(savedRecipe.ingredients),
-              instructions: parseInstructions(savedRecipe.instructions),
-              nutritional_info: parseNutritionalInfo(savedRecipe.nutritional_info),
-              health_benefits: parseHealthBenefits(savedRecipe.health_benefits),
-              cooking_steps: parseCookingSteps(savedRecipe.cooking_steps),
-              meal_type: validateMealType(savedRecipe.meal_type) as MealType
-            };
+            const typedRecipe = transformToRecipe(savedRecipe);
             savedRecipes.push(typedRecipe);
           }
         } catch (error) {
@@ -199,11 +103,7 @@ export const useRecipeGeneration = () => {
       return savedRecipes;
 
     } catch (err) {
-      console.error("Error in recipe generation process:", err);
-      const errorMessage = err instanceof Error ? err.message : "Une erreur est survenue";
-      setError(errorMessage);
-      toast.error(errorMessage);
-      throw err;
+      return handleError(err, "Une erreur est survenue lors de la génération des recettes");
     } finally {
       setLoading(false);
     }
