@@ -1,35 +1,8 @@
 import { useState } from "react";
-import { Recipe, RecipeFilters, ChildProfile } from "../../types";
+import { Recipe, RecipeFilters, ChildProfile, HealthBenefitCategory } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Json } from "@/integrations/supabase/types";
-
-interface DbRecipe {
-  id: string;
-  profile_id: string;
-  name: string;
-  ingredients: Json;
-  instructions: string;
-  nutritional_info: Json;
-  meal_type: string;
-  preparation_time: number;
-  difficulty: string;
-  servings: number;
-  is_generated: boolean;
-  image_url: string;
-  health_benefits: Json;
-  min_age: number;
-  max_age: number;
-  dietary_preferences: string[];
-  allergens: string[];
-  cost_estimate: number;
-  seasonal_months: number[];
-  cooking_steps: Json;
-  child_id: string;
-  max_prep_time: number;
-  source: string;
-  auto_generated: boolean;
-}
 
 interface Ingredient {
   item: string;
@@ -51,62 +24,81 @@ interface CookingStep {
   tips?: string;
 }
 
+interface HealthBenefit {
+  icon: string;
+  category: HealthBenefitCategory;
+  description: string;
+}
+
+const parseIngredients = (ingredients: Json): Ingredient[] => {
+  if (!Array.isArray(ingredients)) return [];
+  
+  return ingredients.map(ing => {
+    if (typeof ing === 'object' && ing !== null) {
+      return {
+        item: String(ing.item || ''),
+        quantity: String(ing.quantity || ''),
+        unit: String(ing.unit || '')
+      };
+    }
+    return { item: '', quantity: '', unit: '' };
+  });
+};
+
+const parseNutritionalInfo = (info: Json): NutritionalInfo => {
+  if (typeof info !== 'object' || !info || Array.isArray(info)) {
+    return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+  }
+
+  return {
+    calories: Number(info.calories) || 0,
+    protein: Number(info.protein) || 0,
+    carbs: Number(info.carbs) || 0,
+    fat: Number(info.fat) || 0
+  };
+};
+
+const parseCookingSteps = (steps: Json): CookingStep[] => {
+  if (!Array.isArray(steps)) return [];
+
+  return steps.map(step => {
+    if (typeof step === 'object' && step !== null) {
+      return {
+        step: Number(step.step) || 0,
+        description: String(step.description || ''),
+        duration: step.duration ? Number(step.duration) : undefined,
+        tips: step.tips ? String(step.tips) : undefined
+      };
+    }
+    return { step: 0, description: '' };
+  });
+};
+
+const parseHealthBenefits = (benefits: Json): HealthBenefit[] => {
+  if (!Array.isArray(benefits)) return [];
+
+  return benefits.map(benefit => {
+    if (typeof benefit === 'object' && benefit !== null) {
+      const category = String(benefit.category || '');
+      // Validate that the category is a valid HealthBenefitCategory
+      const validCategory = ['cognitive', 'energy', 'satiety', 'digestive', 'immunity',
+        'growth', 'mental', 'organs', 'beauty', 'physical', 'prevention', 'global'].includes(category) 
+        ? (category as HealthBenefitCategory) 
+        : 'global';
+
+      return {
+        icon: String(benefit.icon || ''),
+        category: validCategory,
+        description: String(benefit.description || '')
+      };
+    }
+    return { icon: '', category: 'global', description: '' };
+  });
+};
+
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const parseIngredients = (ingredients: Json): Ingredient[] => {
-    if (!Array.isArray(ingredients)) return [];
-    
-    return ingredients.map(ing => ({
-      item: typeof ing.item === 'string' ? ing.item : '',
-      quantity: typeof ing.quantity === 'string' ? ing.quantity : '',
-      unit: typeof ing.unit === 'string' ? ing.unit : ''
-    }));
-  };
-
-  const parseNutritionalInfo = (info: Json): NutritionalInfo => {
-    if (typeof info !== 'object' || !info) {
-      return { calories: 0, protein: 0, carbs: 0, fat: 0 };
-    }
-
-    return {
-      calories: typeof info.calories === 'number' ? info.calories : 0,
-      protein: typeof info.protein === 'number' ? info.protein : 0,
-      carbs: typeof info.carbs === 'number' ? info.carbs : 0,
-      fat: typeof info.fat === 'number' ? info.fat : 0
-    };
-  };
-
-  const parseCookingSteps = (steps: Json): CookingStep[] => {
-    if (!Array.isArray(steps)) return [];
-
-    return steps.map(step => ({
-      step: typeof step.step === 'number' ? step.step : 0,
-      description: typeof step.description === 'string' ? step.description : '',
-      duration: typeof step.duration === 'number' ? step.duration : undefined,
-      tips: typeof step.tips === 'string' ? step.tips : undefined
-    }));
-  };
-
-  const transformDbRecipeToRecipe = (dbRecipe: DbRecipe): Recipe => {
-    return {
-      ...dbRecipe,
-      ingredients: parseIngredients(dbRecipe.ingredients),
-      instructions: Array.isArray(dbRecipe.instructions) 
-        ? dbRecipe.instructions.map(String)
-        : [String(dbRecipe.instructions)],
-      nutritional_info: parseNutritionalInfo(dbRecipe.nutritional_info),
-      health_benefits: Array.isArray(dbRecipe.health_benefits) 
-        ? dbRecipe.health_benefits.map(benefit => ({
-            icon: String(benefit.icon || ''),
-            category: String(benefit.category || ''),
-            description: String(benefit.description || '')
-          }))
-        : [],
-      cooking_steps: parseCookingSteps(dbRecipe.cooking_steps)
-    };
-  };
 
   const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     if (!child.name || !child.birth_date) {
@@ -200,7 +192,25 @@ export const useRecipeGeneration = () => {
           }
 
           if (savedRecipe) {
-            savedRecipes.push(transformDbRecipeToRecipe(savedRecipe as DbRecipe));
+            savedRecipes.push({
+              ...savedRecipe,
+              ingredients: parseIngredients(savedRecipe.ingredients),
+              instructions: Array.isArray(savedRecipe.instructions) 
+                ? savedRecipe.instructions 
+                : [String(savedRecipe.instructions)],
+              nutritional_info: parseNutritionalInfo(savedRecipe.nutritional_info),
+              health_benefits: parseHealthBenefits(savedRecipe.health_benefits),
+              cooking_steps: parseCookingSteps(savedRecipe.cooking_steps),
+              dietary_preferences: Array.isArray(savedRecipe.dietary_preferences) 
+                ? savedRecipe.dietary_preferences 
+                : [],
+              allergens: Array.isArray(savedRecipe.allergens) 
+                ? savedRecipe.allergens 
+                : [],
+              seasonal_months: Array.isArray(savedRecipe.seasonal_months)
+                ? savedRecipe.seasonal_months
+                : [1,2,3,4,5,6,7,8,9,10,11,12]
+            });
           }
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
