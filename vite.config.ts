@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true, // Don't try other ports if 8080 is taken
     hmr: {
       clientPort: 443, // Force client to use HTTPS for WebSocket
-      host: `${process.env.VITE_PROJECT_ID}.lovableproject.com`,
+      host: "2831d47d-69be-4714-a513-87fc4a750ecb.lovableproject.com",
     }
   },
   plugins: [
