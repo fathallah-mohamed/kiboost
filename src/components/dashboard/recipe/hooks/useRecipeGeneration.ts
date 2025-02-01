@@ -95,7 +95,6 @@ const parseHealthBenefits = (benefits: Json): HealthBenefit[] => {
       const healthBenefit = benefit as Record<string, unknown>;
       const category = String(healthBenefit.category || '');
       
-      // Validate that the category is a valid HealthBenefitCategory
       const validCategory = ['cognitive', 'energy', 'satiety', 'digestive', 'immunity',
         'growth', 'mental', 'organs', 'beauty', 'physical', 'prevention', 'global'].includes(category) 
         ? (category as HealthBenefitCategory) 
@@ -203,7 +202,15 @@ export const useRecipeGeneration = () => {
           }
 
           if (savedRecipe) {
-            savedRecipes.push(savedRecipe as Recipe);
+            // Parse the JSON strings back into objects for the Recipe type
+            const parsedRecipe: Recipe = {
+              ...savedRecipe,
+              ingredients: JSON.parse(savedRecipe.ingredients as string),
+              nutritional_info: JSON.parse(savedRecipe.nutritional_info as string),
+              health_benefits: savedRecipe.health_benefits ? JSON.parse(savedRecipe.health_benefits as string) : [],
+              cooking_steps: savedRecipe.cooking_steps ? JSON.parse(savedRecipe.cooking_steps as string) : []
+            };
+            savedRecipes.push(parsedRecipe);
           }
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
