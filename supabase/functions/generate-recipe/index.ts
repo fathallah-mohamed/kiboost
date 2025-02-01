@@ -134,6 +134,7 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
       const content = data.choices[0].message.content;
       console.log("Raw OpenAI response content:", content);
       
+      // Clean the content and ensure it's valid JSON
       const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
       console.log("Cleaned content:", cleanContent);
       
@@ -146,13 +147,17 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
       // Validation et transformation
       recipes = recipes.map(recipe => ({
         ...recipe,
-        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
-        instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
-        nutritional_info: recipe.nutritional_info || {
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fat: 0
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({
+          item: String(ing.item || ''),
+          quantity: String(ing.quantity || ''),
+          unit: String(ing.unit || '')
+        })) : [],
+        instructions: Array.isArray(recipe.instructions) ? recipe.instructions.map(String) : [],
+        nutritional_info: {
+          calories: Number(recipe?.nutritional_info?.calories || 0),
+          protein: Number(recipe?.nutritional_info?.protein || 0),
+          carbs: Number(recipe?.nutritional_info?.carbs || 0),
+          fat: Number(recipe?.nutritional_info?.fat || 0)
         },
         health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
         cooking_steps: Array.isArray(recipe.cooking_steps) ? recipe.cooking_steps : [],

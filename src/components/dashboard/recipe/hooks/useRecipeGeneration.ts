@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Recipe, MealType, Difficulty, RecipeFilters } from "../../types";
+import { Recipe, RecipeFilters, HealthBenefitCategory } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateMealType, validateDifficulty } from '../utils/validationUtils';
@@ -11,17 +11,22 @@ type RecipeIngredient = {
   unit: string;
 };
 
+type JsonObject = { [key: string]: Json };
+
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const parseIngredients = (ingredients: Json): RecipeIngredient[] => {
     if (Array.isArray(ingredients)) {
-      return ingredients.map(ing => ({
-        item: String(ing.item || ''),
-        quantity: String(ing.quantity || ''),
-        unit: String(ing.unit || '')
-      }));
+      return ingredients.map(ing => {
+        const item = ing as JsonObject;
+        return {
+          item: String(item?.item || ''),
+          quantity: String(item?.quantity || ''),
+          unit: String(item?.unit || '')
+        };
+      });
     }
     return [];
   };
@@ -29,6 +34,14 @@ export const useRecipeGeneration = () => {
   const parseInstructions = (instructions: Json): string[] => {
     if (Array.isArray(instructions)) {
       return instructions.map(String);
+    }
+    if (typeof instructions === 'string') {
+      try {
+        const parsed = JSON.parse(instructions);
+        return Array.isArray(parsed) ? parsed.map(String) : [String(instructions)];
+      } catch {
+        return [String(instructions)];
+      }
     }
     return [];
   };
@@ -41,15 +54,45 @@ export const useRecipeGeneration = () => {
       fat: 0
     };
 
-    if (typeof info === 'object' && info !== null) {
+    if (typeof info === 'object' && info !== null && !Array.isArray(info)) {
+      const nutritionalInfo = info as JsonObject;
       return {
-        calories: Number(info.calories) || 0,
-        protein: Number(info.protein) || 0,
-        carbs: Number(info.carbs) || 0,
-        fat: Number(info.fat) || 0
+        calories: Number(nutritionalInfo?.calories || 0),
+        protein: Number(nutritionalInfo?.protein || 0),
+        carbs: Number(nutritionalInfo?.carbs || 0),
+        fat: Number(nutritionalInfo?.fat || 0)
       };
     }
     return defaultInfo;
+  };
+
+  const parseHealthBenefits = (benefits: Json) => {
+    if (Array.isArray(benefits)) {
+      return benefits.map(benefit => {
+        const b = benefit as JsonObject;
+        return {
+          icon: String(b?.icon || ''),
+          category: String(b?.category || '') as HealthBenefitCategory,
+          description: String(b?.description || '')
+        };
+      });
+    }
+    return [];
+  };
+
+  const parseCookingSteps = (steps: Json) => {
+    if (Array.isArray(steps)) {
+      return steps.map(step => {
+        const s = step as JsonObject;
+        return {
+          step: Number(s?.step || 0),
+          description: String(s?.description || ''),
+          duration: Number(s?.duration || 0),
+          tips: String(s?.tips || '')
+        };
+      });
+    }
+    return [];
   };
 
   const generateRecipes = async (child: { id: string; name: string; birth_date: string; allergies?: string[]; preferences?: string[]; profile_id: string }, filters: RecipeFilters) => {
@@ -98,9 +141,9 @@ export const useRecipeGeneration = () => {
             profile_id: child.profile_id,
             child_id: child.id,
             name: String(recipe.name),
-            ingredients: parseIngredients(recipe.ingredients),
-            instructions: parseInstructions(recipe.instructions),
-            nutritional_info: parseNutritionalInfo(recipe.nutritional_info),
+            ingredients: JSON.stringify(recipe.ingredients),
+            instructions: JSON.stringify(recipe.instructions),
+            nutritional_info: JSON.stringify(recipe.nutritional_info),
             meal_type: validateMealType(recipe.meal_type),
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
@@ -108,15 +151,15 @@ export const useRecipeGeneration = () => {
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
-            health_benefits: recipe.health_benefits || [],
+            health_benefits: JSON.stringify(recipe.health_benefits || []),
             image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
             min_age: Number(recipe.min_age) || 0,
             max_age: Number(recipe.max_age) || 18,
-            dietary_preferences: Array.isArray(recipe.dietary_preferences) ? recipe.dietary_preferences : [],
-            allergens: Array.isArray(recipe.allergens) ? recipe.allergens : [],
+            dietary_preferences: recipe.dietary_preferences || [],
+            allergens: recipe.allergens || [],
             cost_estimate: Number(recipe.cost_estimate) || 0,
-            seasonal_months: Array.isArray(recipe.seasonal_months) ? recipe.seasonal_months : [1,2,3,4,5,6,7,8,9,10,11,12],
-            cooking_steps: Array.isArray(recipe.cooking_steps) ? recipe.cooking_steps : [],
+            seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
+            cooking_steps: JSON.stringify(recipe.cooking_steps || []),
             is_generated: true
           };
 
@@ -128,20 +171,16 @@ export const useRecipeGeneration = () => {
             .select()
             .single();
 
-          if (saveError) {
-            console.error("Error saving recipe:", saveError);
-            throw saveError;
-          }
+          if (saveError) throw saveError;
 
           if (savedRecipe) {
-            // Convert the saved recipe to match the Recipe type
             const typedRecipe: Recipe = {
               ...savedRecipe,
               ingredients: parseIngredients(savedRecipe.ingredients),
               instructions: parseInstructions(savedRecipe.instructions),
               nutritional_info: parseNutritionalInfo(savedRecipe.nutritional_info),
-              health_benefits: savedRecipe.health_benefits || [],
-              cooking_steps: savedRecipe.cooking_steps || []
+              health_benefits: parseHealthBenefits(savedRecipe.health_benefits),
+              cooking_steps: parseCookingSteps(savedRecipe.cooking_steps)
             };
             savedRecipes.push(typedRecipe);
           }
