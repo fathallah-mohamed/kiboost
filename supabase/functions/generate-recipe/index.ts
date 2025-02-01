@@ -35,40 +35,57 @@ serve(async (req) => {
       constraints.push(`Difficulté : ${filters.difficulty}`);
     }
 
-    const prompt = `Tu es un chef spécialisé dans la nutrition infantile. Génère 3 recettes DIFFÉRENTES et CRÉATIVES pour enfant:
+    const prompt = `Tu es un chef expert en nutrition infantile. Ta mission est de générer 3 recettes SAINES, VARIÉES et ADAPTÉES aux besoins spécifiques d'un enfant.
 
-Age: ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} ans
-Allergies: ${child.allergies?.join(", ") || "Aucune"}
-Préférences: ${child.preferences?.join(", ") || "Aucune préférence particulière"}
-${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
+🔹 **Profil de l'enfant :**
+- **Âge** : ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} ans
+- **Allergies** : ${child.allergies?.length ? child.allergies.join(", ") : "Aucune"}
+- **Préférences alimentaires** : ${child.preferences?.length ? child.preferences.join(", ") : "Aucune préférence particulière"}
 
-IMPORTANT:
-- 3 bienfaits santé PARFAITEMENT distincts parmi: ${validCategories.join(', ')} dans CHAQUE recette
-- Varies les ingrédients et évite la répétition
-- Temps réaliste incluant préparation + cuisson
-- Utilise des ingrédients courants et accessibles
-- Étapes claires et concises
-- CHAQUE recette doit être UNIQUE
+🔹 **Critères spécifiques à respecter :**
+${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte particulière"}
 
-Retourne UNIQUEMENT un tableau JSON de recettes avec cette structure:
-{
-  "name": "string",
-  "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
-  "instructions": ["string"],
-  "nutritional_info": {"calories": number, "protein": number, "carbs": number, "fat": number},
-  "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
-  "preparation_time": number,
-  "difficulty": "easy" | "medium" | "hard",
-  "servings": number,
-  "health_benefits": [{"icon": "string", "category": "string", "description": "string"}],
-  "min_age": number,
-  "max_age": number,
-  "dietary_preferences": ["string"],
-  "allergens": ["string"],
-  "cost_estimate": number,
-  "seasonal_months": [number],
-  "cooking_steps": [{"step": number, "description": "string", "duration": number, "tips": "string"}]
-}`;
+🎯 **Exigences incontournables pour chaque recette :**
+- **VARIÉTÉ** : Chaque recette doit être UNIQUE, avec des ingrédients et techniques de préparation distincts.
+- **SANTÉ** : Doit inclure **exactement 3 bienfaits santé distincts** parmi : ${validCategories.join(", ")}.
+- **ÉVITE LES RÉPÉTITIONS** : Les recettes doivent être différentes en goût, texture et préparation.
+- **ACCESSIBILITÉ** : Utiliser des ingrédients simples, courants et faciles à trouver.
+- **SAISONNALITÉ** : Prioriser les ingrédients de saison si une contrainte est définie.
+- **COÛT** : Respecter un budget raisonnable par portion si précisé.
+- **FACILITÉ** : Étapes claires, simples et adaptées aux parents occupés.
+
+⚠️ **Retourne uniquement un tableau JSON strictement formaté comme suit :**
+[
+  {
+    "name": "Nom de la recette",
+    "ingredients": [
+      {"item": "Nom de l'ingrédient", "quantity": "Valeur", "unit": "Unité (g, ml, etc.)"}
+    ],
+    "instructions": ["Étape 1", "Étape 2"],
+    "nutritional_info": {
+      "calories": 0,
+      "protein": 0,
+      "carbs": 0,
+      "fat": 0
+    },
+    "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
+    "preparation_time": nombre,
+    "difficulty": "easy" | "medium" | "hard",
+    "servings": nombre,
+    "health_benefits": [
+      {"icon": "string", "category": "string", "description": "string"}
+    ],
+    "min_age": nombre,
+    "max_age": nombre,
+    "dietary_preferences": ["Préférences spécifiques"],
+    "allergens": ["Liste des allergènes"],
+    "cost_estimate": nombre,
+    "seasonal_months": [1,2,3,4,5,6,7,8,9,10,11,12],
+    "cooking_steps": [
+      {"step": nombre, "description": "Détail de l'étape", "duration": nombre, "tips": "Astuces optionnelles"}
+    ]
+  }
+]`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
