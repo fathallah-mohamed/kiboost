@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Recipe, RecipeFilters, ChildProfile } from "../../types";
+import { Recipe, RecipeFilters, ChildProfile, MealType, Difficulty } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { transformToRecipeData } from "../utils/recipeTransformers";
+import { validateMealType, validateDifficulty } from "../utils/validationUtils";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,16 @@ export const useRecipeGeneration = () => {
 
       if (existingRecipes && existingRecipes.length > 0) {
         console.log("Using existing recipes:", existingRecipes);
-        return existingRecipes;
+        return existingRecipes.map(recipe => ({
+          ...recipe,
+          ingredients: typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : recipe.ingredients,
+          nutritional_info: typeof recipe.nutritional_info === 'string' ? JSON.parse(recipe.nutritional_info) : recipe.nutritional_info,
+          instructions: typeof recipe.instructions === 'string' ? recipe.instructions.split('\n') : recipe.instructions,
+          health_benefits: recipe.health_benefits ? (typeof recipe.health_benefits === 'string' ? JSON.parse(recipe.health_benefits) : recipe.health_benefits) : undefined,
+          cooking_steps: recipe.cooking_steps ? (typeof recipe.cooking_steps === 'string' ? JSON.parse(recipe.cooking_steps) : recipe.cooking_steps) : [],
+          meal_type: validateMealType(recipe.meal_type),
+          difficulty: validateDifficulty(recipe.difficulty)
+        })) as Recipe[];
       }
 
       // Generate new recipes if none exist
@@ -64,17 +73,20 @@ export const useRecipeGeneration = () => {
       // Save each recipe
       for (const recipe of response.recipes) {
         try {
+          const mealType = validateMealType(filters.mealType !== 'all' ? filters.mealType : 'dinner');
+          const difficulty = validateDifficulty(filters.difficulty !== 'all' ? filters.difficulty : 'medium');
+
           const recipeData = {
             profile_id: child.profile_id,
             child_id: child.id,
             name: recipe.name,
             ingredients: JSON.stringify(recipe.ingredients),
-            instructions: recipe.instructions.join('\n'),
+            instructions: Array.isArray(recipe.instructions) ? recipe.instructions.join('\n') : recipe.instructions,
             nutritional_info: JSON.stringify(recipe.nutritional_info),
-            meal_type: filters.mealType !== 'all' ? filters.mealType : 'dinner',
+            meal_type: mealType,
             preparation_time: recipe.preparation_time || 30,
             max_prep_time: filters.maxPrepTime || 30,
-            difficulty: filters.difficulty !== 'all' ? filters.difficulty : 'medium',
+            difficulty: difficulty,
             servings: recipe.servings || 4,
             auto_generated: true,
             source: 'ia',
@@ -91,14 +103,17 @@ export const useRecipeGeneration = () => {
 
           if (saveError) throw saveError;
           if (savedRecipe) {
-            savedRecipes.push({
+            const parsedRecipe: Recipe = {
               ...savedRecipe,
-              ingredients: JSON.parse(savedRecipe.ingredients),
-              nutritional_info: JSON.parse(savedRecipe.nutritional_info),
+              ingredients: JSON.parse(savedRecipe.ingredients as string),
+              nutritional_info: JSON.parse(savedRecipe.nutritional_info as string),
               instructions: savedRecipe.instructions.split('\n'),
-              health_benefits: savedRecipe.health_benefits ? JSON.parse(savedRecipe.health_benefits) : undefined,
-              cooking_steps: savedRecipe.cooking_steps ? JSON.parse(savedRecipe.cooking_steps) : []
-            });
+              health_benefits: savedRecipe.health_benefits ? JSON.parse(savedRecipe.health_benefits as string) : undefined,
+              cooking_steps: savedRecipe.cooking_steps ? JSON.parse(savedRecipe.cooking_steps as string) : [],
+              meal_type: validateMealType(savedRecipe.meal_type),
+              difficulty: validateDifficulty(savedRecipe.difficulty)
+            };
+            savedRecipes.push(parsedRecipe);
           }
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
