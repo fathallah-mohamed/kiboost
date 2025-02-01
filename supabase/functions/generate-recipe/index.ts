@@ -27,34 +27,60 @@ serve(async (req) => {
     const isQuick = (filters?.maxPrepTime || 30) <= 15;
     const isEasy = filters?.difficulty === 'easy';
 
-    // Adapt the prompt based on the filters
-    let basePrompt = `Tu es un chef expert en nutrition infantile spécialisé dans la création de recettes ${isBreakfast ? 'de petit-déjeuner' : ''} ${isQuick ? 'rapides' : ''} ${isEasy ? 'et faciles' : ''} pour les enfants.`;
-
-    // For breakfast recipes, add specific constraints
-    const breakfastConstraints = isBreakfast ? `
-🔹 **Contraintes spécifiques petit-déjeuner:**
+    // Adapt the prompt based on meal type
+    const mealTypePrompts = {
+      breakfast: `
+🔹 **Contraintes petit-déjeuner:**
 - Recettes UNIQUEMENT pour le petit-déjeuner
-- Temps de préparation: STRICTEMENT moins de 15 minutes
-- Difficulté: UNIQUEMENT facile
+- Temps de préparation: STRICTEMENT moins de ${filters.maxPrepTime || 15} minutes
+- Difficulté: ${filters.difficulty || 'facile'}
 - Ingrédients: Utiliser des ingrédients courants du petit-déjeuner
-- Énergie: Fournir l'énergie nécessaire pour la matinée
-` : '';
+- Énergie: Fournir l'énergie nécessaire pour la matinée`,
+      lunch: `
+🔹 **Contraintes déjeuner:**
+- Recettes UNIQUEMENT pour le déjeuner
+- Temps de préparation: STRICTEMENT moins de ${filters.maxPrepTime || 30} minutes
+- Difficulté: ${filters.difficulty || 'medium'}
+- Équilibre: Protéines, légumes et féculents
+- Adapté pour une lunch box si nécessaire`,
+      dinner: `
+🔹 **Contraintes dîner:**
+- Recettes UNIQUEMENT pour le dîner
+- Temps de préparation: STRICTEMENT moins de ${filters.maxPrepTime || 30} minutes
+- Difficulté: ${filters.difficulty || 'medium'}
+- Repas léger mais nutritif
+- Favoriser la digestion pour la nuit`,
+      snack: `
+🔹 **Contraintes goûter:**
+- Recettes UNIQUEMENT pour le goûter
+- Temps de préparation: STRICTEMENT moins de ${filters.maxPrepTime || 15} minutes
+- Difficulté: ${filters.difficulty || 'easy'}
+- Collation équilibrée et énergétique
+- Limiter le sucre tout en restant gourmand`
+    };
 
-    const prompt = `${basePrompt}
+    const mealTypePrompt = mealTypePrompts[filters.mealType as keyof typeof mealTypePrompts] || mealTypePrompts.dinner;
+
+    const prompt = `Tu es un chef expert en nutrition infantile spécialisé dans la création de recettes ${isBreakfast ? 'de petit-déjeuner' : ''} ${isQuick ? 'rapides' : ''} ${isEasy ? 'et faciles' : ''} pour les enfants.
 
 🔹 **Profil de l'enfant:**
 - Âge: ${childAge} ans
 - Allergies: ${child.allergies?.length ? child.allergies.join(", ") : "Aucune"}
 - Préférences: ${child.preferences?.length ? child.preferences.join(", ") : "Aucune préférence"}
 
-${breakfastConstraints}
+${mealTypePrompt}
 
 🔹 **Critères stricts:**
 - Type de repas: ${filters.mealType}
 - Temps maximum: ${filters.maxPrepTime}min
 - Difficulté: ${filters.difficulty}
 
-⚠️ IMPORTANT: Génère TOUJOURS au moins 3 recettes, même si certaines contraintes sont difficiles. Adapte les recettes plutôt que de ne rien renvoyer.
+⚠️ IMPORTANT: 
+- Génère TOUJOURS au moins 3 recettes, même si certaines contraintes sont difficiles
+- Adapte les recettes plutôt que de ne rien renvoyer
+- RESPECTE STRICTEMENT le temps de préparation maximum
+- Utilise des ingrédients SIMPLES et FACILES à trouver
+- Assure-toi que les recettes sont adaptées à l'âge de l'enfant
 
 Retourne UNIQUEMENT un tableau JSON avec ce format STRICT:
 {
