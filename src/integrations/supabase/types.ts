@@ -389,6 +389,9 @@ export type Database = {
       recipes: {
         Row: {
           allergens: string[] | null
+          auto_generated: boolean | null
+          budget_max: number | null
+          child_id: string | null
           cooking_steps: Json | null
           cost_estimate: number | null
           created_at: string
@@ -401,6 +404,7 @@ export type Database = {
           instructions: string
           is_generated: boolean | null
           max_age: number | null
+          max_prep_time: number
           meal_type: string
           min_age: number | null
           name: string
@@ -408,11 +412,16 @@ export type Database = {
           preparation_time: number
           profile_id: string
           seasonal_months: number[] | null
+          seasonality: string[] | null
           servings: number
+          source: string | null
           updated_at: string
         }
         Insert: {
           allergens?: string[] | null
+          auto_generated?: boolean | null
+          budget_max?: number | null
+          child_id?: string | null
           cooking_steps?: Json | null
           cost_estimate?: number | null
           created_at?: string
@@ -425,6 +434,7 @@ export type Database = {
           instructions: string
           is_generated?: boolean | null
           max_age?: number | null
+          max_prep_time?: number
           meal_type?: string
           min_age?: number | null
           name: string
@@ -432,11 +442,16 @@ export type Database = {
           preparation_time?: number
           profile_id: string
           seasonal_months?: number[] | null
+          seasonality?: string[] | null
           servings?: number
+          source?: string | null
           updated_at?: string
         }
         Update: {
           allergens?: string[] | null
+          auto_generated?: boolean | null
+          budget_max?: number | null
+          child_id?: string | null
           cooking_steps?: Json | null
           cost_estimate?: number | null
           created_at?: string
@@ -449,6 +464,7 @@ export type Database = {
           instructions?: string
           is_generated?: boolean | null
           max_age?: number | null
+          max_prep_time?: number
           meal_type?: string
           min_age?: number | null
           name?: string
@@ -456,10 +472,19 @@ export type Database = {
           preparation_time?: number
           profile_id?: string
           seasonal_months?: number[] | null
+          seasonality?: string[] | null
           servings?: number
+          source?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "recipes_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "recipes_profile_id_fkey"
             columns: ["profile_id"]

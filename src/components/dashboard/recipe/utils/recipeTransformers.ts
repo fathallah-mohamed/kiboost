@@ -30,6 +30,9 @@ export type GeneratedRecipe = {
   cost_estimate?: number;
   seasonal_months?: number[];
   cooking_steps?: any[];
+  child_id?: string;
+  source?: string;
+  auto_generated?: boolean;
 }
 
 export const transformToRecipeData = (recipe: GeneratedRecipe, profileId: string) => {
@@ -43,7 +46,7 @@ export const transformToRecipeData = (recipe: GeneratedRecipe, profileId: string
     preparation_time: Number(recipe.preparation_time) || 30,
     difficulty: validateDifficulty(recipe.difficulty),
     servings: Number(recipe.servings) || 4,
-    is_generated: true,
+    auto_generated: recipe.auto_generated || false,
     image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
     health_benefits: JSON.stringify(recipe.health_benefits || []),
     min_age: Number(recipe.min_age) || 0,
@@ -52,7 +55,10 @@ export const transformToRecipeData = (recipe: GeneratedRecipe, profileId: string
     allergens: recipe.allergens || [],
     cost_estimate: Number(recipe.cost_estimate) || 0,
     seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
-    cooking_steps: JSON.stringify(recipe.cooking_steps || [])
+    cooking_steps: JSON.stringify(recipe.cooking_steps || []),
+    child_id: recipe.child_id,
+    source: recipe.source || 'ia',
+    max_prep_time: recipe.preparation_time || 30
   };
 };
 
@@ -65,6 +71,8 @@ export const transformDatabaseToRecipe = (dbRecipe: any): Recipe => {
     health_benefits: parseJsonField(dbRecipe.health_benefits),
     cooking_steps: parseJsonField(dbRecipe.cooking_steps),
     meal_type: validateMealType(dbRecipe.meal_type),
-    difficulty: validateDifficulty(dbRecipe.difficulty)
+    difficulty: validateDifficulty(dbRecipe.difficulty),
+    auto_generated: dbRecipe.auto_generated || false,
+    source: dbRecipe.source || 'ia'
   };
 };

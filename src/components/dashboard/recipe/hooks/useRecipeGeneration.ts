@@ -21,14 +21,20 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
 
-      // Récupérer les recettes existantes
+      // Fetch existing recipes for this child with similar filters
       const { data: existingRecipes, error: fetchError } = await supabase
         .from('recipes')
         .select('*')
         .eq('profile_id', child.profile_id)
-        .eq('is_generated', true);
+        .eq('child_id', child.id)
+        .eq('auto_generated', true)
+        .eq('meal_type', filters.mealType !== 'all' ? filters.mealType : 'dinner')
+        .lte('max_prep_time', filters.maxPrepTime || 30)
+        .eq('difficulty', filters.difficulty !== 'all' ? filters.difficulty : 'medium');
 
       if (fetchError) throw fetchError;
+
+      console.log("Existing recipes found:", existingRecipes);
 
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
@@ -55,21 +61,25 @@ export const useRecipeGeneration = () => {
         throw new Error("Format de réponse invalide");
       }
 
-      // Supprimer les anciennes recettes générées
+      // Delete old generated recipes for this child
       const { error: deleteError } = await supabase
         .from('recipes')
         .delete()
         .eq('profile_id', child.profile_id)
-        .eq('is_generated', true);
+        .eq('child_id', child.id)
+        .eq('auto_generated', true);
 
       if (deleteError) throw deleteError;
 
       const savedRecipes: Recipe[] = [];
 
-      // Sauvegarder les nouvelles recettes
+      // Save new recipes
       for (const recipe of response.recipes as GeneratedRecipe[]) {
         try {
           const recipeData = transformToRecipeData(recipe, child.profile_id);
+          recipeData.child_id = child.id;
+          recipeData.auto_generated = true;
+          recipeData.source = 'ia';
 
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')

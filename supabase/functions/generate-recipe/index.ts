@@ -14,6 +14,10 @@ serve(async (req) => {
   try {
     const { child, filters, existingRecipes = [] } = await req.json();
 
+    console.log("Generating recipes for child:", child);
+    console.log("Using filters:", filters);
+    console.log("Existing recipes:", existingRecipes);
+
     const validCategories = [
       'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
       'growth', 'mental', 'organs', 'beauty', 'physical',
@@ -67,7 +71,8 @@ Retourne UNIQUEMENT un tableau JSON de recettes SANS texte ou formatage supplém
   "dietary_preferences": ["string"],
   "allergens": ["string"],
   "cost_estimate": number,
-  "seasonal_months": [number]
+  "seasonal_months": [number],
+  "cooking_steps": [{"step": number, "description": "string", "duration": number, "tips": "string"}]
 }`;
 
     console.log("Sending prompt to OpenAI:", prompt);
@@ -104,31 +109,32 @@ Retourne UNIQUEMENT un tableau JSON de recettes SANS texte ou formatage supplém
     let recipes;
     try {
       const content = data.choices[0].message.content;
-      console.log("Contenu brut de la réponse OpenAI:", content);
+      console.log("Raw OpenAI response content:", content);
       
-      // Nettoyer le contenu en retirant tout formatage markdown
+      // Clean up the content by removing any markdown formatting
       const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
-      console.log("Contenu nettoyé:", cleanContent);
+      console.log("Cleaned content:", cleanContent);
       
       recipes = JSON.parse(cleanContent);
       
-      // Valider la structure des recettes
       if (!Array.isArray(recipes)) {
         throw new Error("Les recettes doivent être un tableau");
       }
 
-      // Vérifier l'unicité des bienfaits santé
+      // Add additional metadata to each recipe
       recipes = recipes.map(recipe => ({
         ...recipe,
-        is_generated: true,
+        auto_generated: true,
         profile_id: child.profile_id,
+        child_id: child.id,
+        source: 'ia',
         image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
       }));
 
-      console.log("Recettes analysées et traitées avec succès:", recipes);
+      console.log("Recipes processed successfully:", recipes);
     } catch (e) {
-      console.error("Erreur lors de l'analyse des données de recette:", e);
-      throw new Error(`Échec de l'analyse des données de recette: ${e.message}`);
+      console.error("Error processing recipe data:", e);
+      throw new Error(`Failed to process recipe data: ${e.message}`);
     }
 
     return new Response(
@@ -142,7 +148,7 @@ Retourne UNIQUEMENT un tableau JSON de recettes SANS texte ou formatage supplém
     );
 
   } catch (error) {
-    console.error("Erreur dans la fonction generate-recipe:", error);
+    console.error("Error in generate-recipe function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
