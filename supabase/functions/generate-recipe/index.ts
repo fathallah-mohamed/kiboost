@@ -135,7 +135,13 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
       console.log("Raw OpenAI response content:", content);
       
       // Clean the content and ensure it's valid JSON
-      const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
+      const cleanContent = content
+        .replace(/```json\n|\n```|```/g, '')
+        .trim()
+        .replace(/\n/g, ' ')
+        .replace(/,\s*}/g, '}')
+        .replace(/,\s*\]/g, ']');
+      
       console.log("Cleaned content:", cleanContent);
       
       recipes = JSON.parse(cleanContent);
