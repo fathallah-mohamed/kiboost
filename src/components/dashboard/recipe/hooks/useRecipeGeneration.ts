@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { transformToRecipe } from '../utils/recipeTransformers';
 import { useRecipeError } from './useRecipeError';
 
 export const useRecipeGeneration = () => {
@@ -49,20 +48,44 @@ export const useRecipeGeneration = () => {
         try {
           console.log("Processing recipe:", recipe);
 
-          // Ensure ingredients, instructions, and health_benefits are properly stringified
+          // Ensure all JSON fields are properly stringified before saving
+          const ingredients = Array.isArray(recipe.ingredients) 
+            ? recipe.ingredients 
+            : typeof recipe.ingredients === 'string'
+              ? JSON.parse(recipe.ingredients)
+              : [];
+
+          const instructions = Array.isArray(recipe.instructions)
+            ? recipe.instructions
+            : typeof recipe.instructions === 'string'
+              ? recipe.instructions.split('\n')
+              : [];
+
+          const healthBenefits = Array.isArray(recipe.health_benefits)
+            ? recipe.health_benefits
+            : typeof recipe.health_benefits === 'string'
+              ? JSON.parse(recipe.health_benefits)
+              : [];
+
+          const cookingSteps = Array.isArray(recipe.cooking_steps)
+            ? recipe.cooking_steps
+            : typeof recipe.cooking_steps === 'string'
+              ? JSON.parse(recipe.cooking_steps)
+              : [];
+
+          const nutritionalInfo = typeof recipe.nutritional_info === 'object'
+            ? recipe.nutritional_info
+            : typeof recipe.nutritional_info === 'string'
+              ? JSON.parse(recipe.nutritional_info)
+              : { calories: 0, protein: 0, carbs: 0, fat: 0 };
+
           const recipeData = {
             profile_id: child.profile_id,
             child_id: child.id,
             name: String(recipe.name),
-            ingredients: Array.isArray(recipe.ingredients) 
-              ? JSON.stringify(recipe.ingredients)
-              : recipe.ingredients,
-            instructions: Array.isArray(recipe.instructions) 
-              ? JSON.stringify(recipe.instructions)
-              : recipe.instructions,
-            nutritional_info: typeof recipe.nutritional_info === 'object'
-              ? JSON.stringify(recipe.nutritional_info)
-              : recipe.nutritional_info,
+            ingredients: JSON.stringify(ingredients),
+            instructions: Array.isArray(instructions) ? instructions.join('\n') : instructions,
+            nutritional_info: JSON.stringify(nutritionalInfo),
             meal_type: recipe.meal_type,
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
@@ -70,9 +93,7 @@ export const useRecipeGeneration = () => {
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
-            health_benefits: Array.isArray(recipe.health_benefits)
-              ? JSON.stringify(recipe.health_benefits)
-              : recipe.health_benefits || '[]',
+            health_benefits: JSON.stringify(healthBenefits),
             image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
             min_age: Number(recipe.min_age) || 0,
             max_age: Number(recipe.max_age) || 18,
@@ -80,9 +101,7 @@ export const useRecipeGeneration = () => {
             allergens: recipe.allergens || [],
             cost_estimate: Number(recipe.cost_estimate) || 0,
             seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
-            cooking_steps: Array.isArray(recipe.cooking_steps)
-              ? JSON.stringify(recipe.cooking_steps)
-              : recipe.cooking_steps || '[]',
+            cooking_steps: JSON.stringify(cookingSteps),
             is_generated: true
           };
 
@@ -97,8 +116,7 @@ export const useRecipeGeneration = () => {
           if (saveError) throw saveError;
 
           if (savedRecipe) {
-            const typedRecipe = transformToRecipe(savedRecipe);
-            savedRecipes.push(typedRecipe);
+            savedRecipes.push(savedRecipe as Recipe);
           }
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
