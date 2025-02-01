@@ -2,11 +2,7 @@ import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { 
-  transformToRecipeData, 
-  transformDatabaseToRecipe, 
-  GeneratedRecipe 
-} from "../utils/recipeTransformers";
+import { transformToRecipeData } from "../utils/recipeTransformers";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -21,7 +17,7 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch existing recipes for this child with similar filters
+      // First check for existing recipes
       const { data: existingRecipes, error: fetchError } = await supabase
         .from('recipes')
         .select('*')
@@ -34,22 +30,24 @@ export const useRecipeGeneration = () => {
 
       if (fetchError) throw fetchError;
 
-      console.log("Existing recipes found:", existingRecipes);
+      if (existingRecipes && existingRecipes.length > 0) {
+        console.log("Using existing recipes:", existingRecipes);
+        return existingRecipes;
+      }
 
+      // Generate new recipes if none exist
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
         {
           body: { 
             child: {
-              ...child,
               id: child.id,
               name: child.name,
               birth_date: child.birth_date,
               allergies: child.allergies || [],
               preferences: child.preferences || []
             },
-            filters,
-            existingRecipes: existingRecipes || []
+            filters
           }
         }
       );
@@ -61,25 +59,29 @@ export const useRecipeGeneration = () => {
         throw new Error("Format de réponse invalide");
       }
 
-      // Delete old generated recipes for this child
-      const { error: deleteError } = await supabase
-        .from('recipes')
-        .delete()
-        .eq('profile_id', child.profile_id)
-        .eq('child_id', child.id)
-        .eq('auto_generated', true);
-
-      if (deleteError) throw deleteError;
-
       const savedRecipes: Recipe[] = [];
 
-      // Save new recipes
-      for (const recipe of response.recipes as GeneratedRecipe[]) {
+      // Save each recipe
+      for (const recipe of response.recipes) {
         try {
-          const recipeData = transformToRecipeData(recipe, child.profile_id);
-          recipeData.child_id = child.id;
-          recipeData.auto_generated = true;
-          recipeData.source = 'ia';
+          const recipeData = {
+            profile_id: child.profile_id,
+            child_id: child.id,
+            name: recipe.name,
+            ingredients: JSON.stringify(recipe.ingredients),
+            instructions: recipe.instructions.join('\n'),
+            nutritional_info: JSON.stringify(recipe.nutritional_info),
+            meal_type: filters.mealType !== 'all' ? filters.mealType : 'dinner',
+            preparation_time: recipe.preparation_time || 30,
+            max_prep_time: filters.maxPrepTime || 30,
+            difficulty: filters.difficulty !== 'all' ? filters.difficulty : 'medium',
+            servings: recipe.servings || 4,
+            auto_generated: true,
+            source: 'ia',
+            health_benefits: recipe.health_benefits ? JSON.stringify(recipe.health_benefits) : null,
+            cooking_steps: recipe.cooking_steps ? JSON.stringify(recipe.cooking_steps) : null,
+            image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
+          };
 
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
@@ -89,7 +91,14 @@ export const useRecipeGeneration = () => {
 
           if (saveError) throw saveError;
           if (savedRecipe) {
-            savedRecipes.push(transformDatabaseToRecipe(savedRecipe));
+            savedRecipes.push({
+              ...savedRecipe,
+              ingredients: JSON.parse(savedRecipe.ingredients),
+              nutritional_info: JSON.parse(savedRecipe.nutritional_info),
+              instructions: savedRecipe.instructions.split('\n'),
+              health_benefits: savedRecipe.health_benefits ? JSON.parse(savedRecipe.health_benefits) : undefined,
+              cooking_steps: savedRecipe.cooking_steps ? JSON.parse(savedRecipe.cooking_steps) : []
+            });
           }
         } catch (error) {
           console.error('Error processing recipe:', recipe.name, error);
@@ -101,7 +110,6 @@ export const useRecipeGeneration = () => {
         throw new Error("Aucune recette n'a pu être sauvegardée");
       }
 
-      toast.success(`${savedRecipes.length} nouvelles recettes ont été générées !`);
       return savedRecipes;
 
     } catch (err) {
