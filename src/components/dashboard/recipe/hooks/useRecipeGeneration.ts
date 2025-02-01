@@ -61,10 +61,12 @@ export const useRecipeGeneration = () => {
         }
       );
 
-      if (generateError) throw generateError;
-      console.log("Generated recipe response:", response);
+      if (generateError) {
+        console.error("Error from generate-recipe function:", generateError);
+        throw new Error(generateError.message || "Erreur lors de la génération des recettes");
+      }
 
-      if (!response.recipes || !Array.isArray(response.recipes)) {
+      if (!response?.recipes || !Array.isArray(response.recipes)) {
         throw new Error("Format de réponse invalide");
       }
 
@@ -114,7 +116,10 @@ export const useRecipeGeneration = () => {
             .select()
             .single();
 
-          if (saveError) throw saveError;
+          if (saveError) {
+            console.error("Error saving recipe:", saveError);
+            throw saveError;
+          }
 
           if (savedRecipe) {
             const parsedRecipe: Recipe = {
