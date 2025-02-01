@@ -2,12 +2,11 @@ import { useState } from "react";
 import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useRecipeError } from './useRecipeError';
 import { transformToRecipe } from '../utils/recipeTransformers';
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
-  const { error, handleError } = useRecipeError();
+  const [error, setError] = useState<string | null>(null);
 
   const generateRecipes = async (child: ChildProfile, filters: RecipeFilters) => {
     if (!child.name || !child.birth_date) {
@@ -16,6 +15,7 @@ export const useRecipeGeneration = () => {
 
     try {
       setLoading(true);
+      setError(null);
       console.log("Generating recipes for child:", child);
       console.log("Using filters:", filters);
 
@@ -36,7 +36,11 @@ export const useRecipeGeneration = () => {
         }
       );
 
-      if (generateError) throw generateError;
+      if (generateError) {
+        console.error("Generation error:", generateError);
+        throw generateError;
+      }
+
       console.log("Generated recipe response:", response);
 
       if (!response?.recipes || !Array.isArray(response.recipes)) {
@@ -49,7 +53,6 @@ export const useRecipeGeneration = () => {
         try {
           console.log("Processing recipe:", recipe);
 
-          // Ensure all JSON fields are properly formatted
           const recipeData = {
             profile_id: child.profile_id,
             child_id: child.id,
@@ -94,7 +97,6 @@ export const useRecipeGeneration = () => {
           if (saveError) throw saveError;
 
           if (savedRecipe) {
-            // Transform the database response to match our Recipe type
             const transformedRecipe = transformToRecipe(savedRecipe);
             savedRecipes.push(transformedRecipe);
           }
@@ -112,7 +114,11 @@ export const useRecipeGeneration = () => {
       return savedRecipes;
 
     } catch (err) {
-      return handleError(err, "Une erreur est survenue lors de la génération des recettes");
+      console.error('Error generating recipes:', err);
+      const errorMessage = err instanceof Error ? err.message : "Une erreur est survenue";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }

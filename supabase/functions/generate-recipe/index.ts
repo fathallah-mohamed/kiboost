@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -107,12 +107,7 @@ serve(async (req) => {
       const content = data.choices[0].message.content;
       console.log("Raw content:", content);
       
-      const cleanContent = content
-        .replace(/```json\n?|\n?```/g, '')
-        .replace(/[\u200B-\u200D\uFEFF]/g, '')
-        .replace(/\n/g, ' ')
-        .trim();
-      
+      const cleanContent = content.trim();
       console.log("Cleaned content:", cleanContent);
       
       recipes = JSON.parse(cleanContent);
@@ -121,45 +116,60 @@ serve(async (req) => {
         throw new Error("Le format de réponse n'est pas un tableau");
       }
 
-      recipes = recipes.map(recipe => ({
-        name: String(recipe.name || ''),
-        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
-        instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
-        nutritional_info: {
-          calories: Number(recipe?.nutritional_info?.calories || 0),
-          protein: Number(recipe?.nutritional_info?.protein || 0),
-          carbs: Number(recipe?.nutritional_info?.carbs || 0),
-          fat: Number(recipe?.nutritional_info?.fat || 0)
-        },
-        meal_type: mealType,
-        preparation_time: Math.min(Number(recipe?.preparation_time || 15), maxPrepTime),
-        difficulty: difficulty,
-        servings: Number(recipe?.servings || 4),
-        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
-        min_age: childAge - 2,
-        max_age: childAge + 2,
-        dietary_preferences: child.preferences || [],
-        allergens: child.allergies || [],
-        is_generated: true,
-        profile_id: child.profile_id,
-        child_id: child.id
-      }));
+      recipes = recipes.map(recipe => {
+        if (!recipe.name || !Array.isArray(recipe.ingredients)) {
+          throw new Error("Format de recette invalide");
+        }
+
+        return {
+          name: String(recipe.name),
+          ingredients: recipe.ingredients.map(ing => ({
+            item: String(ing.item || ''),
+            quantity: String(ing.quantity || ''),
+            unit: String(ing.unit || '')
+          })),
+          instructions: Array.isArray(recipe.instructions) 
+            ? recipe.instructions.map(String)
+            : [String(recipe.instructions || '')],
+          nutritional_info: {
+            calories: Number(recipe?.nutritional_info?.calories || 0),
+            protein: Number(recipe?.nutritional_info?.protein || 0),
+            carbs: Number(recipe?.nutritional_info?.carbs || 0),
+            fat: Number(recipe?.nutritional_info?.fat || 0)
+          },
+          meal_type: mealType,
+          preparation_time: Math.min(Number(recipe?.preparation_time || 30), maxPrepTime),
+          difficulty: difficulty,
+          servings: Number(recipe?.servings || 4),
+          health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
+          min_age: childAge - 2,
+          max_age: childAge + 2,
+          dietary_preferences: child.preferences || [],
+          allergens: child.allergies || [],
+          is_generated: true,
+          profile_id: child.profile_id,
+          child_id: child.id,
+          source: 'ia',
+          auto_generated: true
+        };
+      });
 
       console.log("Processed recipes:", recipes);
-    } catch (e) {
-      console.error("Error processing recipe data:", e);
-      throw new Error(`Failed to process recipe data: ${e.message}`);
-    }
 
-    return new Response(
-      JSON.stringify({ recipes }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
-      }
-    );
+      return new Response(
+        JSON.stringify({ recipes }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+
+    } catch (error) {
+      console.error("Error processing recipe data:", error);
+      throw new Error(`Failed to process recipe data: ${error.message}`);
+    }
 
   } catch (error) {
     console.error("Error in generate-recipe function:", error);
