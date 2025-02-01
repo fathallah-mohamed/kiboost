@@ -1,4 +1,4 @@
-import { MealType, Difficulty, Recipe, HealthBenefitCategory } from "../../types";
+import { MealType, Difficulty, Recipe } from "../../types";
 import { validateMealType, validateDifficulty } from './validationUtils';
 import { Json } from "@/integrations/supabase/types";
 
@@ -9,32 +9,37 @@ export type RecipeIngredient = {
 };
 
 export const parseIngredients = (ingredients: Json): RecipeIngredient[] => {
-  if (Array.isArray(ingredients)) {
-    return ingredients.map(ing => {
-      const item = ing as { [key: string]: Json };
-      return {
-        item: String(item?.item || ''),
-        quantity: String(item?.quantity || ''),
-        unit: String(item?.unit || '')
-      };
-    });
+  try {
+    if (typeof ingredients === 'string') {
+      return JSON.parse(ingredients);
+    }
+    if (Array.isArray(ingredients)) {
+      return ingredients.map(ing => ({
+        item: String(ing?.item || ''),
+        quantity: String(ing?.quantity || ''),
+        unit: String(ing?.unit || '')
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error('Error parsing ingredients:', error);
+    return [];
   }
-  return [];
 };
 
-export const parseInstructions = (instructions: Json): string[] => {
-  if (Array.isArray(instructions)) {
-    return instructions.map(String);
-  }
-  if (typeof instructions === 'string') {
-    try {
-      const parsed = JSON.parse(instructions);
-      return Array.isArray(parsed) ? parsed.map(String) : [String(instructions)];
-    } catch {
-      return [String(instructions)];
+export const parseInstructions = (instructions: string | Json): string[] => {
+  try {
+    if (typeof instructions === 'string') {
+      return instructions.split('\n').filter(Boolean);
     }
+    if (Array.isArray(instructions)) {
+      return instructions.map(String);
+    }
+    return [];
+  } catch (error) {
+    console.error('Error parsing instructions:', error);
+    return [];
   }
-  return [];
 };
 
 export const parseNutritionalInfo = (info: Json) => {
@@ -45,56 +50,50 @@ export const parseNutritionalInfo = (info: Json) => {
     fat: 0
   };
 
-  if (typeof info === 'object' && info !== null && !Array.isArray(info)) {
-    const nutritionalInfo = info as { [key: string]: Json };
-    return {
-      calories: Number(nutritionalInfo?.calories || 0),
-      protein: Number(nutritionalInfo?.protein || 0),
-      carbs: Number(nutritionalInfo?.carbs || 0),
-      fat: Number(nutritionalInfo?.fat || 0)
-    };
-  }
-  return defaultInfo;
-};
-
-export const parseHealthBenefits = (benefits: Json) => {
-  if (Array.isArray(benefits)) {
-    return benefits.map(benefit => {
-      const b = benefit as { [key: string]: Json };
+  try {
+    if (typeof info === 'string') {
+      return JSON.parse(info);
+    }
+    if (typeof info === 'object' && info !== null && !Array.isArray(info)) {
       return {
-        icon: String(b?.icon || ''),
-        category: String(b?.category || '') as HealthBenefitCategory,
-        description: String(b?.description || '')
+        calories: Number(info.calories || 0),
+        protein: Number(info.protein || 0),
+        carbs: Number(info.carbs || 0),
+        fat: Number(info.fat || 0)
       };
-    });
+    }
+    return defaultInfo;
+  } catch (error) {
+    console.error('Error parsing nutritional info:', error);
+    return defaultInfo;
   }
-  return [];
-};
-
-export const parseCookingSteps = (steps: Json) => {
-  if (Array.isArray(steps)) {
-    return steps.map(step => {
-      const s = step as { [key: string]: Json };
-      return {
-        step: Number(s?.step || 0),
-        description: String(s?.description || ''),
-        duration: Number(s?.duration || 0),
-        tips: String(s?.tips || '')
-      };
-    });
-  }
-  return [];
 };
 
 export const transformToRecipe = (dbRecipe: any): Recipe => {
   return {
-    ...dbRecipe,
+    id: dbRecipe.id,
+    profile_id: dbRecipe.profile_id,
+    name: dbRecipe.name,
     ingredients: parseIngredients(dbRecipe.ingredients),
     instructions: parseInstructions(dbRecipe.instructions),
     nutritional_info: parseNutritionalInfo(dbRecipe.nutritional_info),
-    health_benefits: parseHealthBenefits(dbRecipe.health_benefits),
-    cooking_steps: parseCookingSteps(dbRecipe.cooking_steps),
     meal_type: validateMealType(dbRecipe.meal_type) as MealType,
-    difficulty: validateDifficulty(dbRecipe.difficulty) as Difficulty
+    preparation_time: Number(dbRecipe.preparation_time) || 30,
+    difficulty: validateDifficulty(dbRecipe.difficulty) as Difficulty,
+    servings: Number(dbRecipe.servings) || 4,
+    is_generated: Boolean(dbRecipe.is_generated),
+    image_url: dbRecipe.image_url,
+    health_benefits: typeof dbRecipe.health_benefits === 'string' 
+      ? JSON.parse(dbRecipe.health_benefits)
+      : dbRecipe.health_benefits || [],
+    min_age: Number(dbRecipe.min_age) || 0,
+    max_age: Number(dbRecipe.max_age) || 18,
+    dietary_preferences: dbRecipe.dietary_preferences || [],
+    allergens: dbRecipe.allergens || [],
+    cost_estimate: Number(dbRecipe.cost_estimate) || 0,
+    seasonal_months: dbRecipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
+    cooking_steps: typeof dbRecipe.cooking_steps === 'string'
+      ? JSON.parse(dbRecipe.cooking_steps)
+      : dbRecipe.cooking_steps || []
   };
 };
