@@ -202,7 +202,6 @@ export const useRecipeGeneration = () => {
           }
 
           if (savedRecipe) {
-            // Parse the JSON strings back into objects for the Recipe type
             const parsedRecipe: Recipe = {
               ...savedRecipe,
               ingredients: JSON.parse(savedRecipe.ingredients as string),
@@ -210,6 +209,7 @@ export const useRecipeGeneration = () => {
                 ? savedRecipe.instructions 
                 : [savedRecipe.instructions],
               nutritional_info: JSON.parse(savedRecipe.nutritional_info as string),
+              meal_type: validateMealType(savedRecipe.meal_type),
               health_benefits: savedRecipe.health_benefits ? JSON.parse(savedRecipe.health_benefits as string) : [],
               cooking_steps: savedRecipe.cooking_steps ? JSON.parse(savedRecipe.cooking_steps as string) : []
             };
