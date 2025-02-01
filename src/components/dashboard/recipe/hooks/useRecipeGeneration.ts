@@ -36,9 +36,13 @@ export const useRecipeGeneration = () => {
           ...recipe,
           ingredients: typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : recipe.ingredients,
           nutritional_info: typeof recipe.nutritional_info === 'string' ? JSON.parse(recipe.nutritional_info) : recipe.nutritional_info,
-          instructions: typeof recipe.instructions === 'string' ? recipe.instructions.split('\n') : recipe.instructions,
-          health_benefits: recipe.health_benefits ? (typeof recipe.health_benefits === 'string' ? JSON.parse(recipe.health_benefits) : recipe.health_benefits) : undefined,
-          cooking_steps: recipe.cooking_steps ? (typeof recipe.cooking_steps === 'string' ? JSON.parse(recipe.cooking_steps) : recipe.cooking_steps) : [],
+          instructions: Array.isArray(recipe.instructions) ? recipe.instructions : recipe.instructions.split('\n'),
+          health_benefits: recipe.health_benefits ? 
+            (typeof recipe.health_benefits === 'string' ? JSON.parse(recipe.health_benefits) : recipe.health_benefits) 
+            : undefined,
+          cooking_steps: recipe.cooking_steps ? 
+            (typeof recipe.cooking_steps === 'string' ? JSON.parse(recipe.cooking_steps) : recipe.cooking_steps) 
+            : [],
           meal_type: validateMealType(recipe.meal_type),
           difficulty: validateDifficulty(recipe.difficulty)
         })) as Recipe[];
@@ -76,22 +80,33 @@ export const useRecipeGeneration = () => {
           const mealType = validateMealType(filters.mealType !== 'all' ? filters.mealType : 'dinner');
           const difficulty = validateDifficulty(filters.difficulty !== 'all' ? filters.difficulty : 'medium');
 
+          // Ensure all JSON fields are properly stringified
+          const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+          const nutritionalInfo = recipe.nutritional_info || {
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0
+          };
+          const healthBenefits = Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [];
+          const cookingSteps = Array.isArray(recipe.cooking_steps) ? recipe.cooking_steps : [];
+
           const recipeData = {
             profile_id: child.profile_id,
             child_id: child.id,
             name: recipe.name,
-            ingredients: JSON.stringify(recipe.ingredients),
-            instructions: Array.isArray(recipe.instructions) ? recipe.instructions.join('\n') : recipe.instructions,
-            nutritional_info: JSON.stringify(recipe.nutritional_info),
+            ingredients: JSON.stringify(ingredients),
+            instructions: Array.isArray(recipe.instructions) ? recipe.instructions.join('\n') : String(recipe.instructions),
+            nutritional_info: JSON.stringify(nutritionalInfo),
             meal_type: mealType,
-            preparation_time: recipe.preparation_time || 30,
-            max_prep_time: filters.maxPrepTime || 30,
+            preparation_time: Number(recipe.preparation_time) || 30,
+            max_prep_time: Number(filters.maxPrepTime) || 30,
             difficulty: difficulty,
-            servings: recipe.servings || 4,
+            servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
-            health_benefits: recipe.health_benefits ? JSON.stringify(recipe.health_benefits) : null,
-            cooking_steps: recipe.cooking_steps ? JSON.stringify(recipe.cooking_steps) : null,
+            health_benefits: JSON.stringify(healthBenefits),
+            cooking_steps: JSON.stringify(cookingSteps),
             image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
           };
 
@@ -108,8 +123,12 @@ export const useRecipeGeneration = () => {
               ingredients: JSON.parse(savedRecipe.ingredients as string),
               nutritional_info: JSON.parse(savedRecipe.nutritional_info as string),
               instructions: savedRecipe.instructions.split('\n'),
-              health_benefits: savedRecipe.health_benefits ? JSON.parse(savedRecipe.health_benefits as string) : undefined,
-              cooking_steps: savedRecipe.cooking_steps ? JSON.parse(savedRecipe.cooking_steps as string) : [],
+              health_benefits: savedRecipe.health_benefits ? 
+                JSON.parse(savedRecipe.health_benefits as string) 
+                : undefined,
+              cooking_steps: savedRecipe.cooking_steps ? 
+                JSON.parse(savedRecipe.cooking_steps as string) 
+                : [],
               meal_type: validateMealType(savedRecipe.meal_type),
               difficulty: validateDifficulty(savedRecipe.difficulty)
             };
