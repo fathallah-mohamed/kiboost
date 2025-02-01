@@ -49,13 +49,20 @@ export const useRecipeGeneration = () => {
         try {
           console.log("Processing recipe:", recipe);
 
+          // Ensure ingredients, instructions, and health_benefits are properly stringified
           const recipeData = {
             profile_id: child.profile_id,
             child_id: child.id,
             name: String(recipe.name),
-            ingredients: JSON.stringify(recipe.ingredients),
-            instructions: JSON.stringify(recipe.instructions),
-            nutritional_info: JSON.stringify(recipe.nutritional_info),
+            ingredients: Array.isArray(recipe.ingredients) 
+              ? JSON.stringify(recipe.ingredients)
+              : recipe.ingredients,
+            instructions: Array.isArray(recipe.instructions) 
+              ? JSON.stringify(recipe.instructions)
+              : recipe.instructions,
+            nutritional_info: typeof recipe.nutritional_info === 'object'
+              ? JSON.stringify(recipe.nutritional_info)
+              : recipe.nutritional_info,
             meal_type: recipe.meal_type,
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
@@ -63,7 +70,9 @@ export const useRecipeGeneration = () => {
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
-            health_benefits: JSON.stringify(recipe.health_benefits || []),
+            health_benefits: Array.isArray(recipe.health_benefits)
+              ? JSON.stringify(recipe.health_benefits)
+              : recipe.health_benefits || '[]',
             image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
             min_age: Number(recipe.min_age) || 0,
             max_age: Number(recipe.max_age) || 18,
@@ -71,7 +80,9 @@ export const useRecipeGeneration = () => {
             allergens: recipe.allergens || [],
             cost_estimate: Number(recipe.cost_estimate) || 0,
             seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
-            cooking_steps: JSON.stringify(recipe.cooking_steps || []),
+            cooking_steps: Array.isArray(recipe.cooking_steps)
+              ? JSON.stringify(recipe.cooking_steps)
+              : recipe.cooking_steps || '[]',
             is_generated: true
           };
 
