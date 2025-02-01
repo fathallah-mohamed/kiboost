@@ -17,38 +17,21 @@ export const useRecipeGeneration = () => {
       setLoading(true);
       setError(null);
 
+      console.log("Generating recipes for child:", child);
+      console.log("Using filters:", filters);
+
       // First check for existing recipes
       const { data: existingRecipes, error: fetchError } = await supabase
         .from('recipes')
         .select('*')
         .eq('profile_id', child.profile_id)
-        .eq('child_id', child.id)
-        .eq('auto_generated', true)
-        .eq('meal_type', filters.mealType !== 'all' ? filters.mealType : 'dinner')
-        .lte('max_prep_time', filters.maxPrepTime || 30)
-        .eq('difficulty', filters.difficulty !== 'all' ? filters.difficulty : 'medium');
+        .eq('child_id', child.id);
 
       if (fetchError) throw fetchError;
 
-      if (existingRecipes && existingRecipes.length > 0) {
-        console.log("Using existing recipes:", existingRecipes);
-        return existingRecipes.map(recipe => ({
-          ...recipe,
-          ingredients: typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : recipe.ingredients,
-          nutritional_info: typeof recipe.nutritional_info === 'string' ? JSON.parse(recipe.nutritional_info) : recipe.nutritional_info,
-          instructions: Array.isArray(recipe.instructions) ? recipe.instructions : recipe.instructions.split('\n'),
-          health_benefits: recipe.health_benefits ? 
-            (typeof recipe.health_benefits === 'string' ? JSON.parse(recipe.health_benefits) : recipe.health_benefits) 
-            : undefined,
-          cooking_steps: recipe.cooking_steps ? 
-            (typeof recipe.cooking_steps === 'string' ? JSON.parse(recipe.cooking_steps) : recipe.cooking_steps) 
-            : [],
-          meal_type: validateMealType(recipe.meal_type),
-          difficulty: validateDifficulty(recipe.difficulty)
-        })) as Recipe[];
-      }
+      console.log("Existing recipes:", existingRecipes);
 
-      // Generate new recipes if none exist
+      // Generate new recipes if none exist or force regeneration
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
         {
@@ -60,7 +43,8 @@ export const useRecipeGeneration = () => {
               allergies: child.allergies || [],
               preferences: child.preferences || []
             },
-            filters
+            filters,
+            existingRecipes: existingRecipes || []
           }
         }
       );
@@ -80,7 +64,7 @@ export const useRecipeGeneration = () => {
           const mealType = validateMealType(filters.mealType !== 'all' ? filters.mealType : 'dinner');
           const difficulty = validateDifficulty(filters.difficulty !== 'all' ? filters.difficulty : 'medium');
 
-          // Ensure all JSON fields are properly stringified
+          // Ensure all JSON fields are properly formatted
           const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
           const nutritionalInfo = recipe.nutritional_info || {
             calories: 0,
@@ -107,8 +91,17 @@ export const useRecipeGeneration = () => {
             source: 'ia',
             health_benefits: JSON.stringify(healthBenefits),
             cooking_steps: JSON.stringify(cookingSteps),
-            image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'
+            image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
+            min_age: Number(recipe.min_age) || 0,
+            max_age: Number(recipe.max_age) || 18,
+            dietary_preferences: recipe.dietary_preferences || [],
+            allergens: recipe.allergens || [],
+            cost_estimate: Number(recipe.cost_estimate) || 0,
+            seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
+            is_generated: true
           };
+
+          console.log("Saving recipe:", recipeData);
 
           const { data: savedRecipe, error: saveError } = await supabase
             .from('recipes')
@@ -117,6 +110,7 @@ export const useRecipeGeneration = () => {
             .single();
 
           if (saveError) throw saveError;
+
           if (savedRecipe) {
             const parsedRecipe: Recipe = {
               ...savedRecipe,

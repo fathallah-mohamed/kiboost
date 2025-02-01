@@ -1,38 +1,43 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe, MealType, Difficulty } from '../../types';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { validateMealType, validateDifficulty } from '../utils/validationUtils';
 
 export const useRecipes = (userId: string) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   const fetchRecipes = async () => {
     try {
       setLoading(true);
+      console.log('Fetching recipes for user:', userId);
+      
       const { data, error } = await supabase
         .from('recipes')
         .select('*')
-        .eq('profile_id', userId);
+        .eq('profile_id', userId)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const typedRecipes: Recipe[] = (data || []).map(recipe => ({
+      console.log('Raw recipes data:', data);
+
+      const parsedRecipes = (data || []).map(recipe => ({
         ...recipe,
-        ingredients: typeof recipe.ingredients === 'string'
+        ingredients: typeof recipe.ingredients === 'string' 
           ? JSON.parse(recipe.ingredients)
           : recipe.ingredients,
         nutritional_info: typeof recipe.nutritional_info === 'string'
           ? JSON.parse(recipe.nutritional_info)
           : recipe.nutritional_info,
-        instructions: Array.isArray(recipe.instructions)
-          ? recipe.instructions
-          : [recipe.instructions].filter(Boolean),
-        meal_type: recipe.meal_type as MealType,
-        difficulty: recipe.difficulty as Difficulty,
-        is_generated: recipe.is_generated || false,
-        image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
+        instructions: typeof recipe.instructions === 'string'
+          ? recipe.instructions.split('\n')
+          : Array.isArray(recipe.instructions)
+            ? recipe.instructions
+            : [recipe.instructions],
+        meal_type: validateMealType(recipe.meal_type),
+        difficulty: validateDifficulty(recipe.difficulty),
         health_benefits: recipe.health_benefits ? 
           (typeof recipe.health_benefits === 'string' 
             ? JSON.parse(recipe.health_benefits) 
@@ -43,24 +48,23 @@ export const useRecipes = (userId: string) => {
             ? JSON.parse(recipe.cooking_steps)
             : recipe.cooking_steps)
           : []
-      }));
+      })) as Recipe[];
 
-      setRecipes(typedRecipes);
+      console.log('Parsed recipes:', parsedRecipes);
+      setRecipes(parsedRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de charger les recettes.",
-      });
+      toast.error("Impossible de charger les recettes");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRecipes();
+    if (userId) {
+      fetchRecipes();
+    }
   }, [userId]);
 
-  return { recipes, loading };
+  return { recipes, loading, fetchRecipes };
 };
