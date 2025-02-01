@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -40,57 +39,49 @@ serve(async (req) => {
       constraints.push(`Difficulté : ${filters.difficulty}`);
     }
 
-    const prompt = `Tu es un chef expert en nutrition infantile. Ta mission est de générer 3 recettes SAINES, VARIÉES et ADAPTÉES aux besoins spécifiques d'un enfant.
+    const prompt = `Tu es un chef expert en nutrition infantile spécialisé dans la création de recettes UNIQUES et ADAPTÉES. Ta mission est de générer 5 recettes DIFFÉRENTES qui respectent STRICTEMENT les critères suivants:
 
 🔹 **Profil de l'enfant :**
 - **Âge** : ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} ans
 - **Allergies** : ${child.allergies?.length ? child.allergies.join(", ") : "Aucune"}
-- **Préférences alimentaires** : ${child.preferences?.length ? child.preferences.join(", ") : "Aucune préférence particulière"}
+- **Préférences** : ${child.preferences?.length ? child.preferences.join(", ") : "Aucune préférence particulière"}
 
-🔹 **Critères spécifiques à respecter :**
+🔹 **Critères STRICTS à respecter :**
 ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte particulière"}
 
-🎯 **Exigences incontournables pour chaque recette :**
-- **VARIÉTÉ** : Chaque recette doit être UNIQUE, avec des ingrédients et techniques de préparation distincts.
-- **SANTÉ** : Doit inclure **exactement 3 bienfaits santé distincts** parmi : ${validCategories.join(", ")}.
-- **ÉVITE LES RÉPÉTITIONS** : Les recettes doivent être différentes en goût, texture et préparation.
-- **ACCESSIBILITÉ** : Utiliser des ingrédients simples, courants et faciles à trouver.
-- **SAISONNALITÉ** : Prioriser les ingrédients de saison si une contrainte est définie.
-- **COÛT** : Respecter un budget raisonnable par portion si précisé.
-- **FACILITÉ** : Étapes claires, simples et adaptées aux parents occupés.
+🎯 **Règles OBLIGATOIRES pour chaque recette :**
+1. **UNICITÉ** : Chaque recette DOIT être TOTALEMENT DIFFÉRENTE des autres en termes d'ingrédients principaux et de méthode de préparation.
+2. **TEMPS** : Si un temps maximum est spécifié, la recette DOIT pouvoir être réalisée dans ce temps.
+3. **SIMPLICITÉ** : Pour les recettes faciles, utiliser maximum 5-6 ingrédients et 3-4 étapes simples.
+4. **SANTÉ** : Inclure EXACTEMENT 3 bienfaits santé distincts parmi : ${validCategories.join(", ")}.
+5. **PRATIQUE** : Utiliser des ingrédients courants qu'on trouve facilement en supermarché.
+6. **ADAPTABILITÉ** : La recette doit pouvoir être préparée par un parent même pressé.
 
-⚠️ **Retourne uniquement un tableau JSON strictement formaté comme suit :**
-[
-  {
-    "name": "Nom de la recette",
-    "ingredients": [
-      {"item": "Nom de l'ingrédient", "quantity": "Valeur", "unit": "Unité (g, ml, etc.)"}
-    ],
-    "instructions": ["Étape 1", "Étape 2"],
-    "nutritional_info": {
-      "calories": 0,
-      "protein": 0,
-      "carbs": 0,
-      "fat": 0
-    },
-    "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
-    "preparation_time": nombre,
-    "difficulty": "easy" | "medium" | "hard",
-    "servings": nombre,
-    "health_benefits": [
-      {"icon": "string", "category": "string", "description": "string"}
-    ],
-    "min_age": nombre,
-    "max_age": nombre,
-    "dietary_preferences": ["Préférences spécifiques"],
-    "allergens": ["Liste des allergènes"],
-    "cost_estimate": nombre,
-    "seasonal_months": [1,2,3,4,5,6,7,8,9,10,11,12],
-    "cooking_steps": [
-      {"step": nombre, "description": "Détail de l'étape", "duration": nombre, "tips": "Astuces optionnelles"}
-    ]
-  }
-]`;
+⚠️ **Format JSON STRICT pour chaque recette :**
+{
+  "name": "Nom unique et descriptif",
+  "ingredients": [{"item": "Nom", "quantity": "Valeur", "unit": "Unité"}],
+  "instructions": ["Étape 1", "Étape 2"],
+  "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
+  "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
+  "preparation_time": nombre (en minutes),
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": nombre,
+  "health_benefits": [
+    {"icon": "emoji", "category": "catégorie", "description": "description"}
+  ],
+  "min_age": nombre,
+  "max_age": nombre,
+  "dietary_preferences": ["préférences"],
+  "allergens": ["allergènes"],
+  "cost_estimate": nombre,
+  "seasonal_months": [1-12],
+  "cooking_steps": [
+    {"step": nombre, "description": "détail", "duration": minutes, "tips": "astuce"}
+  ]
+}
+
+⚠️ IMPORTANT: Retourne UNIQUEMENT un tableau JSON avec 5 recettes UNIQUES, sans texte additionnel.`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
@@ -110,14 +101,15 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
         messages: [
           {
             role: "system",
-            content: "Tu es un chef spécialisé dans la nutrition infantile. Tu crées des recettes uniques, saines et attrayantes pour les enfants. Retourne TOUJOURS les données au format JSON pur sans markdown ni texte supplémentaire."
+            content: "Tu es un chef expert en nutrition infantile qui crée des recettes uniques, saines et adaptées aux enfants. Retourne UNIQUEMENT du JSON pur, sans texte ni markdown."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        temperature: 0.9,
+        temperature: 1.0, // Augmenté pour plus de créativité
+        max_tokens: 4000, // Augmenté pour permettre plus de recettes
       }),
     });
 
@@ -139,7 +131,6 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
       const content = data.choices[0].message.content;
       console.log("Raw OpenAI response content:", content);
       
-      // Clean the response to ensure it's valid JSON
       const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
       console.log("Cleaned content:", cleanContent);
       
@@ -149,7 +140,7 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
         recipes = [recipes];
       }
 
-      // Validate and transform each recipe
+      // Validation et transformation
       recipes = recipes.map(recipe => ({
         ...recipe,
         ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
