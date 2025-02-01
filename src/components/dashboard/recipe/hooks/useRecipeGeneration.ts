@@ -139,12 +139,8 @@ export const useRecipeGeneration = () => {
         }
       );
 
-      if (generateError) {
-        console.error("Error from generate-recipe function:", generateError);
-        throw new Error(generateError.message || "Erreur lors de la génération des recettes");
-      }
-
-      console.log("Response from generate-recipe:", response);
+      if (generateError) throw generateError;
+      console.log("Generated recipe response:", response);
 
       if (!response?.recipes || !Array.isArray(response.recipes)) {
         throw new Error("Format de réponse invalide");
@@ -160,9 +156,9 @@ export const useRecipeGeneration = () => {
             profile_id: child.profile_id,
             child_id: child.id,
             name: String(recipe.name),
-            ingredients: parseIngredients(recipe.ingredients),
+            ingredients: JSON.stringify(parseIngredients(recipe.ingredients)),
             instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [String(recipe.instructions)],
-            nutritional_info: parseNutritionalInfo(recipe.nutritional_info),
+            nutritional_info: JSON.stringify(parseNutritionalInfo(recipe.nutritional_info)),
             meal_type: validateMealType(recipe.meal_type),
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
@@ -170,16 +166,16 @@ export const useRecipeGeneration = () => {
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
-            health_benefits: parseHealthBenefits(recipe.health_benefits),
-            cooking_steps: parseCookingSteps(recipe.cooking_steps),
+            health_benefits: JSON.stringify(parseHealthBenefits(recipe.health_benefits)),
+            cooking_steps: JSON.stringify(parseCookingSteps(recipe.cooking_steps)),
             image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
             min_age: Number(recipe.min_age) || 0,
             max_age: Number(recipe.max_age) || 18,
-            dietary_preferences: Array.isArray(recipe.dietary_preferences)
-              ? recipe.dietary_preferences
+            dietary_preferences: Array.isArray(recipe.dietary_preferences) 
+              ? recipe.dietary_preferences 
               : [],
-            allergens: Array.isArray(recipe.allergens)
-              ? recipe.allergens
+            allergens: Array.isArray(recipe.allergens) 
+              ? recipe.allergens 
               : [],
             cost_estimate: Number(recipe.cost_estimate) || 0,
             seasonal_months: Array.isArray(recipe.seasonal_months)
