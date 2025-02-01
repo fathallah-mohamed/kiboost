@@ -31,42 +31,80 @@ interface DbRecipe {
   auto_generated: boolean;
 }
 
+interface Ingredient {
+  item: string;
+  quantity: string;
+  unit: string;
+}
+
+interface NutritionalInfo {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+interface CookingStep {
+  step: number;
+  description: string;
+  duration?: number;
+  tips?: string;
+}
+
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const parseIngredients = (ingredients: Json): Ingredient[] => {
+    if (!Array.isArray(ingredients)) return [];
+    
+    return ingredients.map(ing => ({
+      item: typeof ing.item === 'string' ? ing.item : '',
+      quantity: typeof ing.quantity === 'string' ? ing.quantity : '',
+      unit: typeof ing.unit === 'string' ? ing.unit : ''
+    }));
+  };
+
+  const parseNutritionalInfo = (info: Json): NutritionalInfo => {
+    if (typeof info !== 'object' || !info) {
+      return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    }
+
+    return {
+      calories: typeof info.calories === 'number' ? info.calories : 0,
+      protein: typeof info.protein === 'number' ? info.protein : 0,
+      carbs: typeof info.carbs === 'number' ? info.carbs : 0,
+      fat: typeof info.fat === 'number' ? info.fat : 0
+    };
+  };
+
+  const parseCookingSteps = (steps: Json): CookingStep[] => {
+    if (!Array.isArray(steps)) return [];
+
+    return steps.map(step => ({
+      step: typeof step.step === 'number' ? step.step : 0,
+      description: typeof step.description === 'string' ? step.description : '',
+      duration: typeof step.duration === 'number' ? step.duration : undefined,
+      tips: typeof step.tips === 'string' ? step.tips : undefined
+    }));
+  };
+
   const transformDbRecipeToRecipe = (dbRecipe: DbRecipe): Recipe => {
     return {
       ...dbRecipe,
-      ingredients: Array.isArray(dbRecipe.ingredients) 
-        ? dbRecipe.ingredients.map(ing => ({
-            item: String(ing.item || ''),
-            quantity: String(ing.quantity || ''),
-            unit: String(ing.unit || '')
-          }))
-        : [],
+      ingredients: parseIngredients(dbRecipe.ingredients),
       instructions: Array.isArray(dbRecipe.instructions) 
         ? dbRecipe.instructions.map(String)
         : [String(dbRecipe.instructions)],
-      nutritional_info: typeof dbRecipe.nutritional_info === 'object' 
-        ? {
-            calories: Number(dbRecipe.nutritional_info.calories || 0),
-            protein: Number(dbRecipe.nutritional_info.protein || 0),
-            carbs: Number(dbRecipe.nutritional_info.carbs || 0),
-            fat: Number(dbRecipe.nutritional_info.fat || 0)
-          }
-        : {
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0
-          },
+      nutritional_info: parseNutritionalInfo(dbRecipe.nutritional_info),
       health_benefits: Array.isArray(dbRecipe.health_benefits) 
-        ? dbRecipe.health_benefits
+        ? dbRecipe.health_benefits.map(benefit => ({
+            icon: String(benefit.icon || ''),
+            category: String(benefit.category || ''),
+            description: String(benefit.description || '')
+          }))
         : [],
-      cooking_steps: Array.isArray(dbRecipe.cooking_steps) 
-        ? dbRecipe.cooking_steps
-        : []
+      cooking_steps: parseCookingSteps(dbRecipe.cooking_steps)
     };
   };
 
@@ -120,24 +158,9 @@ export const useRecipeGeneration = () => {
             profile_id: child.profile_id,
             child_id: child.id,
             name: String(recipe.name),
-            ingredients: Array.isArray(recipe.ingredients) 
-              ? recipe.ingredients 
-              : typeof recipe.ingredients === 'string'
-                ? JSON.parse(recipe.ingredients)
-                : [],
-            instructions: Array.isArray(recipe.instructions)
-              ? recipe.instructions
-              : [String(recipe.instructions)],
-            nutritional_info: typeof recipe.nutritional_info === 'object'
-              ? recipe.nutritional_info
-              : typeof recipe.nutritional_info === 'string'
-                ? JSON.parse(recipe.nutritional_info)
-                : {
-                    calories: 0,
-                    protein: 0,
-                    carbs: 0,
-                    fat: 0
-                  },
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            nutritional_info: recipe.nutritional_info,
             meal_type: recipe.meal_type || 'dinner',
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
@@ -145,16 +168,8 @@ export const useRecipeGeneration = () => {
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
-            health_benefits: Array.isArray(recipe.health_benefits)
-              ? recipe.health_benefits
-              : typeof recipe.health_benefits === 'string'
-                ? JSON.parse(recipe.health_benefits)
-                : [],
-            cooking_steps: Array.isArray(recipe.cooking_steps)
-              ? recipe.cooking_steps
-              : typeof recipe.cooking_steps === 'string'
-                ? JSON.parse(recipe.cooking_steps)
-                : [],
+            health_benefits: recipe.health_benefits || [],
+            cooking_steps: recipe.cooking_steps || [],
             image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
             min_age: Number(recipe.min_age) || 0,
             max_age: Number(recipe.max_age) || 18,
