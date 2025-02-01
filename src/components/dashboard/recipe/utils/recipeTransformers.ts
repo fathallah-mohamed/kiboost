@@ -8,6 +8,8 @@ export type RecipeIngredient = {
   unit: string;
 };
 
+type JsonObject = { [key: string]: Json };
+
 export const parseIngredients = (ingredients: Json): RecipeIngredient[] => {
   try {
     if (typeof ingredients === 'string') {
@@ -16,10 +18,11 @@ export const parseIngredients = (ingredients: Json): RecipeIngredient[] => {
     if (Array.isArray(ingredients)) {
       return ingredients.map(ing => {
         if (typeof ing === 'object' && ing !== null) {
+          const ingredient = ing as JsonObject;
           return {
-            item: String(ing.item || ''),
-            quantity: String(ing.quantity || ''),
-            unit: String(ing.unit || '')
+            item: String(ingredient.item || ''),
+            quantity: String(ingredient.quantity || ''),
+            unit: String(ingredient.unit || '')
           };
         }
         return {
@@ -64,11 +67,12 @@ export const parseNutritionalInfo = (info: Json) => {
       return JSON.parse(info);
     }
     if (typeof info === 'object' && info !== null && !Array.isArray(info)) {
+      const nutritionalInfo = info as JsonObject;
       return {
-        calories: Number(info.calories || 0),
-        protein: Number(info.protein || 0),
-        carbs: Number(info.carbs || 0),
-        fat: Number(info.fat || 0)
+        calories: Number(nutritionalInfo.calories || 0),
+        protein: Number(nutritionalInfo.protein || 0),
+        carbs: Number(nutritionalInfo.carbs || 0),
+        fat: Number(nutritionalInfo.fat || 0)
       };
     }
     return defaultInfo;
