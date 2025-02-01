@@ -6,6 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const validCategories = [
+  'cognitive',
+  'energy',
+  'satiety',
+  'digestive',
+  'immunity',
+  'growth',
+  'mental',
+  'organs',
+  'beauty',
+  'physical',
+  'prevention',
+  'global'
+];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -22,11 +37,35 @@ serve(async (req) => {
     console.log("Using filters:", filters);
 
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
-    const mealType = filters?.mealType || 'dinner';
-    const maxPrepTime = filters?.maxPrepTime || 30;
-    const difficulty = filters?.difficulty || 'medium';
+    const constraints = [];
+    
+    if (filters.maxPrepTime) {
+      constraints.push(`Temps de préparation maximum: ${filters.maxPrepTime} minutes`);
+    }
+    if (filters.difficulty) {
+      constraints.push(`Difficulté: ${filters.difficulty}`);
+    }
+    if (filters.mealType && filters.mealType !== 'all') {
+      constraints.push(`Type de repas: ${filters.mealType}`);
+    }
 
-    const prompt = `Tu es un chef expert en nutrition infantile. Génère UNIQUEMENT un tableau JSON de 3 recettes UNIQUES avec ce format STRICT:
+    const prompt = `Tu es un chef spécialisé en nutrition infantile. Génère 3 recettes DIFFÉRENTES et CRÉATIVES pour un enfant :
+
+📌 **Caractéristiques de l'enfant :**
+- Âge : ${childAge} ans
+- Allergies : ${child.allergies?.join(", ") || "Aucune"}
+- Préférences alimentaires : ${child.preferences?.join(", ") || "Aucune préférence particulière"}
+${constraints.length ? '- Contraintes spécifiques : ' + constraints.join(', ') : ''}
+
+⚠️ **IMPORTANT :**
+- **Ne jamais renvoyer un résultat vide !** Si aucune recette ne correspond **exactement**, ajuste légèrement les contraintes.
+- **3 bienfaits santé DISTINCTS** parmi : ${validCategories.join(', ')} (évite les répétitions inutiles).
+- **Préparation rapide (<15 min)** : Prioriser des recettes **sans cuisson** ou **cuisson très rapide**.
+- **Éviter la répétition excessive des ingrédients** pour plus de diversité.
+- **Ingrédients simples et accessibles**, disponibles en supermarché.
+- **Étapes claires et adaptées aux parents pressés**.
+
+Renvoie UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT, sans texte ni markdown autour :
 
 [
   {
@@ -36,29 +75,15 @@ serve(async (req) => {
     ],
     "instructions": ["Étape 1", "Étape 2"],
     "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
-    "meal_type": "${mealType}",
-    "preparation_time": ${maxPrepTime},
-    "difficulty": "${difficulty}",
+    "meal_type": "${filters.mealType || 'dinner'}",
+    "preparation_time": ${filters.maxPrepTime || 15},
+    "difficulty": "${filters.difficulty || 'medium'}",
     "servings": 4,
     "health_benefits": [
-      {"icon": "🍳", "category": "energy", "description": "Description"}
+      {"icon": "🧠", "category": "cognitive", "description": "Description"}
     ]
   }
-]
-
-🔹 Profil enfant:
-- Âge: ${childAge} ans
-- Allergies: ${child.allergies?.length ? child.allergies.join(", ") : "Aucune"}
-- Préférences: ${child.preferences?.length ? child.preferences.join(", ") : "Aucune"}
-
-⚠️ IMPORTANT:
-- Génère EXACTEMENT 3 recettes DIFFÉRENTES
-- RESPECTE le format JSON fourni
-- Temps max: ${maxPrepTime}min
-- Difficulté: ${difficulty}
-- Ingrédients simples et adaptés
-- Adapté à l'âge: ${childAge} ans
-- CHAQUE recette doit être UNIQUE avec des ingrédients principaux différents`;
+]`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
@@ -78,7 +103,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "Tu es un chef qui génère UNIQUEMENT du JSON valide, sans texte ni markdown. Chaque recette doit être unique et différente des autres."
+            content: "Tu es un chef qui génère UNIQUEMENT du JSON valide, sans texte ni markdown."
           },
           {
             role: "user",
@@ -103,70 +128,50 @@ serve(async (req) => {
       throw new Error("Réponse invalide d'OpenAI");
     }
 
-    let recipes;
     try {
       const content = data.choices[0].message.content;
       console.log("Raw content:", content);
       
       const cleanContent = content.trim();
-      recipes = JSON.parse(cleanContent);
+      const recipes = JSON.parse(cleanContent);
       
       if (!Array.isArray(recipes)) {
         throw new Error("Le format de réponse n'est pas un tableau");
       }
 
-      // Transformation et validation des recettes
-      const processedRecipes = recipes.map(recipe => {
-        // Validation des champs requis
-        if (!recipe.name || !Array.isArray(recipe.ingredients)) {
-          throw new Error("Format de recette invalide");
-        }
-
-        // S'assurer que les ingrédients sont au bon format
-        const ingredients = recipe.ingredients.map(ing => ({
-          item: String(ing.item || ''),
-          quantity: String(ing.quantity || ''),
-          unit: String(ing.unit || '')
-        }));
-
-        // S'assurer que les instructions sont un tableau
-        const instructions = Array.isArray(recipe.instructions) 
-          ? recipe.instructions.map(String)
-          : [String(recipe.instructions || '')];
-
-        // Créer l'objet recette avec tous les champs correctement formatés
-        return {
-          name: String(recipe.name),
-          ingredients: JSON.stringify(ingredients), // Convertir en chaîne JSON
-          instructions: instructions.join('\n'), // Convertir en chaîne avec sauts de ligne
-          nutritional_info: JSON.stringify({
-            calories: Number(recipe?.nutritional_info?.calories || 0),
-            protein: Number(recipe?.nutritional_info?.protein || 0),
-            carbs: Number(recipe?.nutritional_info?.carbs || 0),
-            fat: Number(recipe?.nutritional_info?.fat || 0)
-          }),
-          meal_type: mealType,
-          preparation_time: Math.min(Number(recipe?.preparation_time || 30), maxPrepTime),
-          max_prep_time: maxPrepTime,
-          difficulty: difficulty,
-          servings: Number(recipe?.servings || 4),
-          health_benefits: JSON.stringify(
-            Array.isArray(recipe.health_benefits) ? recipe.health_benefits : []
-          ),
-          min_age: childAge - 2,
-          max_age: childAge + 2,
-          dietary_preferences: child.preferences || [],
-          allergens: child.allergies || [],
-          cost_estimate: 0,
-          seasonal_months: [1,2,3,4,5,6,7,8,9,10,11,12],
-          cooking_steps: JSON.stringify([]),
-          is_generated: true,
-          profile_id: child.profile_id,
-          child_id: child.id,
-          source: 'ia',
-          auto_generated: true
-        };
-      });
+      // Transformation des recettes pour la base de données
+      const processedRecipes = recipes.map(recipe => ({
+        profile_id: child.profile_id,
+        child_id: child.id,
+        name: String(recipe.name),
+        ingredients: JSON.stringify(recipe.ingredients || []),
+        instructions: Array.isArray(recipe.instructions) 
+          ? recipe.instructions.join('\n') 
+          : String(recipe.instructions || ''),
+        nutritional_info: JSON.stringify(recipe.nutritional_info || {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0
+        }),
+        meal_type: recipe.meal_type || filters.mealType || 'dinner',
+        preparation_time: Number(recipe.preparation_time) || filters.maxPrepTime || 30,
+        max_prep_time: Number(filters.maxPrepTime) || 30,
+        difficulty: recipe.difficulty || filters.difficulty || 'medium',
+        servings: Number(recipe.servings) || 4,
+        is_generated: true,
+        source: 'ia',
+        auto_generated: true,
+        health_benefits: JSON.stringify(recipe.health_benefits || []),
+        image_url: String(recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9'),
+        min_age: childAge - 2,
+        max_age: childAge + 2,
+        dietary_preferences: child.preferences || [],
+        allergens: child.allergies || [],
+        cost_estimate: Number(recipe.cost_estimate) || 0,
+        seasonal_months: recipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
+        cooking_steps: JSON.stringify(recipe.cooking_steps || [])
+      }));
 
       console.log("Processed recipes:", processedRecipes);
 
