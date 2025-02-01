@@ -22,67 +22,54 @@ serve(async (req) => {
     console.log("Generating recipes for child:", child);
     console.log("Using filters:", filters);
 
-    const validCategories = [
-      'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
-      'growth', 'mental', 'organs', 'beauty', 'physical',
-      'prevention', 'global'
-    ];
+    const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
+    const isBreakfast = filters?.mealType === 'breakfast';
+    const isQuick = (filters?.maxPrepTime || 30) <= 15;
+    const isEasy = filters?.difficulty === 'easy';
 
-    let constraints = [];
-    if (filters?.mealType && filters.mealType !== 'all') {
-      constraints.push(`Type de repas : ${filters.mealType}`);
-    }
-    if (filters?.maxPrepTime) {
-      constraints.push(`Temps maximum : ${filters.maxPrepTime}min`);
-    }
-    if (filters?.difficulty && filters.difficulty !== 'all') {
-      constraints.push(`Difficulté : ${filters.difficulty}`);
-    }
+    // Adapt the prompt based on the filters
+    let basePrompt = `Tu es un chef expert en nutrition infantile spécialisé dans la création de recettes ${isBreakfast ? 'de petit-déjeuner' : ''} ${isQuick ? 'rapides' : ''} ${isEasy ? 'et faciles' : ''} pour les enfants.`;
 
-    const prompt = `Tu es un chef expert en nutrition infantile spécialisé dans la création de recettes UNIQUES et ADAPTÉES. Ta mission est de générer 8 recettes DIFFÉRENTES qui respectent STRICTEMENT les critères suivants:
+    // For breakfast recipes, add specific constraints
+    const breakfastConstraints = isBreakfast ? `
+🔹 **Contraintes spécifiques petit-déjeuner:**
+- Recettes UNIQUEMENT pour le petit-déjeuner
+- Temps de préparation: STRICTEMENT moins de 15 minutes
+- Difficulté: UNIQUEMENT facile
+- Ingrédients: Utiliser des ingrédients courants du petit-déjeuner
+- Énergie: Fournir l'énergie nécessaire pour la matinée
+` : '';
 
-🔹 **Profil de l'enfant :**
-- **Âge** : ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} ans
-- **Allergies** : ${child.allergies?.length ? child.allergies.join(", ") : "Aucune"}
-- **Préférences** : ${child.preferences?.length ? child.preferences.join(", ") : "Aucune préférence particulière"}
+    const prompt = `${basePrompt}
 
-🔹 **Critères STRICTS à respecter :**
-${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte particulière"}
+🔹 **Profil de l'enfant:**
+- Âge: ${childAge} ans
+- Allergies: ${child.allergies?.length ? child.allergies.join(", ") : "Aucune"}
+- Préférences: ${child.preferences?.length ? child.preferences.join(", ") : "Aucune préférence"}
 
-🎯 **Règles OBLIGATOIRES pour chaque recette :**
-1. **UNICITÉ** : Chaque recette DOIT être TOTALEMENT DIFFÉRENTE des autres en termes d'ingrédients principaux et de méthode de préparation.
-2. **TEMPS** : Si un temps maximum est spécifié, la recette DOIT pouvoir être réalisée dans ce temps.
-3. **SIMPLICITÉ** : Pour les recettes faciles, utiliser maximum 5-6 ingrédients et 3-4 étapes simples.
-4. **SANTÉ** : Inclure EXACTEMENT 3 bienfaits santé distincts parmi : ${validCategories.join(", ")}.
-5. **PRATIQUE** : Utiliser des ingrédients courants qu'on trouve facilement en supermarché.
-6. **ADAPTABILITÉ** : La recette doit pouvoir être préparée par un parent même pressé.
-7. **DIVERSITÉ** : Varier les types de plats, les ingrédients et les techniques de cuisson.
+${breakfastConstraints}
 
-⚠️ **Format JSON STRICT pour chaque recette :**
+🔹 **Critères stricts:**
+- Type de repas: ${filters.mealType}
+- Temps maximum: ${filters.maxPrepTime}min
+- Difficulté: ${filters.difficulty}
+
+⚠️ IMPORTANT: Génère TOUJOURS au moins 3 recettes, même si certaines contraintes sont difficiles. Adapte les recettes plutôt que de ne rien renvoyer.
+
+Retourne UNIQUEMENT un tableau JSON avec ce format STRICT:
 {
-  "name": "Nom unique et descriptif",
-  "ingredients": [{"item": "Nom", "quantity": "Valeur", "unit": "Unité"}],
+  "name": "Nom descriptif",
+  "ingredients": [{"item": "Ingrédient", "quantity": "Valeur", "unit": "Unité"}],
   "instructions": ["Étape 1", "Étape 2"],
   "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
-  "meal_type": "breakfast" | "lunch" | "dinner" | "snack",
-  "preparation_time": nombre (en minutes),
-  "difficulty": "easy" | "medium" | "hard",
-  "servings": nombre,
+  "meal_type": "${filters.mealType}",
+  "preparation_time": ${Math.min(filters.maxPrepTime || 30, 15)},
+  "difficulty": "${filters.difficulty}",
+  "servings": 1,
   "health_benefits": [
     {"icon": "emoji", "category": "catégorie", "description": "description"}
-  ],
-  "min_age": nombre,
-  "max_age": nombre,
-  "dietary_preferences": ["préférences"],
-  "allergens": ["allergènes"],
-  "cost_estimate": nombre,
-  "seasonal_months": [1-12],
-  "cooking_steps": [
-    {"step": nombre, "description": "détail", "duration": minutes, "tips": "astuce"}
   ]
-}
-
-⚠️ IMPORTANT: Retourne UNIQUEMENT un tableau JSON avec 8 recettes UNIQUES, sans texte additionnel.`;
+}`;
 
     console.log("Sending prompt to OpenAI:", prompt);
 
@@ -102,17 +89,17 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
         messages: [
           {
             role: "system",
-            content: "Tu es un chef expert en nutrition infantile qui crée des recettes uniques, saines et adaptées aux enfants. Retourne UNIQUEMENT du JSON pur, sans texte ni markdown."
+            content: "Tu es un chef expert qui génère UNIQUEMENT du JSON valide, sans texte ni markdown."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        temperature: 1.0,
-        max_tokens: 4000,
-        presence_penalty: 0.6,
-        frequency_penalty: 0.8
+        temperature: 0.8,
+        max_tokens: 2000,
+        presence_penalty: 0.4,
+        frequency_penalty: 0.4
       }),
     });
 
@@ -140,7 +127,8 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
         .trim()
         .replace(/\n/g, ' ')
         .replace(/,\s*}/g, '}')
-        .replace(/,\s*\]/g, ']');
+        .replace(/,\s*\]/g, ']')
+        .replace(/\s+/g, ' ');
       
       console.log("Cleaned content:", cleanContent);
       
@@ -165,11 +153,14 @@ ${constraints.length ? '- ' + constraints.join("\n- ") : "- Aucune contrainte pa
           carbs: Number(recipe?.nutritional_info?.carbs || 0),
           fat: Number(recipe?.nutritional_info?.fat || 0)
         },
-        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [],
-        cooking_steps: Array.isArray(recipe.cooking_steps) ? recipe.cooking_steps : [],
-        dietary_preferences: Array.isArray(recipe.dietary_preferences) ? recipe.dietary_preferences : [],
-        allergens: Array.isArray(recipe.allergens) ? recipe.allergens : [],
-        seasonal_months: Array.isArray(recipe.seasonal_months) ? recipe.seasonal_months : [1,2,3,4,5,6,7,8,9,10,11,12]
+        meal_type: filters.mealType,
+        preparation_time: Math.min(Number(recipe?.preparation_time || 15), filters.maxPrepTime || 30),
+        difficulty: filters.difficulty,
+        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits.map(benefit => ({
+          icon: String(benefit.icon || '🍳'),
+          category: String(benefit.category || 'energy'),
+          description: String(benefit.description || 'Apporte de l\'énergie')
+        })) : []
       }));
 
       console.log("Recipes processed successfully:", recipes);
