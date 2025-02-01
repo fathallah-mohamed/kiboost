@@ -1,14 +1,14 @@
-import { MealType, Difficulty, Recipe } from "../../types";
-import { validateMealType, validateDifficulty } from './validationUtils';
 import { Json } from "@/integrations/supabase/types";
-
-export type RecipeIngredient = {
-  item: string;
-  quantity: string;
-  unit: string;
-};
+import { Recipe, RecipeIngredient, NutritionalInfo } from "../../types";
 
 type JsonObject = { [key: string]: Json };
+
+const defaultInfo: NutritionalInfo = {
+  calories: 0,
+  protein: 0,
+  carbs: 0,
+  fat: 0
+};
 
 export const parseIngredients = (ingredients: Json): RecipeIngredient[] => {
   try {
@@ -39,29 +39,22 @@ export const parseIngredients = (ingredients: Json): RecipeIngredient[] => {
   }
 };
 
-export const parseInstructions = (instructions: string | Json): string[] => {
+export const parseHealthBenefits = (benefits: Json) => {
   try {
-    if (typeof instructions === 'string') {
-      return instructions.split('\n').filter(Boolean);
+    if (typeof benefits === 'string') {
+      return JSON.parse(benefits);
     }
-    if (Array.isArray(instructions)) {
-      return instructions.map(String);
+    if (Array.isArray(benefits)) {
+      return benefits;
     }
     return [];
   } catch (error) {
-    console.error('Error parsing instructions:', error);
+    console.error('Error parsing health benefits:', error);
     return [];
   }
 };
 
-export const parseNutritionalInfo = (info: Json) => {
-  const defaultInfo = {
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0
-  };
-
+export const parseNutritionalInfo = (info: Json): NutritionalInfo => {
   try {
     if (typeof info === 'string') {
       return JSON.parse(info);
@@ -82,31 +75,28 @@ export const parseNutritionalInfo = (info: Json) => {
   }
 };
 
-export const transformToRecipe = (dbRecipe: any): Recipe => {
+export const transformToRecipe = (data: any): Recipe => {
   return {
-    id: dbRecipe.id,
-    profile_id: dbRecipe.profile_id,
-    name: dbRecipe.name,
-    ingredients: parseIngredients(dbRecipe.ingredients),
-    instructions: parseInstructions(dbRecipe.instructions),
-    nutritional_info: parseNutritionalInfo(dbRecipe.nutritional_info),
-    meal_type: validateMealType(dbRecipe.meal_type) as MealType,
-    preparation_time: Number(dbRecipe.preparation_time) || 30,
-    difficulty: validateDifficulty(dbRecipe.difficulty) as Difficulty,
-    servings: Number(dbRecipe.servings) || 4,
-    is_generated: Boolean(dbRecipe.is_generated),
-    image_url: dbRecipe.image_url,
-    health_benefits: typeof dbRecipe.health_benefits === 'string' 
-      ? JSON.parse(dbRecipe.health_benefits)
-      : dbRecipe.health_benefits || [],
-    min_age: Number(dbRecipe.min_age) || 0,
-    max_age: Number(dbRecipe.max_age) || 18,
-    dietary_preferences: dbRecipe.dietary_preferences || [],
-    allergens: dbRecipe.allergens || [],
-    cost_estimate: Number(dbRecipe.cost_estimate) || 0,
-    seasonal_months: dbRecipe.seasonal_months || [1,2,3,4,5,6,7,8,9,10,11,12],
-    cooking_steps: typeof dbRecipe.cooking_steps === 'string'
-      ? JSON.parse(dbRecipe.cooking_steps)
-      : dbRecipe.cooking_steps || []
+    id: data.id,
+    profile_id: data.profile_id,
+    name: data.name,
+    ingredients: parseIngredients(data.ingredients),
+    instructions: String(data.instructions || ''),
+    nutritional_info: parseNutritionalInfo(data.nutritional_info),
+    meal_type: data.meal_type || 'dinner',
+    preparation_time: Number(data.preparation_time || 30),
+    difficulty: data.difficulty || 'medium',
+    servings: Number(data.servings || 4),
+    health_benefits: parseHealthBenefits(data.health_benefits),
+    image_url: data.image_url,
+    min_age: Number(data.min_age || 0),
+    max_age: Number(data.max_age || 18),
+    dietary_preferences: Array.isArray(data.dietary_preferences) ? data.dietary_preferences : [],
+    allergens: Array.isArray(data.allergens) ? data.allergens : [],
+    cost_estimate: Number(data.cost_estimate || 0),
+    seasonal_months: Array.isArray(data.seasonal_months) ? data.seasonal_months : [1,2,3,4,5,6,7,8,9,10,11,12],
+    cooking_steps: data.cooking_steps || [],
+    is_generated: Boolean(data.is_generated),
+    max_prep_time: Number(data.max_prep_time || 30)
   };
 };

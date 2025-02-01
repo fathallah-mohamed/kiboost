@@ -22,43 +22,9 @@ serve(async (req) => {
     console.log("Using filters:", filters);
 
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
-    const isBreakfast = filters?.mealType === 'breakfast';
-    const isQuick = (filters?.maxPrepTime || 30) <= 15;
-    const isEasy = filters?.difficulty === 'easy';
-
-    // Adapt the prompt based on meal type
-    const mealTypePrompts = {
-      breakfast: `
-🔹 **Contraintes petit-déjeuner:**
-- Recettes UNIQUEMENT pour le petit-déjeuner
-- Temps de préparation: STRICTEMENT moins de ${filters.maxPrepTime || 15} minutes
-- Difficulté: ${filters.difficulty || 'facile'}
-- Ingrédients: Utiliser des ingrédients courants du petit-déjeuner
-- Énergie: Fournir l'énergie nécessaire pour la matinée`,
-      lunch: `
-🔹 **Contraintes déjeuner:**
-- Recettes UNIQUEMENT pour le déjeuner
-- Temps de préparation: STRICTEMENT moins de ${filters.maxPrepTime || 30} minutes
-- Difficulté: ${filters.difficulty || 'medium'}
-- Équilibre: Protéines, légumes et féculents
-- Adapté pour une lunch box si nécessaire`,
-      dinner: `
-🔹 **Contraintes dîner:**
-- Recettes UNIQUEMENT pour le dîner
-- Temps de préparation: STRICTEMENT moins de ${filters.maxPrepTime || 30} minutes
-- Difficulté: ${filters.difficulty || 'medium'}
-- Repas léger mais nutritif
-- Favoriser la digestion pour la nuit`,
-      snack: `
-🔹 **Contraintes goûter:**
-- Recettes UNIQUEMENT pour le goûter
-- Temps de préparation: STRICTEMENT moins de ${filters.maxPrepTime || 15} minutes
-- Difficulté: ${filters.difficulty || 'easy'}
-- Collation équilibrée et énergétique
-- Limiter le sucre tout en restant gourmand`
-    };
-
-    const mealTypePrompt = mealTypePrompts[filters.mealType as keyof typeof mealTypePrompts] || mealTypePrompts.dinner;
+    const mealType = filters?.mealType || 'dinner';
+    const maxPrepTime = filters?.maxPrepTime || 30;
+    const difficulty = filters?.difficulty || 'medium';
 
     const prompt = `Tu es un chef expert en nutrition infantile. Génère UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT:
 
@@ -70,10 +36,10 @@ serve(async (req) => {
     ],
     "instructions": ["Étape 1", "Étape 2"],
     "nutritional_info": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
-    "meal_type": "${filters.mealType}",
-    "preparation_time": ${Math.min(filters.maxPrepTime || 30, 15)},
-    "difficulty": "${filters.difficulty}",
-    "servings": 1,
+    "meal_type": "${mealType}",
+    "preparation_time": ${maxPrepTime},
+    "difficulty": "${difficulty}",
+    "servings": 4,
     "health_benefits": [
       {"icon": "🍳", "category": "energy", "description": "Description"}
     ]
@@ -85,13 +51,11 @@ serve(async (req) => {
 - Allergies: ${child.allergies?.length ? child.allergies.join(", ") : "Aucune"}
 - Préférences: ${child.preferences?.length ? child.preferences.join(", ") : "Aucune"}
 
-${mealTypePrompt}
-
 ⚠️ IMPORTANT: 
 - Génère EXACTEMENT 3 recettes
 - RESPECTE le format JSON fourni
-- Temps max: ${filters.maxPrepTime}min
-- Difficulté: ${filters.difficulty}
+- Temps max: ${maxPrepTime}min
+- Difficulté: ${difficulty}
 - Ingrédients simples
 - Adapté à l'âge: ${childAge} ans`;
 
@@ -155,12 +119,12 @@ ${mealTypePrompt}
       recipes = JSON.parse(cleanContent);
       
       if (!Array.isArray(recipes)) {
-        recipes = [recipes];
+        throw new Error("Le format de réponse n'est pas un tableau");
       }
 
       // Validate and transform recipes
       recipes = recipes.map(recipe => ({
-        ...recipe,
+        name: String(recipe.name || ''),
         ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
         instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
         nutritional_info: {
@@ -169,9 +133,10 @@ ${mealTypePrompt}
           carbs: Number(recipe?.nutritional_info?.carbs || 0),
           fat: Number(recipe?.nutritional_info?.fat || 0)
         },
-        meal_type: filters.mealType,
-        preparation_time: Math.min(Number(recipe?.preparation_time || 15), filters.maxPrepTime || 30),
-        difficulty: filters.difficulty,
+        meal_type: mealType,
+        preparation_time: Math.min(Number(recipe?.preparation_time || 15), maxPrepTime),
+        difficulty: difficulty,
+        servings: Number(recipe?.servings || 4),
         health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits : []
       }));
 
