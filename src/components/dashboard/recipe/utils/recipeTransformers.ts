@@ -14,11 +14,20 @@ export const parseIngredients = (ingredients: Json): RecipeIngredient[] => {
       return JSON.parse(ingredients);
     }
     if (Array.isArray(ingredients)) {
-      return ingredients.map(ing => ({
-        item: String(ing?.item || ''),
-        quantity: String(ing?.quantity || ''),
-        unit: String(ing?.unit || '')
-      }));
+      return ingredients.map(ing => {
+        if (typeof ing === 'object' && ing !== null) {
+          return {
+            item: String(ing.item || ''),
+            quantity: String(ing.quantity || ''),
+            unit: String(ing.unit || '')
+          };
+        }
+        return {
+          item: '',
+          quantity: '',
+          unit: ''
+        };
+      });
     }
     return [];
   } catch (error) {
