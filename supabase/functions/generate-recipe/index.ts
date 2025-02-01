@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -80,7 +79,7 @@ Retourne UNIQUEMENT un tableau JSON de recettes avec cette structure:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -94,6 +93,12 @@ Retourne UNIQUEMENT un tableau JSON de recettes avec cette structure:
         temperature: 0.9,
       }),
     });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("OpenAI API error:", error);
+      throw new Error(`OpenAI API error: ${error}`);
+    }
 
     const data = await response.json();
     console.log("OpenAI Response:", data);

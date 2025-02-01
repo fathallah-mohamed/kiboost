@@ -19,11 +19,20 @@ export const useRecipes = (userId: string) => {
         .eq('profile_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching recipes:', error);
+        throw error;
+      }
 
       console.log('Raw recipes data:', data);
 
-      const parsedRecipes = (data || []).map(recipe => ({
+      if (!data || data.length === 0) {
+        console.log('No recipes found for user');
+        setRecipes([]);
+        return;
+      }
+
+      const parsedRecipes = data.map(recipe => ({
         ...recipe,
         ingredients: typeof recipe.ingredients === 'string' 
           ? JSON.parse(recipe.ingredients)
