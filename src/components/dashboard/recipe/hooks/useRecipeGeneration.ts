@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Recipe, RecipeFilters, HealthBenefitCategory } from "../../types";
+import { Recipe, RecipeFilters, HealthBenefitCategory, MealType } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateMealType, validateDifficulty } from '../utils/validationUtils';
@@ -144,7 +144,7 @@ export const useRecipeGeneration = () => {
             ingredients: JSON.stringify(recipe.ingredients),
             instructions: JSON.stringify(recipe.instructions),
             nutritional_info: JSON.stringify(recipe.nutritional_info),
-            meal_type: validateMealType(recipe.meal_type),
+            meal_type: validateMealType(recipe.meal_type) as MealType,
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
             difficulty: validateDifficulty(recipe.difficulty),
@@ -180,7 +180,8 @@ export const useRecipeGeneration = () => {
               instructions: parseInstructions(savedRecipe.instructions),
               nutritional_info: parseNutritionalInfo(savedRecipe.nutritional_info),
               health_benefits: parseHealthBenefits(savedRecipe.health_benefits),
-              cooking_steps: parseCookingSteps(savedRecipe.cooking_steps)
+              cooking_steps: parseCookingSteps(savedRecipe.cooking_steps),
+              meal_type: validateMealType(savedRecipe.meal_type) as MealType
             };
             savedRecipes.push(typedRecipe);
           }
