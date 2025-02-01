@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Recipe, RecipeFilters, ChildProfile, MealType, Difficulty } from "../../types";
+import { Recipe, RecipeFilters, ChildProfile } from "../../types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { validateMealType, validateDifficulty } from "../utils/validationUtils";
 
 export const useRecipeGeneration = () => {
   const [loading, setLoading] = useState(false);
@@ -20,18 +19,7 @@ export const useRecipeGeneration = () => {
       console.log("Generating recipes for child:", child);
       console.log("Using filters:", filters);
 
-      // First check for existing recipes
-      const { data: existingRecipes, error: fetchError } = await supabase
-        .from('recipes')
-        .select('*')
-        .eq('profile_id', child.profile_id)
-        .eq('child_id', child.id);
-
-      if (fetchError) throw fetchError;
-
-      console.log("Existing recipes:", existingRecipes);
-
-      // Generate new recipes if none exist or force regeneration
+      // Appel à la fonction Edge pour générer les recettes
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
         {
@@ -41,10 +29,10 @@ export const useRecipeGeneration = () => {
               name: child.name,
               birth_date: child.birth_date,
               allergies: child.allergies || [],
-              preferences: child.preferences || []
+              preferences: child.preferences || [],
+              profile_id: child.profile_id
             },
-            filters,
-            existingRecipes: existingRecipes || []
+            filters
           }
         }
       );
@@ -58,39 +46,25 @@ export const useRecipeGeneration = () => {
 
       const savedRecipes: Recipe[] = [];
 
-      // Save each recipe
+      // Sauvegarde de chaque recette
       for (const recipe of response.recipes) {
         try {
-          const mealType = validateMealType(filters.mealType !== 'all' ? filters.mealType : 'dinner');
-          const difficulty = validateDifficulty(filters.difficulty !== 'all' ? filters.difficulty : 'medium');
-
-          // Ensure all JSON fields are properly formatted
-          const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
-          const nutritionalInfo = recipe.nutritional_info || {
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0
-          };
-          const healthBenefits = Array.isArray(recipe.health_benefits) ? recipe.health_benefits : [];
-          const cookingSteps = Array.isArray(recipe.cooking_steps) ? recipe.cooking_steps : [];
-
           const recipeData = {
             profile_id: child.profile_id,
             child_id: child.id,
             name: recipe.name,
-            ingredients: JSON.stringify(ingredients),
-            instructions: Array.isArray(recipe.instructions) ? recipe.instructions.join('\n') : String(recipe.instructions),
-            nutritional_info: JSON.stringify(nutritionalInfo),
-            meal_type: mealType,
+            ingredients: JSON.stringify(recipe.ingredients),
+            instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [recipe.instructions],
+            nutritional_info: JSON.stringify(recipe.nutritional_info),
+            meal_type: recipe.meal_type || 'dinner',
             preparation_time: Number(recipe.preparation_time) || 30,
             max_prep_time: Number(filters.maxPrepTime) || 30,
-            difficulty: difficulty,
+            difficulty: recipe.difficulty || 'medium',
             servings: Number(recipe.servings) || 4,
             auto_generated: true,
             source: 'ia',
-            health_benefits: JSON.stringify(healthBenefits),
-            cooking_steps: JSON.stringify(cookingSteps),
+            health_benefits: JSON.stringify(recipe.health_benefits || []),
+            cooking_steps: JSON.stringify(recipe.cooking_steps || []),
             image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
             min_age: Number(recipe.min_age) || 0,
             max_age: Number(recipe.max_age) || 18,
@@ -114,17 +88,17 @@ export const useRecipeGeneration = () => {
           if (savedRecipe) {
             const parsedRecipe: Recipe = {
               ...savedRecipe,
-              ingredients: JSON.parse(savedRecipe.ingredients as string),
-              nutritional_info: JSON.parse(savedRecipe.nutritional_info as string),
-              instructions: savedRecipe.instructions.split('\n'),
-              health_benefits: savedRecipe.health_benefits ? 
-                JSON.parse(savedRecipe.health_benefits as string) 
-                : undefined,
-              cooking_steps: savedRecipe.cooking_steps ? 
-                JSON.parse(savedRecipe.cooking_steps as string) 
+              ingredients: JSON.parse(savedRecipe.ingredients),
+              nutritional_info: JSON.parse(savedRecipe.nutritional_info),
+              instructions: Array.isArray(savedRecipe.instructions) 
+                ? savedRecipe.instructions 
+                : [savedRecipe.instructions],
+              health_benefits: savedRecipe.health_benefits 
+                ? JSON.parse(savedRecipe.health_benefits)
                 : [],
-              meal_type: validateMealType(savedRecipe.meal_type),
-              difficulty: validateDifficulty(savedRecipe.difficulty)
+              cooking_steps: savedRecipe.cooking_steps 
+                ? JSON.parse(savedRecipe.cooking_steps)
+                : []
             };
             savedRecipes.push(parsedRecipe);
           }

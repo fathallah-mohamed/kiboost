@@ -12,11 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { child, filters, existingRecipes = [] } = await req.json();
+    const { child, filters } = await req.json();
 
     console.log("Generating recipes for child:", child);
     console.log("Using filters:", filters);
-    console.log("Existing recipes:", existingRecipes);
 
     const validCategories = [
       'cognitive', 'energy', 'satiety', 'digestive', 'immunity',
@@ -35,27 +34,22 @@ serve(async (req) => {
       constraints.push(`Difficulté : ${filters.difficulty}`);
     }
 
-    const excludeRecipes = existingRecipes.length
-      ? `Exclure toute recette ayant des ingrédients, étapes ou noms similaires à : ${existingRecipes.map((recipe: any) => recipe.name).join(', ')}`
-      : '';
-
-    const prompt = `Tu es un chef spécialisé dans la nutrition infantile. Génère 5 recettes DIFFÉRENTES et CRÉATIVES pour enfant:
+    const prompt = `Tu es un chef spécialisé dans la nutrition infantile. Génère 3 recettes DIFFÉRENTES et CRÉATIVES pour enfant:
 
 Age: ${new Date().getFullYear() - new Date(child.birth_date).getFullYear()} ans
 Allergies: ${child.allergies?.join(", ") || "Aucune"}
 Préférences: ${child.preferences?.join(", ") || "Aucune préférence particulière"}
 ${constraints.length ? 'Contraintes: ' + constraints.join(', ') : ''}
-${excludeRecipes}
 
 IMPORTANT:
 - 3 bienfaits santé PARFAITEMENT distincts parmi: ${validCategories.join(', ')} dans CHAQUE recette
-- Varies les ingrédients et évite la répétition (ex: différents légumes ou sources de protéines entre recettes)
+- Varies les ingrédients et évite la répétition
 - Temps réaliste incluant préparation + cuisson
 - Utilise des ingrédients courants et accessibles
-- Étapes claires et concises, mais VARIÉES dans leur style d'écriture
-- CHAQUE recette doit être UNIQUE (pas de noms, ingrédients, ou structures similaires)
+- Étapes claires et concises
+- CHAQUE recette doit être UNIQUE
 
-Retourne UNIQUEMENT un tableau JSON de recettes SANS texte ou formatage supplémentaire. Chaque recette doit suivre EXACTEMENT cette structure:
+Retourne UNIQUEMENT un tableau JSON de recettes avec cette structure:
 {
   "name": "string",
   "ingredients": [{"item": "string", "quantity": "string", "unit": "string"}],
@@ -111,24 +105,23 @@ Retourne UNIQUEMENT un tableau JSON de recettes SANS texte ou formatage supplém
       const content = data.choices[0].message.content;
       console.log("Raw OpenAI response content:", content);
       
-      // Clean up the content by removing any markdown formatting
       const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
       console.log("Cleaned content:", cleanContent);
       
       recipes = JSON.parse(cleanContent);
       
       if (!Array.isArray(recipes)) {
-        throw new Error("Les recettes doivent être un tableau");
+        recipes = [recipes];
       }
 
-      // Add additional metadata to each recipe
       recipes = recipes.map(recipe => ({
         ...recipe,
-        auto_generated: true,
         profile_id: child.profile_id,
         child_id: child.id,
         source: 'ia',
         image_url: recipe.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
+        is_generated: true,
+        auto_generated: true
       }));
 
       console.log("Recipes processed successfully:", recipes);
