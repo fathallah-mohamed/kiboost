@@ -130,15 +130,14 @@ Renvoie UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT, sans tex
         throw new Error("Le format de réponse n'est pas un tableau");
       }
 
-      // Transform recipes for database storage
       const processedRecipes = recipes.map(recipe => ({
         profile_id: child.profile_id,
         child_id: child.id,
         name: String(recipe.name),
         ingredients: recipe.ingredients || [],
         instructions: Array.isArray(recipe.instructions) 
-          ? recipe.instructions.join('\n') 
-          : String(recipe.instructions || ''),
+          ? recipe.instructions 
+          : [String(recipe.instructions || '')],
         nutritional_info: recipe.nutritional_info || {
           calories: 0,
           protein: 0,
