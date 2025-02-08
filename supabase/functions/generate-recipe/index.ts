@@ -107,14 +107,27 @@ Renvoie UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT, sans tex
       }),
     });
 
+    const responseText = await response.text();
+    console.log("Raw Deepseek response:", responseText);
+
     if (!response.ok) {
-      const error = await response.text();
-      console.error("Deepseek API error:", error);
-      throw new Error(`Deepseek API error: ${error}`);
+      let errorMessage = "Erreur de l'API Deepseek";
+      try {
+        const errorData = JSON.parse(responseText);
+        if (errorData.error?.message === "Insufficient Balance") {
+          errorMessage = "Le solde du compte Deepseek est insuffisant. Veuillez recharger votre compte Deepseek.";
+          console.error("Deepseek balance insufficient:", errorData);
+        } else {
+          console.error("Deepseek API error:", errorData);
+        }
+      } catch (e) {
+        console.error("Error parsing Deepseek error response:", e);
+      }
+      throw new Error(errorMessage);
     }
 
-    const data = await response.json();
-    console.log("Deepseek Response:", data);
+    const data = JSON.parse(responseText);
+    console.log("Parsed Deepseek Response:", data);
 
     if (!data.choices?.[0]?.message?.content) {
       throw new Error("Réponse invalide de Deepseek");
