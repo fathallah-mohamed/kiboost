@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -76,21 +77,21 @@ Renvoie UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT, sans tex
   }
 ]`;
 
-    console.log("Sending prompt to OpenAI:", prompt);
+    console.log("Sending prompt to Deepseek:", prompt);
 
-    const openAiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAiKey) {
-      throw new Error('OpenAI API key is missing');
+    const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+    if (!deepseekKey) {
+      throw new Error('Deepseek API key is missing');
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${openAiKey}`,
+        "Authorization": `Bearer ${deepseekKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "deepseek-chat",
         messages: [
           {
             role: "system",
@@ -102,21 +103,21 @@ Renvoie UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT, sans tex
           }
         ],
         temperature: 0.5,
-        max_tokens: 1500,
+        max_tokens: 2000,
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("OpenAI API error:", error);
-      throw new Error(`OpenAI API error: ${error}`);
+      console.error("Deepseek API error:", error);
+      throw new Error(`Deepseek API error: ${error}`);
     }
 
     const data = await response.json();
-    console.log("OpenAI Response:", data);
+    console.log("Deepseek Response:", data);
 
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error("Réponse invalide d'OpenAI");
+      throw new Error("Réponse invalide de Deepseek");
     }
 
     try {
