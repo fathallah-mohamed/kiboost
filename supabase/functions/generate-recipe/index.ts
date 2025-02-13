@@ -77,60 +77,67 @@ Renvoie UNIQUEMENT un tableau JSON de 3 recettes avec ce format STRICT, sans tex
   }
 ]`;
 
-    console.log("Sending prompt to Deepseek:", prompt);
+    console.log("Sending prompt to Perplexity:", prompt);
 
-    const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
-    if (!deepseekKey) {
-      throw new Error('Deepseek API key is missing');
+    const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!perplexityKey) {
+      throw new Error('Perplexity API key is missing');
     }
 
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${deepseekKey}`,
-        "Content-Type": "application/json",
+        'Authorization': `Bearer ${perplexityKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: 'llama-3.1-sonar-small-128k-online',
         messages: [
           {
-            role: "system",
-            content: "Tu es un chef qui génère UNIQUEMENT du JSON valide, sans texte ni markdown."
+            role: 'system',
+            content: 'Tu es un chef qui génère UNIQUEMENT du JSON valide, sans texte ni markdown.'
           },
           {
-            role: "user",
+            role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.5,
-        max_tokens: 2000,
+        temperature: 0.2,
+        top_p: 0.9,
+        max_tokens: 1000,
+        return_images: false,
+        return_related_questions: false,
+        search_domain_filter: ['perplexity.ai'],
+        search_recency_filter: 'month',
+        frequency_penalty: 1,
+        presence_penalty: 0
       }),
     });
 
     const responseText = await response.text();
-    console.log("Raw Deepseek response:", responseText);
+    console.log("Raw Perplexity response:", responseText);
 
     if (!response.ok) {
-      let errorMessage = "Erreur de l'API Deepseek";
+      let errorMessage = "Erreur de l'API Perplexity";
       try {
         const errorData = JSON.parse(responseText);
-        if (errorData.error?.message === "Insufficient Balance") {
-          errorMessage = "Le solde du compte Deepseek est insuffisant. Veuillez recharger votre compte Deepseek.";
-          console.error("Deepseek balance insufficient:", errorData);
+        if (errorData.error?.message?.includes("insufficient_quota")) {
+          errorMessage = "Le quota Perplexity est insuffisant. Veuillez mettre à jour votre abonnement.";
+          console.error("Perplexity quota insufficient:", errorData);
         } else {
-          console.error("Deepseek API error:", errorData);
+          console.error("Perplexity API error:", errorData);
         }
       } catch (e) {
-        console.error("Error parsing Deepseek error response:", e);
+        console.error("Error parsing Perplexity error response:", e);
       }
       throw new Error(errorMessage);
     }
 
     const data = JSON.parse(responseText);
-    console.log("Parsed Deepseek Response:", data);
+    console.log("Parsed Perplexity Response:", data);
 
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error("Réponse invalide de Deepseek");
+      throw new Error("Réponse invalide de Perplexity");
     }
 
     try {
