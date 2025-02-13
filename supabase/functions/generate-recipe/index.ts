@@ -24,8 +24,10 @@ serve(async (req) => {
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
     console.log("DEBUG - Calculated child age:", childAge);
 
-    const prompt = `En tant que chef cuisinier français expert, génère 5 recettes variées de ${filters.mealType || 'petit-déjeuner'} adaptées pour un enfant de ${childAge} ans.
-Les recettes doivent être différentes et originales. Ta réponse doit suivre EXACTEMENT ce format JSON (commence ta réponse par [ et termine par ], ne mets aucun texte avant ou après) :
+    const prompt = `En tant que chef cuisinier français expert, génère 5 recettes de ${filters.mealType || 'petit-déjeuner'} DIFFÉRENTES adaptées pour un enfant de ${childAge} ans.
+
+Ta réponse doit être UNIQUEMENT un tableau JSON de 5 recettes, sans AUCUN texte avant ou après.
+Voici le format JSON attendu:
 
 [
   {
@@ -51,13 +53,13 @@ Les recettes doivent être différentes et originales. Ta réponse doit suivre E
   }
 ]
 
-IMPORTANT: Je veux EXACTEMENT 5 recettes différentes qui doivent:
-- Prendre moins de ${filters.maxPrepTime || 30} minutes à préparer
-- Être nutritives et équilibrées pour un enfant de ${childAge} ans
-- Être variées en termes de goûts et d'ingrédients
-${child.allergies?.length ? `- Éviter ces allergènes: ${child.allergies.join(", ")}` : ""}
+Règles pour les 5 recettes:
+- Temps de préparation: moins de ${filters.maxPrepTime || 30} minutes
+- Équilibrées pour un enfant de ${childAge} ans
+- Variées et originales
+${child.allergies?.length ? `- Sans ces allergènes: ${child.allergies.join(", ")}` : ""}
 
-RETOURNE UNIQUEMENT LE JSON avec les 5 recettes, sans texte avant ou après.`;
+IMPORTANT: Ta réponse doit commencer par [ et finir par ], avec EXACTEMENT 5 recettes.`;
 
     console.log("DEBUG - Sending prompt to Perplexity:", prompt);
 
@@ -77,15 +79,15 @@ RETOURNE UNIQUEMENT LE JSON avec les 5 recettes, sans texte avant ou après.`;
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier français expert qui génère des recettes pour enfants. Tu dois TOUJOURS retourner EXACTEMENT 5 recettes au format JSON demandé.'
+            content: 'Tu es un expert culinaire qui retourne UNIQUEMENT des tableaux JSON de 5 recettes, sans texte autour. Ne réponds JAMAIS avec du texte, seulement du JSON valide commençant par [ et finissant par ].'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.7, // Augmenté pour plus de variété
-        max_tokens: 4000, // Augmenté pour permettre plus de recettes
+        temperature: 0.7,
+        max_tokens: 4000,
       }),
     });
 
@@ -108,11 +110,11 @@ RETOURNE UNIQUEMENT LE JSON avec les 5 recettes, sans texte avant ou après.`;
     let content = perplexityData.choices[0].message.content.trim();
     console.log("DEBUG - Content from Perplexity before cleaning:", content);
 
-    // S'assurer que le contenu commence par [ et se termine par ]
-    if (!content.startsWith('[') || !content.endsWith(']')) {
-      content = content.replace(/^[^[]*(\[[\s\S]*\])[^]*$/, '$1');
-      console.log("DEBUG - Content after cleaning:", content);
-    }
+    // Nettoyage plus agressif pour s'assurer d'avoir un JSON valide
+    content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    content = content.replace(/^[^[]*(\[[\s\S]*\])[^]*$/, '$1');
+    
+    console.log("DEBUG - Content after aggressive cleaning:", content);
 
     let recipes;
     try {
@@ -121,17 +123,30 @@ RETOURNE UNIQUEMENT LE JSON avec les 5 recettes, sans texte avant ou après.`;
     } catch (error) {
       console.error("DEBUG - Failed to parse recipes JSON:", error);
       console.error("DEBUG - Content that failed to parse:", content);
-      throw new Error("La réponse n'est pas au format JSON valide");
+      
+      // Tentative de récupération avec un JSON plus strict
+      try {
+        content = content.replace(/[^\x20-\x7E]/g, ''); // Supprime les caractères non-ASCII
+        recipes = JSON.parse(content);
+        console.log("DEBUG - Successfully parsed recipes after strict cleaning:", recipes);
+      } catch (secondError) {
+        throw new Error("La réponse n'est pas au format JSON valide après nettoyage");
+      }
     }
 
     if (!Array.isArray(recipes)) {
       console.error("DEBUG - Recipes is not an array:", recipes);
-      throw new Error("Le format de réponse est invalide");
+      throw new Error("Le format de réponse est invalide (pas un tableau)");
     }
 
     if (recipes.length === 0) {
       console.error("DEBUG - No recipes generated");
       throw new Error("Aucune recette n'a été générée");
+    }
+
+    if (recipes.length < 5) {
+      console.error("DEBUG - Not enough recipes generated:", recipes.length);
+      throw new Error(`Nombre insuffisant de recettes générées (${recipes.length}/5)`);
     }
 
     // Traiter les recettes
