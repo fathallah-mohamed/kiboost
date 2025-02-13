@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -65,7 +66,7 @@ IMPORTANT:
       throw new Error('Perplexity API key is missing');
     }
 
-    // Appel à Perplexity avec des paramètres optimisés et validés
+    // Appel à Perplexity avec des paramètres optimisés
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -103,6 +104,7 @@ IMPORTANT:
     let data;
     try {
       data = JSON.parse(responseText);
+      console.log("Parsed Perplexity response data:", data);
     } catch (error) {
       console.error("Failed to parse Perplexity response:", error);
       throw new Error("Réponse invalide de Perplexity");
@@ -126,6 +128,7 @@ IMPORTANT:
     let recipes;
     try {
       recipes = JSON.parse(content);
+      console.log("Parsed recipes:", recipes);
     } catch (error) {
       console.error("Failed to parse recipes JSON:", error);
       console.error("Content that failed to parse:", content);
