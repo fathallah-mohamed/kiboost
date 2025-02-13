@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -88,8 +87,7 @@ IMPORTANT:
         temperature: 0.7,
         max_tokens: 2000,
         top_p: 0.95,
-        frequency_penalty: 0.1, // Modifié pour être positif
-        presence_penalty: 0.1   // Modifié pour être positif
+        frequency_penalty: 0.1  // On garde uniquement frequency_penalty
       }),
     });
 
