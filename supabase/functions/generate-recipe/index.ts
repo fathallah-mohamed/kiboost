@@ -24,36 +24,115 @@ serve(async (req) => {
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
     console.log("DEBUG - Calculated child age:", childAge);
 
-    // Créer une recette de test pour vérifier le format
-    const testRecipes = [
-      {
-        "name": "Porridge aux fruits",
-        "ingredients": [
-          { "item": "Flocons d'avoine", "quantity": "40", "unit": "g" },
-          { "item": "Lait", "quantity": "200", "unit": "ml" },
-          { "item": "Banane", "quantity": "1", "unit": "pièce" },
-          { "item": "Miel", "quantity": "1", "unit": "cuillère à café" }
-        ],
-        "instructions": [
-          "Faire chauffer le lait dans une casserole",
-          "Ajouter les flocons d'avoine et mélanger",
-          "Cuire à feu doux pendant 3-4 minutes en remuant",
-          "Couper la banane en rondelles",
-          "Servir le porridge avec la banane et le miel"
-        ],
-        "nutritional_info": { "calories": 250, "protein": 8, "carbs": 45, "fat": 5 },
-        "meal_type": "breakfast",
-        "preparation_time": 10,
-        "difficulty": "easy",
-        "servings": 1,
-        "health_benefits": [
-          { "icon": "🥛", "category": "energy", "description": "Énergie durable pour la matinée" }
-        ]
-      }
-    ];
+    const prompt = `En tant que chef cuisinier français expert, génère une recette de ${filters.mealType || 'petit-déjeuner'} adaptée pour un enfant de ${childAge} ans.
+La recette doit suivre EXACTEMENT ce format JSON (commence ta réponse par [ et termine par ], ne mets aucun texte avant ou après) :
 
-    // Traiter les recettes de test
-    const processedRecipes = testRecipes.map((recipe, index) => ({
+[
+  {
+    "name": "Porridge aux fruits",
+    "ingredients": [
+      { "item": "Flocons d'avoine", "quantity": "40", "unit": "g" },
+      { "item": "Lait", "quantity": "200", "unit": "ml" },
+      { "item": "Banane", "quantity": "1", "unit": "pièce" }
+    ],
+    "instructions": [
+      "Faire chauffer le lait dans une casserole",
+      "Ajouter les flocons d'avoine et mélanger",
+      "Cuire à feu doux pendant 3-4 minutes en remuant"
+    ],
+    "nutritional_info": { "calories": 250, "protein": 8, "carbs": 45, "fat": 5 },
+    "meal_type": "${filters.mealType || 'breakfast'}",
+    "preparation_time": ${filters.maxPrepTime || 30},
+    "difficulty": "easy",
+    "servings": 1,
+    "health_benefits": [
+      { "icon": "🥛", "category": "energy", "description": "Énergie durable pour la matinée" }
+    ]
+  }
+]
+
+La recette doit:
+- Prendre moins de ${filters.maxPrepTime || 30} minutes à préparer
+- Être nutritive et équilibrée pour un enfant de ${childAge} ans
+${child.allergies?.length ? `- Éviter ces allergènes: ${child.allergies.join(", ")}` : ""}`;
+
+    console.log("DEBUG - Sending prompt to Perplexity:", prompt);
+
+    const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!perplexityKey) {
+      throw new Error('Clé API Perplexity manquante');
+    }
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${perplexityKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          {
+            role: 'system',
+            content: 'Tu es un chef cuisinier français expert qui génère des recettes pour enfants. Tu retournes UNIQUEMENT du JSON valide, sans texte autour.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 2000,
+      }),
+    });
+
+    console.log("DEBUG - Perplexity response status:", response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("DEBUG - Perplexity API error response:", errorText);
+      throw new Error(`Erreur API Perplexity: ${errorText}`);
+    }
+
+    const perplexityData = await response.json();
+    console.log("DEBUG - Raw Perplexity response:", perplexityData);
+
+    if (!perplexityData.choices?.[0]?.message?.content) {
+      console.error("DEBUG - Invalid Perplexity response structure:", perplexityData);
+      throw new Error("Structure de réponse Perplexity invalide");
+    }
+
+    let content = perplexityData.choices[0].message.content.trim();
+    console.log("DEBUG - Content from Perplexity before cleaning:", content);
+
+    // S'assurer que le contenu commence par [ et se termine par ]
+    if (!content.startsWith('[') || !content.endsWith(']')) {
+      content = content.replace(/^[^[]*(\[[\s\S]*\])[^]*$/, '$1');
+      console.log("DEBUG - Content after cleaning:", content);
+    }
+
+    let recipes;
+    try {
+      recipes = JSON.parse(content);
+      console.log("DEBUG - Successfully parsed recipes:", recipes);
+    } catch (error) {
+      console.error("DEBUG - Failed to parse recipes JSON:", error);
+      console.error("DEBUG - Content that failed to parse:", content);
+      throw new Error("La réponse n'est pas au format JSON valide");
+    }
+
+    if (!Array.isArray(recipes)) {
+      console.error("DEBUG - Recipes is not an array:", recipes);
+      throw new Error("Le format de réponse est invalide");
+    }
+
+    if (recipes.length === 0) {
+      console.error("DEBUG - No recipes generated");
+      throw new Error("Aucune recette n'a été générée");
+    }
+
+    // Traiter les recettes
+    const processedRecipes = recipes.map((recipe, index) => ({
       id: crypto.randomUUID(),
       name: String(recipe.name || `Recette ${index + 1}`),
       ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({
