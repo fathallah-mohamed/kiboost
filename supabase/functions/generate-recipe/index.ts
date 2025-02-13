@@ -29,32 +29,71 @@ serve(async (req) => {
     console.log("Using filters:", filters);
 
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
-    const constraints = [];
-    
-    if (filters.maxPrepTime) {
-      constraints.push(`Temps de préparation maximum: ${filters.maxPrepTime} minutes`);
-    }
-    if (filters.difficulty) {
-      constraints.push(`Difficulté: ${filters.difficulty}`);
-    }
-    if (filters.mealType && filters.mealType !== 'all') {
-      constraints.push(`Type de repas: ${filters.mealType}`);
-    }
 
-    const prompt = `Tu es un chef spécialisé en nutrition infantile. Je veux que tu me génères EXACTEMENT 3 recettes différentes et créatives dans un format JSON VALIDE. Voici les informations :
+    // Adapter les suggestions en fonction du type de repas
+    const mealSuggestions = {
+      breakfast: [
+        "Porridge aux fruits",
+        "Toast à l'avocat",
+        "Pancakes aux légumes",
+        "Smoothie bowl",
+        "Oeufs brouillés",
+        "Yaourt aux fruits",
+        "Muesli maison",
+        "Sandwich petit-déjeuner"
+      ],
+      lunch: [
+        "Sandwich wrap",
+        "Salade composée",
+        "Pâtes aux légumes",
+        "Bowl de quinoa",
+        "Soupe repas",
+        "Quiche légère"
+      ],
+      dinner: [
+        "Gratin léger",
+        "Poisson aux légumes",
+        "Wok de légumes",
+        "Omelette garnie",
+        "Burger maison",
+        "Pizza légère"
+      ],
+      snack: [
+        "Smoothie fruité",
+        "Muffin aux légumes",
+        "Fruits découpés",
+        "Barre de céréales",
+        "Tartine gourmande"
+      ]
+    };
 
-Caractéristiques de l'enfant :
-- Âge : ${childAge} ans
-- Allergies : ${child.allergies?.join(", ") || "Aucune"}
-- Préférences : ${child.preferences?.join(", ") || "Aucune"}
-${constraints.length ? '- Contraintes : ' + constraints.join(', ') : ''}
+    const suggestedRecipes = mealSuggestions[filters.mealType as keyof typeof mealSuggestions] || 
+                           mealSuggestions.dinner;
 
-IMPORTANT : Renvoie UNIQUEMENT un tableau JSON valide avec 3 recettes. PAS de texte avant ou après. PAS de markdown. UNIQUEMENT du JSON valide.
+    const prompt = `Tu es un chef spécialisé en nutrition infantile. Je veux EXACTEMENT 3 recettes dans un format JSON VALIDE.
 
-Format attendu :
+Informations importantes:
+- Âge de l'enfant : ${childAge} ans
+- Type de repas : ${filters.mealType || 'dinner'}
+- Temps max : ${filters.maxPrepTime || '30'} minutes
+- Difficulté : ${filters.difficulty || 'facile'}
+- Allergies : ${child.allergies?.join(", ") || "aucune"}
+- Préférences : ${child.preferences?.join(", ") || "aucune"}
+
+Voici des suggestions de recettes à adapter : ${suggestedRecipes.join(", ")}
+
+⚠️ RÈGLES ABSOLUES :
+1. Je veux EXACTEMENT 3 recettes DIFFÉRENTES
+2. Format JSON strict : uniquement le tableau JSON, pas de texte autour
+3. Temps de préparation : maximum ${filters.maxPrepTime || 30} minutes
+4. Adapter les portions pour ${childAge} ans
+5. Ingrédients faciles à trouver
+6. Instructions simples et claires
+
+Format JSON STRICT à respecter :
 [
   {
-    "name": "Nom de la recette",
+    "name": "Nom unique de la recette",
     "ingredients": [
       {"item": "Ingrédient 1", "quantity": "100", "unit": "g"}
     ],
@@ -65,17 +104,10 @@ Format attendu :
     "difficulty": "${filters.difficulty || 'medium'}",
     "servings": 4,
     "health_benefits": [
-      {"icon": "🧠", "category": "cognitive", "description": "Bon pour la mémoire"}
+      {"icon": "🧠", "category": "cognitive", "description": "Bénéfice santé"}
     ]
   }
-]
-
-CRITÈRES :
-1. Le JSON DOIT être valide
-2. Chaque recette doit avoir un nom unique
-3. Les bienfaits santé doivent être parmi : ${validCategories.join(', ')}
-4. Prioriser des recettes rapides (<15 min) ou sans cuisson
-5. Utiliser des ingrédients simples et accessibles`;
+]`;
 
     console.log("Sending prompt to Perplexity:", prompt);
 
