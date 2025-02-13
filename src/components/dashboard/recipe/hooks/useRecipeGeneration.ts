@@ -16,6 +16,31 @@ export const useRecipeGeneration = () => {
       console.log("Generating recipes for child:", child);
       console.log("Using filters:", filters);
 
+      // Vérifier la session avant d'appeler la fonction
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        toast.error("Erreur de session", {
+          description: "Veuillez vous reconnecter",
+          action: {
+            label: "Reconnecter",
+            onClick: () => window.location.href = "/login"
+          }
+        });
+        throw sessionError;
+      }
+
+      if (!session) {
+        toast.error("Session expirée", {
+          description: "Veuillez vous reconnecter",
+          action: {
+            label: "Reconnecter",
+            onClick: () => window.location.href = "/login"
+          }
+        });
+        throw new Error("Session expirée");
+      }
+
       const { data: response, error: generateError } = await supabase.functions.invoke(
         'generate-recipe',
         {
