@@ -24,7 +24,9 @@ serve(async (req) => {
 
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
 
-    const prompt = `[
+    const prompt = `Génère 3 recettes pour ${filters.mealType || 'petit-déjeuner'} adaptées pour un enfant de ${childAge} ans en suivant EXACTEMENT ce format JSON :
+
+[
   {
     "name": "Pancakes banane-avoine",
     "ingredients": [
@@ -49,13 +51,12 @@ serve(async (req) => {
   }
 ]
 
-Génère deux autres recettes similaires adaptées pour ${filters.mealType || 'petit-déjeuner'}, en respectant EXACTEMENT le même format JSON. Les recettes doivent:
+Les recettes doivent:
 - Prendre moins de ${filters.maxPrepTime || 30} minutes
 - Être adaptées pour un enfant de ${childAge} ans
-- Former un tableau de 3 recettes au total
 ${child.allergies?.length ? `- Éviter ces allergènes: ${child.allergies.join(", ")}` : ""}
 
-IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
+IMPORTANT: Ne retourne QUE le JSON, sans texte avant ou après. Le JSON doit commencer par [ et finir par ].`;
 
     console.log("Sending prompt to Perplexity:", prompt);
 
@@ -82,10 +83,8 @@ IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
             content: prompt
           }
         ],
-        temperature: 0.3,
+        temperature: 0.2,
         max_tokens: 2000,
-        top_p: 0.9,
-        frequency_penalty: 0.1
       }),
     });
 
@@ -95,37 +94,25 @@ IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
       throw new Error(`Erreur API Perplexity: ${errorText}`);
     }
 
-    const responseText = await response.text();
-    console.log("Raw Perplexity response:", responseText);
+    const perplexityData = await response.json();
+    console.log("Raw Perplexity response:", perplexityData);
 
-    let data;
-    try {
-      data = JSON.parse(responseText);
-      console.log("Parsed Perplexity response data:", data);
-    } catch (error) {
-      console.error("Failed to parse Perplexity response:", error);
-      throw new Error("Réponse invalide de Perplexity");
-    }
-
-    if (!data.choices?.[0]?.message?.content) {
-      console.error("Invalid Perplexity response structure:", data);
+    if (!perplexityData.choices?.[0]?.message?.content) {
+      console.error("Invalid Perplexity response structure:", perplexityData);
       throw new Error("Structure de réponse Perplexity invalide");
     }
 
-    let content = data.choices[0].message.content.trim();
-    console.log("Raw content from Perplexity:", content);
+    let content = perplexityData.choices[0].message.content.trim();
+    console.log("Content from Perplexity before cleaning:", content);
 
-    // Nettoyer le contenu pour extraire uniquement le JSON
-    content = content.replace(/```json\s*([\s\S]*?)\s*```/g, '$1')
-                    .replace(/^[^[]*(\[[\s\S]*\])[^]*$/, '$1')
-                    .trim();
-    
-    console.log("Cleaned content:", content);
+    // S'assurer que le contenu commence par [ et se termine par ]
+    content = content.replace(/^[^[]*(\[[\s\S]*\])[^]*$/, '$1');
+    console.log("Content after cleaning:", content);
 
     let recipes;
     try {
       recipes = JSON.parse(content);
-      console.log("Parsed recipes:", recipes);
+      console.log("Successfully parsed recipes:", recipes);
     } catch (error) {
       console.error("Failed to parse recipes JSON:", error);
       console.error("Content that failed to parse:", content);
@@ -139,8 +126,6 @@ IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
     // Traiter et valider chaque recette
     const processedRecipes = recipes.map((recipe, index) => ({
       id: crypto.randomUUID(),
-      profile_id: child.profile_id,
-      child_id: child.id,
       name: String(recipe.name || `Recette ${index + 1}`),
       ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({
         item: String(ing.item || ''),
@@ -155,15 +140,15 @@ IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         fat: Number(recipe.nutritional_info?.fat) || 0
       },
       meal_type: filters.mealType || 'breakfast',
-      preparation_time: Number(filters.maxPrepTime) || 30,
-      difficulty: filters.difficulty || 'medium',
-      servings: Number(recipe.servings) || 4,
+      preparation_time: Number(recipe.preparation_time) || filters.maxPrepTime || 30,
+      difficulty: recipe.difficulty || 'easy',
+      servings: Number(recipe.servings) || 2,
       is_generated: true,
-      source: 'ia',
-      auto_generated: true,
+      profile_id: child.profile_id,
+      child_id: child.id,
       health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits.map(benefit => ({
         icon: String(benefit.icon || '🍳'),
-        category: String(benefit.category || 'global'),
+        category: String(benefit.category || 'energy'),
         description: String(benefit.description || '')
       })) : [],
       image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
@@ -173,14 +158,11 @@ IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
       allergens: child.allergies || [],
       cost_estimate: 0,
       seasonal_months: [1,2,3,4,5,6,7,8,9,10,11,12],
-      cooking_steps: []
+      source: 'ia',
+      auto_generated: true
     }));
 
     console.log("Final processed recipes:", processedRecipes);
-
-    if (processedRecipes.length === 0) {
-      throw new Error("Aucune recette valide n'a été générée");
-    }
 
     return new Response(
       JSON.stringify({ recipes: processedRecipes }),
