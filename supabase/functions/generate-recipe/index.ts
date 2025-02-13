@@ -66,7 +66,7 @@ IMPORTANT:
       throw new Error('Perplexity API key is missing');
     }
 
-    // Appel à Perplexity avec des paramètres optimisés
+    // Appel à Perplexity avec des paramètres optimisés et validés
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -85,11 +85,11 @@ IMPORTANT:
             content: prompt
           }
         ],
-        temperature: 0.5,
+        temperature: 0.7,
         max_tokens: 2000,
-        top_p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0
+        top_p: 0.95,
+        frequency_penalty: 0.1, // Modifié pour être positif
+        presence_penalty: 0.1   // Modifié pour être positif
       }),
     });
 
