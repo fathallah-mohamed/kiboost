@@ -7,6 +7,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Fonction utilitaire pour nettoyer le JSON
+const cleanJsonString = (str: string): string => {
+  // Enlève tout ce qui n'est pas entre le premier [ et le dernier ]
+  const match = str.match(/\[[\s\S]*\]/);
+  if (!match) return str;
+  
+  let cleaned = match[0]
+    // Enlève les blocs de code markdown
+    .replace(/```json\s*|\s*```/g, '')
+    // Enlève les caractères non-ASCII
+    .replace(/[^\x20-\x7E]/g, ' ')
+    // Nettoie les espaces multiples
+    .replace(/\s+/g, ' ')
+    // Nettoie les virgules trailing
+    .replace(/,\s*]/g, ']')
+    .replace(/,\s*}/g, '}')
+    // S'assure que les guillemets sont droits
+    .replace(/[""]/g, '"')
+    .trim();
+
+  return cleaned;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,42 +47,35 @@ serve(async (req) => {
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
     console.log("DEBUG - Calculated child age:", childAge);
 
-    const prompt = `En tant que chef cuisinier français expert, génère 5 recettes de ${filters.mealType || 'petit-déjeuner'} DIFFÉRENTES adaptées pour un enfant de ${childAge} ans.
+    const prompt = `[IMPORTANT: Réponds UNIQUEMENT avec un tableau JSON de 5 recettes]
 
-Ta réponse doit être UNIQUEMENT un tableau JSON de 5 recettes, sans AUCUN texte avant ou après.
-Voici le format JSON attendu:
+En tant que chef cuisinier français expert, génère 5 recettes de ${filters.mealType || 'petit-déjeuner'} pour un enfant de ${childAge} ans.
 
+Format JSON requis:
 [
   {
-    "name": "Porridge aux fruits",
+    "name": "Nom de la recette",
     "ingredients": [
-      { "item": "Flocons d'avoine", "quantity": "40", "unit": "g" },
-      { "item": "Lait", "quantity": "200", "unit": "ml" },
-      { "item": "Banane", "quantity": "1", "unit": "pièce" }
+      { "item": "Ingrédient", "quantity": "quantité", "unit": "unité" }
     ],
-    "instructions": [
-      "Faire chauffer le lait dans une casserole",
-      "Ajouter les flocons d'avoine et mélanger",
-      "Cuire à feu doux pendant 3-4 minutes en remuant"
-    ],
-    "nutritional_info": { "calories": 250, "protein": 8, "carbs": 45, "fat": 5 },
+    "instructions": ["étape 1", "étape 2"],
+    "nutritional_info": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0 },
     "meal_type": "${filters.mealType || 'breakfast'}",
     "preparation_time": ${filters.maxPrepTime || 30},
     "difficulty": "easy",
     "servings": 1,
     "health_benefits": [
-      { "icon": "🥛", "category": "energy", "description": "Énergie durable pour la matinée" }
+      { "icon": "🥛", "category": "energy", "description": "description" }
     ]
   }
 ]
 
-Règles pour les 5 recettes:
-- Temps de préparation: moins de ${filters.maxPrepTime || 30} minutes
-- Équilibrées pour un enfant de ${childAge} ans
-- Variées et originales
-${child.allergies?.length ? `- Sans ces allergènes: ${child.allergies.join(", ")}` : ""}
+Règles:
+- Temps max: ${filters.maxPrepTime || 30} minutes
+- Adapté aux enfants de ${childAge} ans
+${child.allergies?.length ? `- Sans: ${child.allergies.join(", ")}` : ""}
 
-IMPORTANT: Ta réponse doit commencer par [ et finir par ], avec EXACTEMENT 5 recettes.`;
+[RAPPEL: Renvoie UNIQUEMENT le JSON]`;
 
     console.log("DEBUG - Sending prompt to Perplexity:", prompt);
 
@@ -79,7 +95,7 @@ IMPORTANT: Ta réponse doit commencer par [ et finir par ], avec EXACTEMENT 5 re
         messages: [
           {
             role: 'system',
-            content: 'Tu es un expert culinaire qui retourne UNIQUEMENT des tableaux JSON de 5 recettes, sans texte autour. Ne réponds JAMAIS avec du texte, seulement du JSON valide commençant par [ et finissant par ].'
+            content: 'Tu es un expert culinaire. Format de réponse: UNIQUEMENT un tableau JSON de 5 recettes. Pas de texte autour.'
           },
           {
             role: 'user',
@@ -91,8 +107,6 @@ IMPORTANT: Ta réponse doit commencer par [ et finir par ], avec EXACTEMENT 5 re
       }),
     });
 
-    console.log("DEBUG - Perplexity response status:", response.status);
-    
     if (!response.ok) {
       const errorText = await response.text();
       console.error("DEBUG - Perplexity API error response:", errorText);
@@ -103,50 +117,36 @@ IMPORTANT: Ta réponse doit commencer par [ et finir par ], avec EXACTEMENT 5 re
     console.log("DEBUG - Raw Perplexity response:", perplexityData);
 
     if (!perplexityData.choices?.[0]?.message?.content) {
-      console.error("DEBUG - Invalid Perplexity response structure:", perplexityData);
       throw new Error("Structure de réponse Perplexity invalide");
     }
 
-    let content = perplexityData.choices[0].message.content.trim();
-    console.log("DEBUG - Content from Perplexity before cleaning:", content);
+    const rawContent = perplexityData.choices[0].message.content;
+    console.log("DEBUG - Raw content:", rawContent);
 
-    // Nettoyage plus agressif pour s'assurer d'avoir un JSON valide
-    content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-    content = content.replace(/^[^[]*(\[[\s\S]*\])[^]*$/, '$1');
-    
-    console.log("DEBUG - Content after aggressive cleaning:", content);
+    // Premier nettoyage
+    const cleanedContent = cleanJsonString(rawContent);
+    console.log("DEBUG - Cleaned content:", cleanedContent);
 
     let recipes;
     try {
-      recipes = JSON.parse(content);
+      recipes = JSON.parse(cleanedContent);
       console.log("DEBUG - Successfully parsed recipes:", recipes);
     } catch (error) {
-      console.error("DEBUG - Failed to parse recipes JSON:", error);
-      console.error("DEBUG - Content that failed to parse:", content);
-      
-      // Tentative de récupération avec un JSON plus strict
-      try {
-        content = content.replace(/[^\x20-\x7E]/g, ''); // Supprime les caractères non-ASCII
-        recipes = JSON.parse(content);
-        console.log("DEBUG - Successfully parsed recipes after strict cleaning:", recipes);
-      } catch (secondError) {
-        throw new Error("La réponse n'est pas au format JSON valide après nettoyage");
-      }
+      console.error("DEBUG - Parse error:", error);
+      console.error("DEBUG - Failed content:", cleanedContent);
+      throw new Error("Impossible de parser la réponse JSON");
     }
 
     if (!Array.isArray(recipes)) {
-      console.error("DEBUG - Recipes is not an array:", recipes);
-      throw new Error("Le format de réponse est invalide (pas un tableau)");
+      throw new Error("La réponse n'est pas un tableau de recettes");
     }
 
     if (recipes.length === 0) {
-      console.error("DEBUG - No recipes generated");
-      throw new Error("Aucune recette n'a été générée");
+      throw new Error("Aucune recette générée");
     }
 
     if (recipes.length < 5) {
-      console.error("DEBUG - Not enough recipes generated:", recipes.length);
-      throw new Error(`Nombre insuffisant de recettes générées (${recipes.length}/5)`);
+      throw new Error(`Nombre insuffisant de recettes (${recipes.length}/5)`);
     }
 
     // Traiter les recettes
@@ -188,7 +188,7 @@ IMPORTANT: Ta réponse doit commencer par [ et finir par ], avec EXACTEMENT 5 re
       auto_generated: true
     }));
 
-    console.log("DEBUG - Final processed recipes:", JSON.stringify(processedRecipes, null, 2));
+    console.log("DEBUG - Final processed recipes:", processedRecipes);
 
     return new Response(
       JSON.stringify({ recipes: processedRecipes }),
