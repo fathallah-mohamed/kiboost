@@ -24,57 +24,46 @@ serve(async (req) => {
 
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
 
-    // Exemple adapté au petit-déjeuner rapide
-    const baseRecipe = {
-      name: "Porridge express aux fruits",
-      ingredients: [
-        { item: "Flocons d'avoine", quantity: "40", unit: "g" },
-        { item: "Lait", quantity: "120", unit: "ml" },
-        { item: "Fruits", quantity: "1", unit: "portion" }
-      ],
-      instructions: ["Mélanger les ingrédients", "Cuire 2 minutes au micro-ondes"],
-      nutritional_info: { calories: 200, protein: 6, carbs: 30, fat: 4 },
-      meal_type: filters.mealType || "breakfast",
-      preparation_time: filters.maxPrepTime || 15,
-      difficulty: "easy",
-      servings: 1,
-      health_benefits: [
-        { icon: "🧠", category: "energy", description: "Énergie durable pour la matinée" }
-      ]
-    };
+    const prompt = `[
+  {
+    "name": "Pancakes banane-avoine",
+    "ingredients": [
+      { "item": "Banane mûre", "quantity": "1", "unit": "pièce" },
+      { "item": "Flocons d'avoine", "quantity": "60", "unit": "g" },
+      { "item": "Œuf", "quantity": "1", "unit": "pièce" },
+      { "item": "Lait", "quantity": "120", "unit": "ml" }
+    ],
+    "instructions": [
+      "Écraser la banane",
+      "Mélanger avec les flocons d'avoine, l'œuf et le lait",
+      "Cuire à la poêle 2-3 minutes de chaque côté"
+    ],
+    "nutritional_info": { "calories": 250, "protein": 8, "carbs": 35, "fat": 6 },
+    "meal_type": "${filters.mealType || 'breakfast'}",
+    "preparation_time": ${filters.maxPrepTime || 30},
+    "difficulty": "easy",
+    "servings": 2,
+    "health_benefits": [
+      { "icon": "🍌", "category": "energy", "description": "Énergie durable pour la matinée" }
+    ]
+  }
+]
 
-    const prompt = `Génère exactement 3 recettes rapides et simples pour le ${filters.mealType || 'petit-déjeuner'}. Voici les détails:
+Génère deux autres recettes similaires adaptées pour ${filters.mealType || 'petit-déjeuner'}, en respectant EXACTEMENT le même format JSON. Les recettes doivent:
+- Prendre moins de ${filters.maxPrepTime || 30} minutes
+- Être adaptées pour un enfant de ${childAge} ans
+- Former un tableau de 3 recettes au total
+${child.allergies?.length ? `- Éviter ces allergènes: ${child.allergies.join(", ")}` : ""}
 
-Contexte:
-- Enfant de ${childAge} ans
-- Type de repas: ${filters.mealType || "petit-déjeuner"}
-- Temps de préparation: ${filters.maxPrepTime || 15} minutes MAXIMUM
-- Difficulté: ${filters.difficulty || "facile"}
-${child.allergies?.length ? `- Allergies à éviter: ${child.allergies.join(", ")}` : ""}
-
-Contraintes importantes:
-- Recettes TRÈS rapides (${filters.maxPrepTime || 15} minutes max)
-- Adaptées aux enfants
-- Simples à préparer
-- Nutritives et équilibrées
-
-Exemple exact du format JSON attendu:
-${JSON.stringify([baseRecipe], null, 2)}
-
-IMPORTANT:
-1. Retourne EXACTEMENT 3 recettes
-2. Utilise STRICTEMENT le même format JSON que l'exemple
-3. NE METS PAS de texte avant ou après le JSON
-4. Temps de préparation STRICTEMENT inférieur à ${filters.maxPrepTime || 15} minutes`;
+IMPORTANT: Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
 
     console.log("Sending prompt to Perplexity:", prompt);
 
     const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY');
     if (!perplexityKey) {
-      throw new Error('Perplexity API key is missing');
+      throw new Error('Clé API Perplexity manquante');
     }
 
-    // Optimisation des paramètres pour des réponses plus précises
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -86,17 +75,17 @@ IMPORTANT:
         messages: [
           {
             role: 'system',
-            content: 'Tu es un expert culinaire spécialisé dans les recettes rapides pour enfants. Génère UNIQUEMENT du JSON valide, sans texte autour.'
+            content: 'Tu es un expert culinaire français qui génère des recettes pour enfants. Tu retournes UNIQUEMENT du JSON valide, sans texte autour.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.4, // Réduit pour plus de consistance
+        temperature: 0.3,
         max_tokens: 2000,
-        top_p: 0.95,
-        frequency_penalty: 0.2 // Augmenté pour plus de diversité
+        top_p: 0.9,
+        frequency_penalty: 0.1
       }),
     });
 
@@ -143,68 +132,55 @@ IMPORTANT:
       throw new Error("La réponse n'est pas au format JSON valide");
     }
 
-    if (!Array.isArray(recipes)) {
-      console.error("Recipes is not an array:", recipes);
-      throw new Error("Le format de réponse n'est pas un tableau");
-    }
-
-    if (recipes.length === 0) {
-      console.error("No recipes generated");
+    if (!Array.isArray(recipes) || recipes.length === 0) {
       throw new Error("Aucune recette n'a été générée");
     }
 
     // Traiter et valider chaque recette
-    const processedRecipes = recipes.map((recipe, index) => {
-      if (!recipe.name) {
-        console.warn(`Recipe ${index} has no name, using default`);
-      }
-      if (!Array.isArray(recipe.ingredients)) {
-        console.warn(`Recipe ${index} has invalid ingredients, using empty array`);
-      }
-      if (!Array.isArray(recipe.instructions)) {
-        console.warn(`Recipe ${index} has invalid instructions, using empty array`);
-      }
-
-      return {
-        profile_id: child.profile_id,
-        child_id: child.id,
-        name: String(recipe.name || `Recette ${index + 1}`),
-        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({
-          item: String(ing.item || ''),
-          quantity: String(ing.quantity || ''),
-          unit: String(ing.unit || '')
-        })) : [],
-        instructions: Array.isArray(recipe.instructions) ? recipe.instructions.map(String) : [],
-        nutritional_info: {
-          calories: Number(recipe.nutritional_info?.calories) || 0,
-          protein: Number(recipe.nutritional_info?.protein) || 0,
-          carbs: Number(recipe.nutritional_info?.carbs) || 0,
-          fat: Number(recipe.nutritional_info?.fat) || 0
-        },
-        meal_type: filters.mealType || 'dinner',
-        preparation_time: Number(filters.maxPrepTime) || 30,
-        difficulty: filters.difficulty || 'medium',
-        servings: Number(recipe.servings) || 4,
-        is_generated: true,
-        source: 'ia',
-        auto_generated: true,
-        health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits.map(benefit => ({
-          icon: String(benefit.icon || '🍳'),
-          category: String(benefit.category || 'global'),
-          description: String(benefit.description || '')
-        })) : [],
-        image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
-        min_age: childAge - 2,
-        max_age: childAge + 2,
-        dietary_preferences: child.preferences || [],
-        allergens: child.allergies || [],
-        cost_estimate: 0,
-        seasonal_months: [1,2,3,4,5,6,7,8,9,10,11,12],
-        cooking_steps: []
-      };
-    });
+    const processedRecipes = recipes.map((recipe, index) => ({
+      id: crypto.randomUUID(),
+      profile_id: child.profile_id,
+      child_id: child.id,
+      name: String(recipe.name || `Recette ${index + 1}`),
+      ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({
+        item: String(ing.item || ''),
+        quantity: String(ing.quantity || ''),
+        unit: String(ing.unit || '')
+      })) : [],
+      instructions: Array.isArray(recipe.instructions) ? recipe.instructions.map(String) : [],
+      nutritional_info: {
+        calories: Number(recipe.nutritional_info?.calories) || 0,
+        protein: Number(recipe.nutritional_info?.protein) || 0,
+        carbs: Number(recipe.nutritional_info?.carbs) || 0,
+        fat: Number(recipe.nutritional_info?.fat) || 0
+      },
+      meal_type: filters.mealType || 'breakfast',
+      preparation_time: Number(filters.maxPrepTime) || 30,
+      difficulty: filters.difficulty || 'medium',
+      servings: Number(recipe.servings) || 4,
+      is_generated: true,
+      source: 'ia',
+      auto_generated: true,
+      health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits.map(benefit => ({
+        icon: String(benefit.icon || '🍳'),
+        category: String(benefit.category || 'global'),
+        description: String(benefit.description || '')
+      })) : [],
+      image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
+      min_age: childAge - 2,
+      max_age: childAge + 2,
+      dietary_preferences: child.preferences || [],
+      allergens: child.allergies || [],
+      cost_estimate: 0,
+      seasonal_months: [1,2,3,4,5,6,7,8,9,10,11,12],
+      cooking_steps: []
+    }));
 
     console.log("Final processed recipes:", processedRecipes);
+
+    if (processedRecipes.length === 0) {
+      throw new Error("Aucune recette valide n'a été générée");
+    }
 
     return new Response(
       JSON.stringify({ recipes: processedRecipes }),
