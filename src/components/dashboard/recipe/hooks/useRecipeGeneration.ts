@@ -41,7 +41,7 @@ export const useRecipeGeneration = () => {
         throw new Error("Session expirée");
       }
 
-      const { data: response, error: generateError } = await supabase.functions.invoke(
+      const { data, error: generateError } = await supabase.functions.invoke<{ recipes: Recipe[] }>(
         'generate-recipe',
         {
           body: { 
@@ -72,13 +72,26 @@ export const useRecipeGeneration = () => {
         throw generateError;
       }
 
-      console.log("Generated recipe response:", response);
-
-      if (!response.recipes || !Array.isArray(response.recipes)) {
-        throw new Error("Format de réponse invalide");
+      if (!data) {
+        throw new Error("Aucune donnée reçue de la fonction");
       }
 
-      return response.recipes;
+      const { recipes } = data;
+      console.log("Generated recipes:", recipes);
+
+      if (!recipes || !Array.isArray(recipes) || recipes.length === 0) {
+        throw new Error("Aucune recette n'a été générée");
+      }
+
+      // Vérifier que chaque recette a les propriétés requises
+      recipes.forEach((recipe, index) => {
+        if (!recipe.name || !recipe.ingredients || !recipe.instructions) {
+          console.error(`Invalid recipe at index ${index}:`, recipe);
+          throw new Error(`La recette ${index + 1} est invalide`);
+        }
+      });
+
+      return recipes;
 
     } catch (err) {
       console.error("Error generating recipes:", err);
