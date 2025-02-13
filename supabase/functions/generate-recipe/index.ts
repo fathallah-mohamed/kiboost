@@ -24,8 +24,8 @@ serve(async (req) => {
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
     console.log("DEBUG - Calculated child age:", childAge);
 
-    const prompt = `En tant que chef cuisinier français expert, génère une recette de ${filters.mealType || 'petit-déjeuner'} adaptée pour un enfant de ${childAge} ans.
-La recette doit suivre EXACTEMENT ce format JSON (commence ta réponse par [ et termine par ], ne mets aucun texte avant ou après) :
+    const prompt = `En tant que chef cuisinier français expert, génère 5 recettes variées de ${filters.mealType || 'petit-déjeuner'} adaptées pour un enfant de ${childAge} ans.
+Les recettes doivent être différentes et originales. Ta réponse doit suivre EXACTEMENT ce format JSON (commence ta réponse par [ et termine par ], ne mets aucun texte avant ou après) :
 
 [
   {
@@ -51,10 +51,13 @@ La recette doit suivre EXACTEMENT ce format JSON (commence ta réponse par [ et 
   }
 ]
 
-La recette doit:
+IMPORTANT: Je veux EXACTEMENT 5 recettes différentes qui doivent:
 - Prendre moins de ${filters.maxPrepTime || 30} minutes à préparer
-- Être nutritive et équilibrée pour un enfant de ${childAge} ans
-${child.allergies?.length ? `- Éviter ces allergènes: ${child.allergies.join(", ")}` : ""}`;
+- Être nutritives et équilibrées pour un enfant de ${childAge} ans
+- Être variées en termes de goûts et d'ingrédients
+${child.allergies?.length ? `- Éviter ces allergènes: ${child.allergies.join(", ")}` : ""}
+
+RETOURNE UNIQUEMENT LE JSON avec les 5 recettes, sans texte avant ou après.`;
 
     console.log("DEBUG - Sending prompt to Perplexity:", prompt);
 
@@ -74,15 +77,15 @@ ${child.allergies?.length ? `- Éviter ces allergènes: ${child.allergies.join("
         messages: [
           {
             role: 'system',
-            content: 'Tu es un chef cuisinier français expert qui génère des recettes pour enfants. Tu retournes UNIQUEMENT du JSON valide, sans texte autour.'
+            content: 'Tu es un chef cuisinier français expert qui génère des recettes pour enfants. Tu dois TOUJOURS retourner EXACTEMENT 5 recettes au format JSON demandé.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.1,
-        max_tokens: 2000,
+        temperature: 0.7, // Augmenté pour plus de variété
+        max_tokens: 4000, // Augmenté pour permettre plus de recettes
       }),
     });
 
