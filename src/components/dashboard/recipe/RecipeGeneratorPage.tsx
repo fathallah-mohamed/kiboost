@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { BackToDashboard } from '../BackToDashboard';
@@ -22,6 +23,7 @@ export const RecipeGeneratorPage = () => {
   const [selectedChildren, setSelectedChildren] = useState<ChildProfile[]>([]);
   const [displayCount, setDisplayCount] = useState(10);
   const [error, setError] = useState<string | null>(null);
+  const [generatedRecipes, setGeneratedRecipes] = useState<Recipe[]>([]);
   const session = useSession();
   const navigate = useNavigate();
   const filters = useRecipeFilters();
@@ -29,10 +31,13 @@ export const RecipeGeneratorPage = () => {
   const { generateRecipes } = useRecipeGeneration();
   const { saveRecipe } = useRecipeSaving();
 
-  const { data: recipes = [], refetch } = useRecipeQuery(
+  const { data: savedRecipes = [], refetch } = useRecipeQuery(
     session?.user?.id,
     filters.getFilters()
   );
+
+  // Combine generated and saved recipes
+  const allRecipes = [...generatedRecipes, ...savedRecipes];
 
   const handleGenerateRecipes = async () => {
     if (!selectedChildren.length) {
@@ -56,6 +61,9 @@ export const RecipeGeneratorPage = () => {
       if (!newRecipes || newRecipes.length === 0) {
         throw new Error("Aucune recette n'a été générée");
       }
+
+      setGeneratedRecipes(newRecipes);
+      toast.success("Recettes générées avec succès !");
       
     } catch (error) {
       console.error('Error generating recipes:', error);
@@ -68,7 +76,7 @@ export const RecipeGeneratorPage = () => {
   };
 
   const handleLoadMore = () => {
-    setDisplayCount(prev => Math.min(prev + 5, recipes.length));
+    setDisplayCount(prev => Math.min(prev + 5, allRecipes.length));
   };
 
   const handleDeleteAllRecipes = async () => {
@@ -84,8 +92,9 @@ export const RecipeGeneratorPage = () => {
 
       if (error) throw error;
 
+      setGeneratedRecipes([]); // Clear generated recipes
       toast.success('Toutes les recettes générées ont été supprimées');
-      refetch(); // Refresh the recipes list
+      refetch(); // Refresh the saved recipes list
     } catch (error) {
       console.error('Error deleting recipes:', error);
       toast.error('Une erreur est survenue lors de la suppression des recettes');
@@ -109,7 +118,7 @@ export const RecipeGeneratorPage = () => {
             </p>
           </div>
           <div className="flex gap-4">
-            {recipes.length > 0 && (
+            {allRecipes.length > 0 && (
               <Button 
                 variant="destructive"
                 onClick={handleDeleteAllRecipes}
@@ -138,14 +147,14 @@ export const RecipeGeneratorPage = () => {
         />
 
         <ResultsSection
-          recipes={recipes.slice(0, displayCount)}
+          recipes={allRecipes.slice(0, displayCount)}
           displayCount={displayCount}
           error={error}
           onSaveRecipe={saveRecipe}
           onLoadMore={handleLoadMore}
         />
 
-        {displayCount < recipes.length && (
+        {displayCount < allRecipes.length && (
           <div ref={loadMoreRef} className="h-10" />
         )}
 
