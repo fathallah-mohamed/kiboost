@@ -24,31 +24,39 @@ serve(async (req) => {
 
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
 
-    // Exemple simple et direct pour le modèle
+    // Exemple adapté au petit-déjeuner rapide
     const baseRecipe = {
-      name: "Recette de base",
+      name: "Porridge express aux fruits",
       ingredients: [
-        { item: "Ingrédient 1", quantity: "100", unit: "g" }
+        { item: "Flocons d'avoine", quantity: "40", unit: "g" },
+        { item: "Lait", quantity: "120", unit: "ml" },
+        { item: "Fruits", quantity: "1", unit: "portion" }
       ],
-      instructions: ["Étape 1"],
-      nutritional_info: { calories: 100, protein: 5, carbs: 20, fat: 2 },
-      meal_type: filters.mealType || "dinner",
-      preparation_time: filters.maxPrepTime || 30,
-      difficulty: filters.difficulty || "medium",
-      servings: 4,
+      instructions: ["Mélanger les ingrédients", "Cuire 2 minutes au micro-ondes"],
+      nutritional_info: { calories: 200, protein: 6, carbs: 30, fat: 4 },
+      meal_type: filters.mealType || "breakfast",
+      preparation_time: filters.maxPrepTime || 15,
+      difficulty: "easy",
+      servings: 1,
       health_benefits: [
-        { icon: "🧠", category: "cognitive", description: "Bénéfice santé" }
+        { icon: "🧠", category: "energy", description: "Énergie durable pour la matinée" }
       ]
     };
 
-    const prompt = `Génère exactement 3 recettes créatives adaptées aux enfants. Voici les détails:
+    const prompt = `Génère exactement 3 recettes rapides et simples pour le ${filters.mealType || 'petit-déjeuner'}. Voici les détails:
 
 Contexte:
 - Enfant de ${childAge} ans
-- Type de repas: ${filters.mealType || "dinner"}
-- Temps de préparation maximum: ${filters.maxPrepTime || 30} minutes
-- Difficulté: ${filters.difficulty || "medium"}
+- Type de repas: ${filters.mealType || "petit-déjeuner"}
+- Temps de préparation: ${filters.maxPrepTime || 15} minutes MAXIMUM
+- Difficulté: ${filters.difficulty || "facile"}
 ${child.allergies?.length ? `- Allergies à éviter: ${child.allergies.join(", ")}` : ""}
+
+Contraintes importantes:
+- Recettes TRÈS rapides (${filters.maxPrepTime || 15} minutes max)
+- Adaptées aux enfants
+- Simples à préparer
+- Nutritives et équilibrées
 
 Exemple exact du format JSON attendu:
 ${JSON.stringify([baseRecipe], null, 2)}
@@ -57,7 +65,7 @@ IMPORTANT:
 1. Retourne EXACTEMENT 3 recettes
 2. Utilise STRICTEMENT le même format JSON que l'exemple
 3. NE METS PAS de texte avant ou après le JSON
-4. ÉVITE les caractères spéciaux dans les noms`;
+4. Temps de préparation STRICTEMENT inférieur à ${filters.maxPrepTime || 15} minutes`;
 
     console.log("Sending prompt to Perplexity:", prompt);
 
@@ -66,7 +74,7 @@ IMPORTANT:
       throw new Error('Perplexity API key is missing');
     }
 
-    // Appel à Perplexity avec des paramètres optimisés
+    // Optimisation des paramètres pour des réponses plus précises
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -78,17 +86,17 @@ IMPORTANT:
         messages: [
           {
             role: 'system',
-            content: 'Tu es un assistant qui génère UNIQUEMENT du JSON valide, sans texte ni formatage autour.'
+            content: 'Tu es un expert culinaire spécialisé dans les recettes rapides pour enfants. Génère UNIQUEMENT du JSON valide, sans texte autour.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.7,
+        temperature: 0.4, // Réduit pour plus de consistance
         max_tokens: 2000,
         top_p: 0.95,
-        frequency_penalty: 0.1  // On garde uniquement frequency_penalty
+        frequency_penalty: 0.2 // Augmenté pour plus de diversité
       }),
     });
 
