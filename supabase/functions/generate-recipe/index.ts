@@ -7,23 +7,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Fonction utilitaire pour nettoyer le JSON
+// Fonction pour convertir le type de repas en format correct
+const normalizeMealType = (mealType: string): string => {
+  const mealTypes: Record<string, string> = {
+    'breakfast': 'petit-déjeuner',
+    'lunch': 'déjeuner',
+    'dinner': 'dîner',
+    'snack': 'goûter',
+    'all': 'tous'
+  };
+  return mealTypes[mealType] || 'petit-déjeuner';
+};
+
 const cleanJsonString = (str: string): string => {
-  // Enlève tout ce qui n'est pas entre le premier [ et le dernier ]
   const match = str.match(/\[[\s\S]*\]/);
   if (!match) return str;
   
   let cleaned = match[0]
-    // Enlève les blocs de code markdown
     .replace(/```json\s*|\s*```/g, '')
-    // Enlève les caractères non-ASCII
     .replace(/[^\x20-\x7E]/g, ' ')
-    // Nettoie les espaces multiples
     .replace(/\s+/g, ' ')
-    // Nettoie les virgules trailing
     .replace(/,\s*]/g, ']')
     .replace(/,\s*}/g, '}')
-    // S'assure que les guillemets sont droits
     .replace(/[""]/g, '"')
     .trim();
 
@@ -45,11 +50,14 @@ serve(async (req) => {
     }
 
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
+    const normalizedMealType = normalizeMealType(filters?.mealType || 'breakfast');
+    
     console.log("DEBUG - Calculated child age:", childAge);
+    console.log("DEBUG - Normalized meal type:", normalizedMealType);
 
     const prompt = `[IMPORTANT: Réponds UNIQUEMENT avec un tableau JSON de 5 recettes]
 
-En tant que chef cuisinier français expert, génère 5 recettes de ${filters.mealType || 'petit-déjeuner'} pour un enfant de ${childAge} ans.
+En tant que chef cuisinier français expert, génère 5 recettes de ${normalizedMealType} pour un enfant de ${childAge} ans.
 
 Format JSON requis:
 [
@@ -60,8 +68,8 @@ Format JSON requis:
     ],
     "instructions": ["étape 1", "étape 2"],
     "nutritional_info": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0 },
-    "meal_type": "${filters.mealType || 'breakfast'}",
-    "preparation_time": ${filters.maxPrepTime || 30},
+    "meal_type": "${filters?.mealType || 'breakfast'}",
+    "preparation_time": ${filters?.maxPrepTime || 30},
     "difficulty": "easy",
     "servings": 1,
     "health_benefits": [
@@ -71,7 +79,7 @@ Format JSON requis:
 ]
 
 Règles:
-- Temps max: ${filters.maxPrepTime || 30} minutes
+- Temps max: ${filters?.maxPrepTime || 30} minutes
 - Adapté aux enfants de ${childAge} ans
 ${child.allergies?.length ? `- Sans: ${child.allergies.join(", ")}` : ""}
 
@@ -123,7 +131,6 @@ ${child.allergies?.length ? `- Sans: ${child.allergies.join(", ")}` : ""}
     const rawContent = perplexityData.choices[0].message.content;
     console.log("DEBUG - Raw content:", rawContent);
 
-    // Premier nettoyage
     const cleanedContent = cleanJsonString(rawContent);
     console.log("DEBUG - Cleaned content:", cleanedContent);
 
@@ -149,15 +156,14 @@ ${child.allergies?.length ? `- Sans: ${child.allergies.join(", ")}` : ""}
       throw new Error(`Nombre insuffisant de recettes (${recipes.length}/5)`);
     }
 
-    // Traiter les recettes
     const processedRecipes = recipes.map((recipe, index) => ({
       id: crypto.randomUUID(),
       name: String(recipe.name || `Recette ${index + 1}`),
-      ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({
+      ingredients: (Array.isArray(recipe.ingredients) ? recipe.ingredients : []).map(ing => ({
         item: String(ing.item || ''),
         quantity: String(ing.quantity || ''),
         unit: String(ing.unit || '')
-      })) : [],
+      })),
       instructions: Array.isArray(recipe.instructions) ? recipe.instructions.map(String) : [],
       nutritional_info: {
         calories: Number(recipe.nutritional_info?.calories) || 0,
@@ -165,18 +171,18 @@ ${child.allergies?.length ? `- Sans: ${child.allergies.join(", ")}` : ""}
         carbs: Number(recipe.nutritional_info?.carbs) || 0,
         fat: Number(recipe.nutritional_info?.fat) || 0
       },
-      meal_type: filters.mealType || 'breakfast',
-      preparation_time: Number(recipe.preparation_time) || filters.maxPrepTime || 30,
+      meal_type: filters?.mealType || 'breakfast',
+      preparation_time: Number(recipe.preparation_time) || filters?.maxPrepTime || 30,
       difficulty: recipe.difficulty || 'easy',
       servings: Number(recipe.servings) || 2,
       is_generated: true,
       profile_id: child.profile_id,
       child_id: child.id,
-      health_benefits: Array.isArray(recipe.health_benefits) ? recipe.health_benefits.map(benefit => ({
+      health_benefits: (Array.isArray(recipe.health_benefits) ? recipe.health_benefits : []).map(benefit => ({
         icon: String(benefit.icon || '🍳'),
         category: String(benefit.category || 'energy'),
         description: String(benefit.description || '')
-      })) : [],
+      })),
       image_url: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
       min_age: childAge - 2,
       max_age: childAge + 2,
