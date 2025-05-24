@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Fonction pour convertir le type de repas en format correct
+// Fonction pour convertir le type de repas en format français
 const normalizeMealType = (mealType: string): string => {
   const mealTypes: Record<string, string> = {
     'breakfast': 'petit-déjeuner',
@@ -19,20 +19,50 @@ const normalizeMealType = (mealType: string): string => {
   return mealTypes[mealType] || 'petit-déjeuner';
 };
 
+// Fonction pour normaliser les attributs de difficulté
+const normalizeDifficulty = (difficulty: string): string => {
+  const difficulties: Record<string, string> = {
+    'easy': 'facile',
+    'medium': 'moyen',
+    'hard': 'difficile',
+    'all': 'tous'
+  };
+  return difficulties[difficulty] || 'facile';
+};
+
+// Fonction améliorée pour nettoyer les réponses JSON
 const cleanJsonString = (str: string): string => {
-  const match = str.match(/\[[\s\S]*\]/);
+  // Identifier tout ce qui ressemble à un tableau JSON
+  const match = str.match(/\[\s*\{[\s\S]*\}\s*\]/);
   if (!match) return str;
   
   let cleaned = match[0]
-    .replace(/```json\s*|\s*```/g, '')
+    // Supprimer les marqueurs markdown
+    .replace(/```(?:json)?\s*|\s*```/g, '')
+    // Remplacer les caractères non-ASCII
     .replace(/[^\x20-\x7E]/g, ' ')
+    // Normaliser les espaces
     .replace(/\s+/g, ' ')
-    .replace(/,\s*]/g, ']')
-    .replace(/,\s*}/g, '}')
-    .replace(/[""]/g, '"')
+    // Supprimer les virgules en fin d'objets/tableaux
+    .replace(/,(\s*[}\]])/g, '$1')
+    // Normaliser les guillemets
+    .replace(/[""'']/g, '"')
     .trim();
 
+  // Assurer que les valeurs numériques sont correctement formatées
+  cleaned = cleaned.replace(/:(\s*)([0-9]+)([a-zA-Z]+)(\s*[,}])/g, ':"$2$3"$4');
+  
   return cleaned;
+};
+
+// Fonction pour valider la structure de base des recettes
+const validateRecipeStructure = (recipe: any): boolean => {
+  if (!recipe || typeof recipe !== 'object') return false;
+  if (!recipe.name || typeof recipe.name !== 'string') return false;
+  if (!Array.isArray(recipe.ingredients)) return false;
+  if (!Array.isArray(recipe.instructions)) return false;
+  if (!recipe.nutritional_info || typeof recipe.nutritional_info !== 'object') return false;
+  return true;
 };
 
 serve(async (req) => {
@@ -51,13 +81,24 @@ serve(async (req) => {
 
     const childAge = new Date().getFullYear() - new Date(child.birth_date).getFullYear();
     const normalizedMealType = normalizeMealType(filters?.mealType || 'breakfast');
+    const normalizedDifficulty = normalizeDifficulty(filters?.difficulty || 'easy');
     
     console.log("DEBUG - Calculated child age:", childAge);
     console.log("DEBUG - Normalized meal type:", normalizedMealType);
+    console.log("DEBUG - Normalized difficulty:", normalizedDifficulty);
+    
+    // Construction du prompt amélioré
+    const dietaryRestrictions = child.allergies?.filter(Boolean).join(", ") || "";
+    const dietaryPreferences = child.preferences?.filter(Boolean).join(", ") || "";
+    const maxPrepTime = filters?.maxPrepTime || 30;
+    
+    // Introduire un élément aléatoire pour garantir des recettes différentes
+    const timestamp = new Date().getTime();
+    const randomSeed = Math.floor(Math.random() * 10000);
 
-    const prompt = `[IMPORTANT: Réponds UNIQUEMENT avec un tableau JSON de 5 recettes]
+    const prompt = `[INSTRUCTION: Réponds UNIQUEMENT avec un tableau JSON de 5 recettes différentes, sans texte d'introduction ou de conclusion]
 
-En tant que chef cuisinier français expert, génère 5 recettes de ${normalizedMealType} pour un enfant de ${childAge} ans.
+En tant que chef cuisinier français expert, génère 5 recettes de ${normalizedMealType} pour un enfant de ${childAge} ans avec le seed ${randomSeed}-${timestamp}.
 
 Format JSON requis:
 [
@@ -69,8 +110,8 @@ Format JSON requis:
     "instructions": ["étape 1", "étape 2"],
     "nutritional_info": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0 },
     "meal_type": "${filters?.mealType || 'breakfast'}",
-    "preparation_time": ${filters?.maxPrepTime || 30},
-    "difficulty": "easy",
+    "preparation_time": ${maxPrepTime},
+    "difficulty": "${filters?.difficulty || 'easy'}",
     "servings": 1,
     "health_benefits": [
       { "icon": "🥛", "category": "energy", "description": "description" }
@@ -78,57 +119,62 @@ Format JSON requis:
   }
 ]
 
-Règles:
-- Temps max: ${filters?.maxPrepTime || 30} minutes
+Règles importantes:
+- Temps max: ${maxPrepTime} minutes
+- Difficulté: ${normalizedDifficulty}
 - Adapté aux enfants de ${childAge} ans
-${child.allergies?.length ? `- Sans: ${child.allergies.join(", ")}` : ""}
+${dietaryRestrictions ? `- Allergies/restrictions: ${dietaryRestrictions}` : "- Pas d'allergies connues"}
+${dietaryPreferences ? `- Préférences: ${dietaryPreferences}` : ""}
+${filters?.includedIngredients?.length ? `- Doit inclure: ${filters.includedIngredients.join(', ')}` : ""}
+${filters?.excludedIngredients?.length ? `- Ne doit pas inclure: ${filters.excludedIngredients.join(', ')}` : ""}
+${filters?.healthBenefits?.length ? `- Bienfaits santé ciblés: ${filters.healthBenefits.join(', ')}` : ""}
 
-[RAPPEL: Renvoie UNIQUEMENT le JSON]`;
+[IMPORTANT: Retourne UNIQUEMENT le JSON sans autre texte]`;
 
-    console.log("DEBUG - Sending prompt to Perplexity:", prompt);
+    console.log("DEBUG - Sending prompt to OpenAI:", prompt);
 
-    const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY');
-    if (!perplexityKey) {
-      throw new Error('Clé API Perplexity manquante');
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiKey) {
+      throw new Error('Clé API OpenAI manquante');
     }
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${perplexityKey}`,
+        'Authorization': `Bearer ${openaiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online',
+        model: "gpt-4o",
         messages: [
           {
             role: 'system',
-            content: 'Tu es un expert culinaire. Format de réponse: UNIQUEMENT un tableau JSON de 5 recettes. Pas de texte autour.'
+            content: 'Tu es un chef cuisinier spécialisé pour les enfants. Tu génères des recettes sous format JSON uniquement, sans texte d\'introduction ou de conclusion. Chaque élément JSON doit être correctement formaté.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.7,
+        temperature: 0.8,
         max_tokens: 4000,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("DEBUG - Perplexity API error response:", errorText);
-      throw new Error(`Erreur API Perplexity: ${errorText}`);
+      console.error("DEBUG - OpenAI API error response:", errorText);
+      throw new Error(`Erreur API OpenAI: ${errorText}`);
     }
 
-    const perplexityData = await response.json();
-    console.log("DEBUG - Raw Perplexity response:", perplexityData);
+    const openaiData = await response.json();
+    console.log("DEBUG - Raw OpenAI response:", openaiData);
 
-    if (!perplexityData.choices?.[0]?.message?.content) {
-      throw new Error("Structure de réponse Perplexity invalide");
+    if (!openaiData.choices?.[0]?.message?.content) {
+      throw new Error("Structure de réponse OpenAI invalide");
     }
 
-    const rawContent = perplexityData.choices[0].message.content;
+    const rawContent = openaiData.choices[0].message.content;
     console.log("DEBUG - Raw content:", rawContent);
 
     const cleanedContent = cleanJsonString(rawContent);
@@ -156,6 +202,14 @@ ${child.allergies?.length ? `- Sans: ${child.allergies.join(", ")}` : ""}
       throw new Error(`Nombre insuffisant de recettes (${recipes.length}/5)`);
     }
 
+    // Validation approfondie des recettes
+    recipes.forEach((recipe, index) => {
+      if (!validateRecipeStructure(recipe)) {
+        console.error(`DEBUG - Invalid recipe structure at index ${index}:`, recipe);
+        throw new Error(`Structure de recette invalide: ${recipe.name || `Recette ${index + 1}`}`);
+      }
+    });
+
     const processedRecipes = recipes.map((recipe, index) => ({
       id: crypto.randomUUID(),
       name: String(recipe.name || `Recette ${index + 1}`),
@@ -172,7 +226,7 @@ ${child.allergies?.length ? `- Sans: ${child.allergies.join(", ")}` : ""}
         fat: Number(recipe.nutritional_info?.fat) || 0
       },
       meal_type: filters?.mealType || 'breakfast',
-      preparation_time: Number(recipe.preparation_time) || filters?.maxPrepTime || 30,
+      preparation_time: Number(recipe.preparation_time) || maxPrepTime,
       difficulty: recipe.difficulty || 'easy',
       servings: Number(recipe.servings) || 2,
       is_generated: true,

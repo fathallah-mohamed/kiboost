@@ -55,7 +55,13 @@ export const RecipeGeneratorPage = () => {
       }
 
       console.log("Generating recipes with filters:", filters.getFilters());
-      const newRecipes = await generateRecipes(selectedChild, filters.getFilters());
+      // Ajouter un timestamp pour garantir de nouvelles recettes à chaque génération
+      const currentFilters = {
+        ...filters.getFilters(),
+        timestamp: new Date().getTime()
+      };
+      
+      const newRecipes = await generateRecipes(selectedChild, currentFilters);
       console.log("Generated recipes:", newRecipes);
       
       if (!newRecipes || newRecipes.length === 0) {

@@ -41,6 +41,9 @@ export const useRecipeGeneration = () => {
         throw new Error("Session expirée");
       }
 
+      // Générer un identifiant de demande unique pour éviter les recettes dupliquées
+      const requestId = Date.now();
+
       const { data, error: generateError } = await supabase.functions.invoke<{ recipes: Recipe[] }>(
         'generate-recipe',
         {
@@ -53,20 +56,19 @@ export const useRecipeGeneration = () => {
               allergies: child.allergies || [],
               preferences: child.preferences || []
             },
-            filters
+            filters: {
+              ...filters,
+              requestId // Ajouter un ID unique pour assurer des résultats différents à chaque appel
+            }
           }
         }
       );
 
       if (generateError) {
         // Vérifier si c'est une erreur de quota insuffisant
-        if (generateError.message?.includes("quota Perplexity est insuffisant")) {
-          toast.error("Quota Perplexity insuffisant", {
-            description: "Veuillez mettre à jour votre abonnement Perplexity pour continuer à générer des recettes.",
-            action: {
-              label: "Mettre à jour",
-              onClick: () => window.open("https://www.perplexity.ai/settings/subscription", "_blank")
-            }
+        if (generateError.message?.includes("quota OpenAI est insuffisant")) {
+          toast.error("Quota OpenAI insuffisant", {
+            description: "Veuillez vérifier votre clé API ou réessayer plus tard.",
           });
         }
         throw generateError;
@@ -99,8 +101,10 @@ export const useRecipeGeneration = () => {
       setError(errorMessage);
       
       // Si ce n'est pas déjà une erreur de quota insuffisant (pour éviter le double toast)
-      if (!errorMessage.includes("quota Perplexity est insuffisant")) {
-        toast.error(errorMessage);
+      if (!errorMessage.includes("quota OpenAI est insuffisant")) {
+        toast.error("Erreur de génération", {
+          description: errorMessage
+        });
       }
       
       throw err;
